@@ -3845,6 +3845,39 @@ async fn get_system_audio_waveforms(
     Ok(out)
 }
 
+/// 检测每个录制片段中的静音区间（供编辑器「一键移除静音」使用）。
+/// 同时考虑麦克风与系统音频：两者都静音的时段才算静音（避免删掉只有系统声/只有人声的片段）。
+/// 返回值与 timeline segments 一一对应；无音频的片段返回空列表。
+#[tauri::command]
+#[specta::specta]
+#[instrument(skip(editor_instance))]
+async fn detect_silence_segments(
+    editor_instance: WindowEditorInstance,
+    options: Option<audio::SilenceDetectOptions>,
+) -> Result<Vec<Vec<audio::SilenceSpan>>, String> {
+    let opts = options.unwrap_or_default();
+    let mut out = Vec::new();
+
+    for segment in editor_instance.segment_medias.iter() {
+        let mic_wf = segment.audio.as_ref().map(audio::get_waveform);
+        let sys_wf = segment.system_audio.as_ref().map(audio::get_waveform);
+
+        let combined = match (mic_wf, sys_wf) {
+            (Some(m), Some(s)) => audio::max_dbfs_per_bucket(&m, &s),
+            (Some(m), None) => m,
+            (None, Some(s)) => s,
+            (None, None) => {
+                out.push(Vec::new());
+                continue;
+            }
+        };
+
+        out.push(audio::detect_silence_segments(&combined, opts));
+    }
+
+    Ok(out)
+}
+
 #[tauri::command]
 #[specta::specta]
 #[instrument(skip(app, editor_instance, window))]
@@ -4220,6 +4253,7 @@ pub async fn run(recording_logging_handle: LoggingHandle, logs_dir: PathBuf) {
             get_editor_project_path,
             get_mic_waveforms,
             get_system_audio_waveforms,
+            detect_silence_segments,
             start_playback,
             stop_playback,
             set_playhead_position,

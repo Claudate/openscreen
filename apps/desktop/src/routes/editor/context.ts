@@ -53,6 +53,28 @@ import {
 	sortTrackSegments,
 } from "./timelineTracks";
 import { createProgressBar } from "./utils";
+import { invoke as TAURI_INVOKE } from "@tauri-apps/api/core";
+
+/**
+ * 静音检测参数（镜像 Rust `audio::SilenceDetectOptions`）。
+ * 临时定义：specta 绑定生成后此类型会出现在 tauri.ts，可改为从那里 import。
+ */
+export type SilenceDetectOptionsInput = {
+	thresholdDb: number;
+	minSilenceSeconds: number;
+	edgePaddingSeconds: number;
+};
+
+/**
+ * 调用已注册的 `detect_silence_segments` command 的临时桥接。
+ * 待 specta 重新生成 tauri.ts 后，替换为 `commands.detectSilenceSegments`。
+ * 返回每个 recording segment 的静音区间（秒，source 时间）。
+ */
+function detectSilenceSegmentsBridge(
+	options: SilenceDetectOptionsInput | null,
+): Promise<{ start: number; end: number }[][]> {
+	return TAURI_INVOKE("detect_silence_segments", { options });
+}
 
 export type ModalDialog =
 	| { type: "createPreset" }
@@ -601,6 +623,137 @@ export const [EditorContextProvider, useEditorContext] = createContextProvider(
 						segment.timescale = timescale;
 					}),
 				);
+			},
+			/**
+			 * 按给定的「编辑后时间轴」静音区间，从时间轴 clip 轨上切掉这些片段。
+			 * 输入 `editedSilences` 必须是 edited timeline 秒数、已按 start 升序、互不重叠。
+			 * 实现：从后往前处理（避免 split 改变前面片段的索引/时间），每段
+			 * splitClipSegment(end) → splitClipSegment(start) → 删掉中间那段。
+			 * 至少保留 1 个 clip 片段（deleteClipSegment 自带该保护）。
+			 * @returns 实际删除的片段数
+			 */
+			removeSilenceRanges: (editedSilences: { start: number; end: number }[]) => {
+				if (!project.timeline) return 0;
+				const ranges = [...editedSilences]
+					.filter((r) => r.end - r.start > 0.05) // 丢弃 <50ms 的碎段
+					.sort((a, b) => a.start - b.start);
+				if (ranges.length === 0) return 0;
+
+				let removed = 0;
+				// 从后往前：先切右边界、再切左边界，中间段即为静音，删之。
+				for (let i = ranges.length - 1; i >= 0; i--) {
+					const { start, end } = ranges[i];
+					const totalBefore = project.timeline.segments.reduce(
+						(acc, s) => acc + (s.end - s.start) / s.timescale,
+						0,
+					);
+					// 越界保护：区间必须落在当前时间轴内。
+					if (start < 0 || end > totalBefore + 1e-6 || end <= start) continue;
+
+					// 在 end 处切一刀（除非 end 已是时间轴末尾）。
+					if (totalBefore - end > 1e-6) projectActions.splitClipSegment(end);
+					// 在 start 处切一刀（除非 start 已是时间轴开头）。
+					if (start > 1e-6) projectActions.splitClipSegment(start);
+
+					// 切完后，静音段是「起点累计时长 == start」的那个片段。
+					const segs = project.timeline.segments;
+					let acc = 0;
+					let targetIndex = -1;
+					for (let j = 0; j < segs.length; j++) {
+						const segStart = acc;
+						acc += (segs[j].end - segs[j].start) / segs[j].timescale;
+						if (Math.abs(segStart - start) < 1e-3) {
+							targetIndex = j;
+							break;
+						}
+					}
+					if (targetIndex === -1) continue;
+					if (segs.length < 2) break; // 只剩一段则不再删，保留视频
+					projectActions.deleteClipSegment(targetIndex);
+					removed++;
+				}
+				setEditorState("timeline", "selection", null);
+				return removed;
+			},
+			/**
+			 * 自动移除静音：调后端检测各录制片段的静音区间（source 时间），映射到
+			 * 编辑后时间轴，再调 removeSilenceRanges 切除。返回实际删除的片段数。
+			 *
+			 * 时间映射对齐 captions.ts 的 buildSourceToEditedMappings：每个 timeline
+			 * 片段覆盖某 recording 的 [start,end]（source 时间），静音区间与之求交后
+			 * 按 timescale 换算到 edited 时间轴。
+			 *
+			 * 依赖后端 command `detect_silence_segments`（specta 生成绑定后可用），
+			 * 返回 SilenceSpan[][]（与 recording segments 一一对应，单位秒）。
+			 */
+			autoRemoveSilences: async (
+				options?: SilenceDetectOptionsInput,
+			): Promise<number> => {
+				if (!project.timeline) return 0;
+
+				// 1) 后端检测（每个 recording segment 一组静音区间，source 时间）。
+				// NOTE: `detect_silence_segments` 已在 Rust 端注册；其 specta 类型会在
+				// 下次编译时写入 tauri.ts。在绑定生成前用 invoke 桥接保持可编译，
+				// 生成后可切回 `commands.detectSilenceSegments(options ?? null)`。
+				const perSegmentSilences = (await detectSilenceSegmentsBridge(
+					options ?? null,
+				)) as { start: number; end: number }[][];
+				if (!perSegmentSilences?.some((arr) => arr.length > 0)) return 0;
+
+				// 2) 各 recording segment 在拼接 source 时间轴上的起始偏移。
+				const recordings = props.editorInstance.recordings.segments;
+				const recordingOffsets: number[] = [];
+				{
+					let acc = 0;
+					for (const rec of recordings) {
+						recordingOffsets.push(acc);
+						acc += rec.display.duration;
+					}
+				}
+
+				// 3) 把每个 recording 的静音区间转成「绝对 source 时间」区间。
+				const sourceSilences: { start: number; end: number }[] = [];
+				perSegmentSilences.forEach((spans, recIdx) => {
+					const off = recordingOffsets[recIdx] ?? 0;
+					for (const s of spans) {
+						sourceSilences.push({ start: off + s.start, end: off + s.end });
+					}
+				});
+				if (sourceSilences.length === 0) return 0;
+
+				// 4) 用 timeline 片段把 source 区间映射到 edited 时间轴。
+				const editedSilences: { start: number; end: number }[] = [];
+				let editedOffset = 0;
+				for (const seg of project.timeline.segments) {
+					const recOff = recordingOffsets[seg.recordingSegment ?? 0] ?? 0;
+					const segSourceStart = recOff + seg.start;
+					const segSourceEnd = recOff + seg.end;
+					for (const sil of sourceSilences) {
+						const overlapStart = Math.max(sil.start, segSourceStart);
+						const overlapEnd = Math.min(sil.end, segSourceEnd);
+						if (overlapStart >= overlapEnd) continue;
+						editedSilences.push({
+							start:
+								editedOffset + (overlapStart - segSourceStart) / seg.timescale,
+							end: editedOffset + (overlapEnd - segSourceStart) / seg.timescale,
+						});
+					}
+					editedOffset += (seg.end - seg.start) / seg.timescale;
+				}
+
+				// 5) 合并相邻/重叠区间后执行删除。
+				editedSilences.sort((a, b) => a.start - b.start);
+				const merged: { start: number; end: number }[] = [];
+				for (const r of editedSilences) {
+					const last = merged[merged.length - 1];
+					if (last && r.start <= last.end + 1e-6) {
+						last.end = Math.max(last.end, r.end);
+					} else {
+						merged.push({ ...r });
+					}
+				}
+
+				return projectActions.removeSilenceRanges(merged);
 			},
 		};
 

@@ -63,6 +63,7 @@ import {
 	type CursorAnimationStyle,
 	type CursorType,
 	commands,
+	type GlideDirection,
 	type KeyboardTrackSegment,
 	type SceneMode,
 	type SceneSegment,
@@ -72,7 +73,13 @@ import {
 	type XY,
 	type ZoomSegment,
 } from "~/utils/tauri";
+import IconLucideActivity from "~icons/lucide/activity";
+import IconLucideArrowDown from "~icons/lucide/arrow-down";
+import IconLucideArrowLeft from "~icons/lucide/arrow-left";
+import IconLucideArrowRight from "~icons/lucide/arrow-right";
+import IconLucideArrowUp from "~icons/lucide/arrow-up";
 import IconLucideBoxSelect from "~icons/lucide/box-select";
+import IconLucideCircleDot from "~icons/lucide/circle-dot";
 import IconLucideColumns2 from "~icons/lucide/columns-2";
 import IconLucideEyeOff from "~icons/lucide/eye-off";
 import IconLucideGauge from "~icons/lucide/gauge";
@@ -83,6 +90,7 @@ import IconLucideMonitor from "~icons/lucide/monitor";
 import IconLucideMoon from "~icons/lucide/moon";
 import IconLucidePalette from "~icons/lucide/palette";
 import IconLucideRabbit from "~icons/lucide/rabbit";
+import IconLucideScissors from "~icons/lucide/scissors";
 import IconLucideSparkles from "~icons/lucide/sparkles";
 import IconLucideTimer from "~icons/lucide/timer";
 import IconLucideType from "~icons/lucide/type";
@@ -3729,6 +3737,162 @@ function ZoomSegmentPreview(props: {
 	);
 }
 
+// Maps the raw `glideSpeed` float into the three creator-friendly presets
+// (mirrors Screen Studio's Smooth / Medium / Rapid motion choices) so users
+// pick an intent rather than tuning a bare 0–1 number.
+const GLIDE_SPEED_PRESETS = [
+	{ id: "smooth", label: "Smooth", value: 0.3 },
+	{ id: "medium", label: "Medium", value: 0.5 },
+	{ id: "rapid", label: "Rapid", value: 0.8 },
+] as const;
+
+const DEFAULT_GLIDE_SPEED = 0.5;
+const DEFAULT_EDGE_SNAP_RATIO = 0.25;
+
+const GLIDE_DIRECTIONS = [
+	{ id: "none", label: "Hold", icon: IconLucideCircleDot },
+	{ id: "up", label: "Up", icon: IconLucideArrowUp },
+	{ id: "down", label: "Down", icon: IconLucideArrowDown },
+	{ id: "left", label: "Left", icon: IconLucideArrowLeft },
+	{ id: "right", label: "Right", icon: IconLucideArrowRight },
+] as const satisfies readonly {
+	id: GlideDirection;
+	label: string;
+	icon: ValidComponent;
+}[];
+
+function glideSpeedPreset(speed: number) {
+	if (speed <= 0.39) return "smooth";
+	if (speed >= 0.66) return "rapid";
+	return "medium";
+}
+
+/**
+ * Animation controls for a single zoom segment. Surfaces the `glideSpeed`,
+ * `edgeSnapRatio`, `instantAnimation` and `glideDirection` fields that already
+ * exist on the backend `ZoomSegment` but were never exposed in the editor.
+ */
+function ZoomAnimationControls(props: {
+	segmentIndex: number;
+	segment: ZoomSegment;
+}) {
+	const { setProject } = useEditorContext();
+
+	const glideSpeed = () => props.segment.glideSpeed ?? DEFAULT_GLIDE_SPEED;
+	const edgeSnap = () => props.segment.edgeSnapRatio ?? DEFAULT_EDGE_SNAP_RATIO;
+	const instant = () => props.segment.instantAnimation ?? false;
+	const glideDirection = (): GlideDirection =>
+		props.segment.glideDirection ?? "none";
+
+	return (
+		<div class="flex flex-col gap-4 pt-4 border-t border-gray-3">
+			<Field name="Transition Speed" icon={<IconLucideGauge class="size-4" />}>
+				<KTabs
+					value={glideSpeedPreset(glideSpeed())}
+					onChange={(id) => {
+						const preset = GLIDE_SPEED_PRESETS.find((p) => p.id === id);
+						if (preset)
+							setProject(
+								"timeline",
+								"zoomSegments",
+								props.segmentIndex,
+								"glideSpeed",
+								preset.value,
+							);
+					}}
+				>
+					<KTabs.List
+						data-disabled={instant() ? "true" : undefined}
+						class="flex relative flex-row items-center rounded-lg border transition-opacity data-[disabled='true']:opacity-40 data-[disabled='true']:pointer-events-none"
+					>
+						<For each={GLIDE_SPEED_PRESETS}>
+							{(preset) => (
+								<KTabs.Trigger
+									value={preset.id}
+									disabled={instant()}
+									class="z-10 flex-1 py-2 text-sm transition-colors duration-100 text-gray-11 outline-hidden data-selected:text-gray-12 peer"
+								>
+									{preset.label}
+								</KTabs.Trigger>
+							)}
+						</For>
+						<KTabs.Indicator class="absolute inset-0 flex p-px transition-transform peer-focus-visible:outline-solid outline-2 outline-blue-9 outline-offset-2 rounded-[0.6rem] overflow-hidden">
+							<div class="flex-1 bg-gray-3" />
+						</KTabs.Indicator>
+					</KTabs.List>
+				</KTabs>
+			</Field>
+
+			<Field name="Edge Padding" icon={<IconLucideBoxSelect class="size-4" />}>
+				<Slider
+					value={[edgeSnap() * 100]}
+					onChange={(v) =>
+						setProject(
+							"timeline",
+							"zoomSegments",
+							props.segmentIndex,
+							"edgeSnapRatio",
+							v[0] / 100,
+						)
+					}
+					minValue={0}
+					maxValue={50}
+					step={1}
+					formatTooltip="%"
+					disabled={instant()}
+				/>
+			</Field>
+
+			<Subfield name="Instant zoom">
+				<Toggle
+					checked={instant()}
+					onChange={(v) =>
+						setProject(
+							"timeline",
+							"zoomSegments",
+							props.segmentIndex,
+							"instantAnimation",
+							v,
+						)
+					}
+				/>
+			</Subfield>
+
+			<KCollapsible open={!instant()}>
+				<KCollapsible.Content class="overflow-hidden opacity-0 transition-opacity animate-collapsible-up data-expanded:animate-collapsible-down data-expanded:opacity-100">
+					<div class="flex flex-col gap-4 pt-4">
+						<Field name="Exit Glide" icon={<IconLucideWind class="size-4" />}>
+							<div class="grid grid-cols-5 gap-1.5">
+								<For each={GLIDE_DIRECTIONS}>
+									{(dir) => (
+										<button
+											type="button"
+											aria-label={dir.label}
+											aria-pressed={glideDirection() === dir.id}
+											onClick={() =>
+												setProject(
+													"timeline",
+													"zoomSegments",
+													props.segmentIndex,
+													"glideDirection",
+													dir.id,
+												)
+											}
+											class="flex justify-center items-center h-9 rounded-lg border transition-colors duration-100 outline-hidden border-gray-3 text-gray-11 hover:bg-gray-3 aria-pressed:bg-blue-9 aria-pressed:border-blue-9 aria-pressed:text-gray-1 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-9"
+										>
+											<Dynamic component={dir.icon} class="size-4" />
+										</button>
+									)}
+								</For>
+							</div>
+						</Field>
+					</div>
+				</KCollapsible.Content>
+			</KCollapsible>
+		</div>
+	);
+}
+
 function ZoomSegmentConfig(props: {
 	segmentIndex: number;
 	segment: ZoomSegment;
@@ -4022,6 +4186,10 @@ function ZoomSegmentConfig(props: {
 					</KTabs.Content>
 				</KTabs>
 			</Field>
+			<ZoomAnimationControls
+				segment={props.segment}
+				segmentIndex={props.segmentIndex}
+			/>
 		</>
 	);
 }
@@ -4150,6 +4318,10 @@ function ClipSegmentConfig(props: {
 				/>
 			)}
 
+			<Show when={meta().hasMicrophone || meta().hasSystemAudio}>
+				<AutoSilenceRemoval />
+			</Show>
+
 			{/*<ComingSoonTooltip>
 			<Field name="Hide Cursor" disabled value={<Toggle disabled />} />
 		</ComingSoonTooltip>
@@ -4161,6 +4333,106 @@ function ClipSegmentConfig(props: {
 			/>
 		</ComingSoonTooltip>*/}
 		</>
+	);
+}
+
+// 自动移除静音的默认参数（镜像 Rust audio::SilenceDetectOptions 默认值）。
+const DEFAULT_SILENCE_THRESHOLD_DB = -40;
+const DEFAULT_SILENCE_MIN_SECONDS = 0.5;
+const DEFAULT_SILENCE_EDGE_PADDING_SECONDS = 0.1;
+
+/**
+ * 「自动移除静音」面板：一键检测并切除录制中的静音停顿（对标 Loom remove-silence）。
+ * 后端检测算法在 `audio::detect_silence_segments`，执行复用时间轴 split/delete。
+ */
+function AutoSilenceRemoval() {
+	const { projectActions } = useEditorContext();
+
+	const [thresholdDb, setThresholdDb] = createSignal(
+		DEFAULT_SILENCE_THRESHOLD_DB,
+	);
+	const [minSeconds, setMinSeconds] = createSignal(DEFAULT_SILENCE_MIN_SECONDS);
+	const [edgePadding, setEdgePadding] = createSignal(
+		DEFAULT_SILENCE_EDGE_PADDING_SECONDS,
+	);
+	const [busy, setBusy] = createSignal(false);
+
+	const run = async () => {
+		if (busy()) return;
+		setBusy(true);
+		try {
+			const removed = await projectActions.autoRemoveSilences({
+				thresholdDb: thresholdDb(),
+				minSilenceSeconds: minSeconds(),
+				edgePaddingSeconds: edgePadding(),
+			});
+			if (removed > 0) {
+				toast.success(
+					`Removed ${removed} silent ${removed === 1 ? "section" : "sections"}`,
+				);
+			} else {
+				toast("No silence found to remove");
+			}
+		} catch (error) {
+			console.error("Auto-remove silence failed", error);
+			toast.error("Failed to remove silence");
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	return (
+		<div class="flex flex-col gap-4 pt-4 border-t border-gray-3">
+			<div class="flex flex-row justify-between items-center">
+				<div class="flex flex-col gap-0.5">
+					<h3 class="font-medium text-gray-12">Remove Silence</h3>
+					<p class="text-gray-11">Auto-cut silent pauses from this clip</p>
+				</div>
+				<EditorButton
+					onClick={run}
+					disabled={busy()}
+					leftIcon={<IconLucideScissors class="size-4" />}
+				>
+					{busy() ? "Removing…" : "Remove"}
+				</EditorButton>
+			</div>
+
+			<Field name="Sensitivity" icon={<IconLucideActivity class="size-4" />}>
+				<Slider
+					value={[thresholdDb()]}
+					onChange={(v) => setThresholdDb(v[0])}
+					minValue={-60}
+					maxValue={-20}
+					step={1}
+					formatTooltip="dB"
+					disabled={busy()}
+				/>
+			</Field>
+
+			<Field name="Min Silence" icon={<IconLucideTimer class="size-4" />}>
+				<Slider
+					value={[minSeconds()]}
+					onChange={(v) => setMinSeconds(v[0])}
+					minValue={0.2}
+					maxValue={3}
+					step={0.1}
+					formatTooltip="s"
+					disabled={busy()}
+				/>
+			</Field>
+
+			<Field name="Edge Padding" icon={<IconLucideBoxSelect class="size-4" />}>
+				<Slider
+					value={[edgePadding()]}
+					onChange={(v) => setEdgePadding(v[0])}
+					minValue={0}
+					maxValue={0.5}
+					step={0.05}
+					formatTooltip="s"
+					disabled={busy()}
+				/>
+			</Field>
+		</div>
 	);
 }
 

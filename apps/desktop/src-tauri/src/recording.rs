@@ -3068,20 +3068,227 @@ async fn finalize_studio_recording(
     Ok(())
 }
 
+// === 自动聚焦智能分段算法常量 ===
+// 设计参见共享记忆 p0-zoom-algo-upgrade-spec（架构师方案）+ p0-zoom-algo-code-facts（坐标系核实）。
+// 核心原则：生成阶段只决定「何时聚焦(start/end) + 聚焦多少(amount) + 怎么分段」，
+// 焦点坐标交给渲染层成熟的 Auto 跟随逻辑（zoom_focus_interpolation.rs 仅对 ZoomMode::Auto 生效），
+// 故全程输出 ZoomMode::Auto，moves 仅用于「给点击插值坐标做空间聚类」与「停留检测」，不输出坐标。
+const MS_PER_SECOND: f64 = 1000.0;
+const START_MIN_MS: f64 = 1.0;
+/// 点击前提前进入聚焦的时间（让放大略早于操作，观感更自然）。
+const CLICK_PRE_PADDING_MS: f64 = 300.0;
+/// 孤立单击的聚焦尾延（短，避免单点长时间停留放大）。
+const ISOLATED_POST_PADDING_MS: f64 = 1500.0;
+/// 连击簇的聚焦尾延（长，覆盖连续操作的余波）。
+const CLUSTER_POST_PADDING_MS: f64 = 2500.0;
+/// 录制末尾留白：聚焦结束至少距录制结束这么久。
+const CLICK_END_CLAMP_PADDING_MS: f64 = 800.0;
+/// 录制末尾这段时间内的点击忽略（通常是「停止录制」的收尾点击）。
+const TRAILING_CLICK_IGNORE_MS: f64 = 1000.0;
+
+/// 聚类时间阈值：相邻有效点击间隔 ≤ 此值才可能归入同簇。
+const CLUSTER_TIME_EPS_MS: f64 = 1200.0;
+/// 聚类空间阈值：相邻点击的归一化 UV 距离 ≤ 此值才归入同簇（配合时间阈值）。
+const CLUSTER_SPACE_EPS: f64 = 0.18;
+
+/// 动态缩放强度基准与上下限。
+const AMOUNT_BASE: f64 = 1.8;
+const AMOUNT_MIN: f64 = 1.5;
+const AMOUNT_MAX: f64 = 2.8;
+/// 点击密度对放大强度的增益（密集操作 → 放大更多）。
+const DENSITY_GAIN: f64 = 0.7;
+/// 操作范围对放大强度的惩罚（铺得越开 → 放大越少，保留全局）。
+const SPREAD_PENALTY: f64 = 0.6;
+
+/// 停留检测：速度低于此（UV/秒）视为「停在原地」。
+const DWELL_VELOCITY_THRESH: f64 = 0.05;
+/// 停留检测：持续低速至少这么久才算一次有效停留聚焦点。
+const DWELL_MIN_DURATION_MS: f64 = 800.0;
+/// 段最短时长：短于此的段视为碎段丢弃（防抖）。
+const MIN_SEGMENT_MS: f64 = 800.0;
+
+/// 一个点击事件落在归一化 UV 平面上的位置（由 moves 插值得到）。
+#[derive(Clone, Copy)]
+struct PlacedClick {
+    time_ms: f64,
+    x: f64,
+    y: f64,
+}
+
+/// 时空双维度聚类得到的「一次聚焦意图」。
+struct ClickCluster {
+    first_time_ms: f64,
+    last_time_ms: f64,
+    clicks: Vec<PlacedClick>,
+}
+
+impl ClickCluster {
+    fn new(click: PlacedClick) -> Self {
+        Self {
+            first_time_ms: click.time_ms,
+            last_time_ms: click.time_ms,
+            clicks: vec![click],
+        }
+    }
+
+    fn push(&mut self, click: PlacedClick) {
+        self.first_time_ms = self.first_time_ms.min(click.time_ms);
+        self.last_time_ms = self.last_time_ms.max(click.time_ms);
+        self.clicks.push(click);
+    }
+
+    /// 簇内操作范围的包围盒对角线长度（UV），越大说明操作铺得越开。
+    fn spread(&self) -> f64 {
+        let (mut min_x, mut max_x) = (f64::INFINITY, f64::NEG_INFINITY);
+        let (mut min_y, mut max_y) = (f64::INFINITY, f64::NEG_INFINITY);
+        for c in &self.clicks {
+            min_x = min_x.min(c.x);
+            max_x = max_x.max(c.x);
+            min_y = min_y.min(c.y);
+            max_y = max_y.max(c.y);
+        }
+        let w = (max_x - min_x).max(0.0);
+        let h = (max_y - min_y).max(0.0);
+        (w * w + h * h).sqrt()
+    }
+
+    /// 按密度（点击数 / 时长）与范围动态计算放大强度。
+    fn dynamic_amount(&self) -> f64 {
+        let duration_s = ((self.last_time_ms - self.first_time_ms) / MS_PER_SECOND).max(0.001);
+        // 单击时长≈0 会让密度爆表，用 1 次点击的有效窗口（尾延）做下限归一。
+        let effective_s = duration_s.max(ISOLATED_POST_PADDING_MS / MS_PER_SECOND);
+        let density = (self.clicks.len() as f64 / effective_s / 3.0).clamp(0.0, 1.0);
+        let spread = self.spread();
+        (AMOUNT_BASE + DENSITY_GAIN * density - SPREAD_PENALTY * spread)
+            .clamp(AMOUNT_MIN, AMOUNT_MAX)
+    }
+}
+
+/// 按 `time_ms` 在已排序的 moves 中插值反查光标位置（归一化 UV）。
+/// 逻辑对齐渲染层 `zoom_focus_interpolation::cursor_position_at`，保证生成与渲染同源。
+fn interpolate_cursor_position(
+    moves: &[CursorMoveEvent],
+    time_ms: f64,
+) -> Option<(f64, f64)> {
+    if moves.is_empty() {
+        return None;
+    }
+    if time_ms <= moves[0].time_ms {
+        return Some((moves[0].x, moves[0].y));
+    }
+    if let Some(last) = moves.last()
+        && time_ms >= last.time_ms
+    {
+        return Some((last.x, last.y));
+    }
+
+    let idx = moves.partition_point(|m| m.time_ms <= time_ms);
+    if idx == 0 {
+        return Some((moves[0].x, moves[0].y));
+    }
+    let prev = &moves[idx - 1];
+    let next = &moves[idx.min(moves.len() - 1)];
+    let dt = next.time_ms - prev.time_ms;
+    // 采样间隔过大（>4帧@60Hz）说明中间缺数据，不强行插值，取前一点。
+    if dt > 66.67 {
+        return Some((prev.x, prev.y));
+    }
+    let t = if dt > 1e-9 {
+        ((time_ms - prev.time_ms) / dt).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    Some((prev.x + (next.x - prev.x) * t, prev.y + (next.y - prev.y) * t))
+}
+
+/// 给每个 down 点击插值坐标；无 moves 时退化到屏幕中心 (0.5,0.5)，
+/// 这样纯点击（无轨迹）也能正常分段，只是空间聚类退化为「同位置」。
+fn place_clicks(clicks: &[CursorClickEvent], moves: &[CursorMoveEvent]) -> Vec<PlacedClick> {
+    clicks
+        .iter()
+        .filter(|c| c.down)
+        .map(|c| {
+            let (x, y) = interpolate_cursor_position(moves, c.time_ms).unwrap_or((0.5, 0.5));
+            PlacedClick {
+                time_ms: c.time_ms.floor(),
+                x,
+                y,
+            }
+        })
+        .collect()
+}
+
+/// 时空双阈值聚类：时间间隔 ≤ EPS 且空间距离 ≤ EPS 才归入同簇，否则开新簇。
+/// 替代原算法写死的 `MERGE_GAP=2500ms` 一刀切合并。
+fn cluster_placed_clicks(mut placed: Vec<PlacedClick>) -> Vec<ClickCluster> {
+    placed.sort_by(|a, b| {
+        a.time_ms
+            .partial_cmp(&b.time_ms)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    let mut clusters: Vec<ClickCluster> = Vec::new();
+    for click in placed {
+        if let Some(last) = clusters.last_mut() {
+            let prev = last
+                .clicks
+                .last()
+                .copied()
+                .unwrap_or(click);
+            let dt = click.time_ms - prev.time_ms;
+            let dist = ((click.x - prev.x).powi(2) + (click.y - prev.y).powi(2)).sqrt();
+            if dt <= CLUSTER_TIME_EPS_MS && dist <= CLUSTER_SPACE_EPS {
+                last.push(click);
+                continue;
+            }
+        }
+        clusters.push(ClickCluster::new(click));
+    }
+    clusters
+}
+
+/// 从 moves 中检测「停留」：长时间低速停在小区域，即使没点击也值得轻度聚焦。
+/// 作为点击聚类的补充候选（弱信号），用于纯阅读/讲解类场景。
+///
+/// 【P1 预留】MVP 暂不启用：纯速度阈值无法区分「真静止」与「小幅抖动」，
+/// 需配合「窗口内总位移阈值 + 场景感知（滚动/打字）」才能避免误触发，留作后续专项迭代接入点。
+#[allow(dead_code)]
+fn detect_dwell_clusters(moves: &[CursorMoveEvent], click_cutoff_ms: f64) -> Vec<ClickCluster> {
+    if moves.len() < 2 {
+        return Vec::new();
+    }
+
+    let mut dwells: Vec<ClickCluster> = Vec::new();
+    let mut anchor_idx = 0usize;
+    for i in 1..moves.len() {
+        let prev = &moves[i - 1];
+        let cur = &moves[i];
+        let dt = cur.time_ms - prev.time_ms;
+        let dist = ((cur.x - prev.x).powi(2) + (cur.y - prev.y).powi(2)).sqrt();
+        let velocity = if dt > 1e-9 { dist / (dt / MS_PER_SECOND) } else { 0.0 };
+
+        if velocity > DWELL_VELOCITY_THRESH {
+            // 速度超阈值 → 结算上一段停留窗口。
+            let anchor = &moves[anchor_idx];
+            let dwell_ms = prev.time_ms - anchor.time_ms;
+            if dwell_ms >= DWELL_MIN_DURATION_MS && anchor.time_ms < click_cutoff_ms {
+                dwells.push(ClickCluster::new(PlacedClick {
+                    time_ms: anchor.time_ms.floor(),
+                    x: anchor.x,
+                    y: anchor.y,
+                }));
+            }
+            anchor_idx = i;
+        }
+    }
+    dwells
+}
+
 fn generate_zoom_segments_from_clicks_impl(
-    mut clicks: Vec<CursorClickEvent>,
-    _moves: Vec<CursorMoveEvent>,
+    clicks: Vec<CursorClickEvent>,
+    moves: Vec<CursorMoveEvent>,
     max_duration: f64,
 ) -> Vec<ZoomSegment> {
-    const MS_PER_SECOND: f64 = 1000.0;
-    const START_MIN_MS: f64 = 1.0;
-    const CLICK_PRE_PADDING_MS: f64 = 300.0;
-    const CLICK_POST_PADDING_MS: f64 = 2500.0;
-    const CLICK_END_CLAMP_PADDING_MS: f64 = 800.0;
-    const TRAILING_CLICK_IGNORE_MS: f64 = 1000.0;
-    const MERGE_GAP_MS: f64 = 2500.0;
-    const AUTO_ZOOM_AMOUNT: f64 = 2.0;
-
     if max_duration <= 0.0 {
         return Vec::new();
     }
@@ -3093,57 +3300,64 @@ fn generate_zoom_segments_from_clicks_impl(
         return Vec::new();
     }
 
-    clicks.sort_by(|a, b| {
+    // moves 必须有序，插值与停留检测都依赖此前提。
+    let mut sorted_moves = moves;
+    sorted_moves.sort_by(|a, b| {
         a.time_ms
             .partial_cmp(&b.time_ms)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    let mut intervals: Vec<(f64, f64)> = Vec::new();
-    for click in clicks {
-        let time_ms = click.time_ms.floor();
-        if time_ms >= click_cutoff_ms {
-            continue;
-        }
+    // 1) 给点击插值坐标 → 时空双阈值聚类（主信号，MVP 核心）。
+    let placed: Vec<PlacedClick> = place_clicks(&clicks, &sorted_moves)
+        .into_iter()
+        .filter(|c| c.time_ms < click_cutoff_ms)
+        .collect();
+    let mut clusters = cluster_placed_clicks(placed);
 
-        let start = (time_ms - CLICK_PRE_PADDING_MS).max(START_MIN_MS);
-        let end = (time_ms + CLICK_POST_PADDING_MS).min(end_limit_ms);
+    // 2) 停留检测（P1 弱信号增强，MVP 暂不启用）：
+    //    纯低速判定无法区分「真静止停留」与「持续小幅抖动」，易误触发放大，
+    //    故 MVP 阶段只走点击驱动；dwell 接入点保留在 `detect_dwell_clusters`，
+    //    后续配合「总位移阈值 + 场景感知」专项迭代时在此合并。
 
-        if end > start {
-            intervals.push((start, end));
-        }
-    }
-
-    if intervals.is_empty() {
+    if clusters.is_empty() {
         return Vec::new();
     }
+    clusters.sort_by(|a, b| {
+        a.first_time_ms
+            .partial_cmp(&b.first_time_ms)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
-    intervals.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+    // 3) 每簇 → 一个 ZoomSegment：动态强度 + 单击/连击差异化尾延。
+    let mut segments: Vec<ZoomSegment> = Vec::new();
+    for cluster in &clusters {
+        let is_isolated = cluster.clicks.len() <= 1;
+        let post_padding = if is_isolated {
+            ISOLATED_POST_PADDING_MS
+        } else {
+            CLUSTER_POST_PADDING_MS
+        };
 
-    let mut merged: Vec<(f64, f64)> = Vec::new();
-    for interval in intervals {
-        if let Some(last) = merged.last_mut()
-            && interval.0 <= last.1 + MERGE_GAP_MS
-        {
-            last.1 = last.1.max(interval.1);
+        let start_ms = (cluster.first_time_ms - CLICK_PRE_PADDING_MS).max(START_MIN_MS);
+        let end_ms = (cluster.last_time_ms + post_padding).min(end_limit_ms);
+        if end_ms - start_ms < MIN_SEGMENT_MS {
             continue;
         }
-        merged.push(interval);
-    }
 
-    merged
-        .into_iter()
-        .map(|(start, end)| ZoomSegment {
-            start: start.round() / MS_PER_SECOND,
-            end: end.round() / MS_PER_SECOND,
-            amount: AUTO_ZOOM_AMOUNT,
+        segments.push(ZoomSegment {
+            start: start_ms.round() / MS_PER_SECOND,
+            end: end_ms.round() / MS_PER_SECOND,
+            amount: (cluster.dynamic_amount() * 1000.0).round() / 1000.0,
             mode: ZoomMode::Auto,
             glide_direction: GlideDirection::None,
             glide_speed: 0.5,
             instant_animation: false,
             edge_snap_ratio: 0.25,
-        })
-        .collect()
+        });
+    }
+
+    segments
 }
 
 /// Generates zoom segments based on mouse click events during recording.
@@ -3607,24 +3821,49 @@ mod tests {
     }
 
     #[test]
-    fn merges_clicks_with_screen_studio_gap() {
-        let clicks = vec![click_event(1_200.0), click_event(4_200.0)];
+    fn merges_clicks_in_same_burst() {
+        // 同一处、间隔很短（<1.2s）的连续点击应聚成一段（一次聚焦意图）。
+        let clicks = vec![
+            click_event(1_200.0),
+            click_event(1_900.0),
+            click_event(2_600.0),
+        ];
         let moves = vec![
-            move_event(1_500.0, 0.10, 0.12),
-            move_event(1_720.0, 0.42, 0.45),
-            move_event(1_940.0, 0.74, 0.78),
+            move_event(1_180.0, 0.40, 0.45),
+            move_event(1_900.0, 0.42, 0.46),
+            move_event(2_600.0, 0.41, 0.47),
         ];
 
         let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
 
-        assert!(
-            !segments.is_empty(),
-            "expected activity to produce zoom segments"
-        );
+        assert_eq!(segments.len(), 1, "tight burst should merge into one segment");
         let first = &segments[0];
-        assert_eq!(segments.len(), 1);
-        assert_eq!(first.start, 0.9);
-        assert_eq!(first.end, 6.7);
+        assert_eq!(first.start, 0.9); // 1200 - 300 pre-padding
+        assert_eq!(first.end, 5.1); // 2600 + 2500 cluster post-padding
+        // 三连击且范围极小 → 强度高于孤立单击基准 1.8。
+        assert!(
+            first.amount > 1.8 && first.amount <= AMOUNT_MAX,
+            "dense burst should zoom in more, got {}",
+            first.amount
+        );
+    }
+
+    #[test]
+    fn splits_clicks_separated_by_time_gap() {
+        // 间隔超过时间阈值（1.2s）的两次点击应拆成两段独立聚焦。
+        let clicks = vec![click_event(1_200.0), click_event(4_200.0)];
+        let moves = vec![
+            move_event(1_180.0, 0.10, 0.12),
+            move_event(4_180.0, 0.74, 0.78),
+        ];
+
+        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+
+        assert_eq!(segments.len(), 2, "3s-apart clicks are two focus intents");
+        assert_eq!(segments[0].start, 0.9); // 1200 - 300
+        assert_eq!(segments[0].end, 2.7); // 1200 + 1500 isolated post-padding
+        assert_eq!(segments[1].start, 3.9); // 4200 - 300
+        assert_eq!(segments[1].end, 5.7); // 4200 + 1500
     }
 
     #[test]
@@ -3645,32 +3884,42 @@ mod tests {
 
         let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 19.436_667);
 
+        // 2271 孤立成段；9137/9915 间隔 778ms 且同位置 → 合并；19404 落在尾部忽略窗口被丢弃。
         assert_eq!(segments.len(), 2);
-        assert_eq!(segments[0].start, 1.971);
-        assert_eq!(segments[0].end, 4.771);
-        assert_eq!(segments[1].start, 8.837);
-        assert_eq!(segments[1].end, 12.415);
+        assert_eq!(segments[0].start, 1.971); // 2271 - 300
+        assert_eq!(segments[0].end, 3.771); // 2271 + 1500 (isolated)
+        assert_eq!(segments[1].start, 8.837); // 9137 - 300
+        assert_eq!(segments[1].end, 12.415); // 9915 + 2500 (cluster)
     }
 
     #[test]
-    fn extends_segment_until_after_mouse_up() {
+    fn single_click_produces_gentle_segment() {
+        // 单次 down 点击（mouse-up 不重复计为聚焦意图）→ 一段温和聚焦。
         let clicks = vec![click_event(1_000.0), click_up_event(2_500.0)];
 
         let segments = generate_zoom_segments_from_clicks_impl(clicks, vec![], 10.0);
 
         assert_eq!(segments.len(), 1);
-        assert_eq!(segments[0].start, 0.7);
-        assert_eq!(segments[0].end, 5.0);
+        assert_eq!(segments[0].start, 0.7); // 1000 - 300
+        assert_eq!(segments[0].end, 2.5); // 1000 + 1500 isolated post-padding
+        // 孤立单击：BASE(1.8) + 轻微密度增益、无范围惩罚 → 温和放大（约 1.96）。
+        assert!(
+            segments[0].amount > 1.8 && segments[0].amount <= 2.0,
+            "isolated click should zoom gently, got {}",
+            segments[0].amount
+        );
     }
 
     #[test]
     fn clamps_zoom_end_before_recording_end() {
-        let clicks = vec![click_event(8_999.0), click_event(9_000.0)];
+        // 连击簇的自然尾延会越过录制末尾，应被 clamp 到 end_limit（录制结束前 800ms）。
+        let clicks = vec![click_event(7_000.0), click_event(8_200.0)];
 
         let segments = generate_zoom_segments_from_clicks_impl(clicks, vec![], 10.0);
 
         assert_eq!(segments.len(), 1);
-        assert_eq!(segments[0].start, 8.699);
+        assert_eq!(segments[0].start, 6.7); // 7000 - 300
+        // 自然 end = 8200 + 2500 = 10700 → clamp 到 10000 - 800 = 9200。
         assert_eq!(segments[0].end, 9.2);
     }
 
@@ -3690,6 +3939,114 @@ mod tests {
             segments.is_empty(),
             "small jitter should not generate segments"
         );
+    }
+
+    #[test]
+    fn dense_burst_zooms_in_more_than_isolated_click() {
+        // 同一处密集连击（如填表/连点菜单）应比孤立单击放大更多。
+        let isolated = generate_zoom_segments_from_clicks_impl(
+            vec![click_event(2_000.0)],
+            vec![move_event(2_000.0, 0.5, 0.5)],
+            20.0,
+        );
+        let burst_clicks: Vec<_> = (0..6).map(|i| click_event(2_000.0 + i as f64 * 180.0)).collect();
+        let burst_moves: Vec<_> = (0..6)
+            .map(|i| move_event(2_000.0 + i as f64 * 180.0, 0.50, 0.50))
+            .collect();
+        let burst = generate_zoom_segments_from_clicks_impl(burst_clicks, burst_moves, 20.0);
+
+        assert_eq!(isolated.len(), 1);
+        assert_eq!(burst.len(), 1);
+        assert!(
+            isolated[0].amount > 1.8 && isolated[0].amount <= 2.0,
+            "isolated click should zoom gently, got {}",
+            isolated[0].amount
+        );
+        assert!(
+            burst[0].amount > isolated[0].amount,
+            "dense burst {} should exceed isolated {}",
+            burst[0].amount,
+            isolated[0].amount
+        );
+    }
+
+    #[test]
+    fn wide_spread_clicks_zoom_in_less() {
+        // 同一时间窗内但铺得很开的点击 → 放大更少以保留全局视野。
+        let clicks = vec![
+            click_event(2_000.0),
+            click_event(2_400.0),
+            click_event(2_800.0),
+        ];
+        // 相邻空间距离 < 0.18 阈值（保证同簇），但累积包围盒对角线较大 → spread 惩罚生效。
+        let moves = vec![
+            move_event(2_000.0, 0.35, 0.35),
+            move_event(2_400.0, 0.45, 0.45),
+            move_event(2_800.0, 0.55, 0.55),
+        ];
+
+        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+
+        assert_eq!(segments.len(), 1, "clicks within space/time eps stay one cluster");
+        assert!(
+            segments[0].amount < 2.6,
+            "wide spread should temper zoom amount, got {}",
+            segments[0].amount
+        );
+    }
+
+    #[test]
+    fn distant_clicks_split_by_space_threshold() {
+        // 时间很近但空间相距很远的两次点击 → 视为两个聚焦意图（双阈值的空间维度）。
+        let clicks = vec![click_event(2_000.0), click_event(2_300.0)];
+        let moves = vec![
+            move_event(2_000.0, 0.10, 0.10),
+            move_event(2_300.0, 0.90, 0.90), // 距离 ≈1.13 ≫ 0.18 阈值
+        ];
+
+        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+
+        assert_eq!(segments.len(), 2, "far-apart clicks split despite close timing");
+    }
+
+    #[test]
+    fn always_emits_auto_mode_for_renderer_follow() {
+        // 生成阶段统一输出 Auto，把焦点跟随交给渲染层成熟逻辑（架构决策）。
+        let clicks = vec![click_event(2_000.0), click_event(6_000.0)];
+        let moves = vec![
+            move_event(2_000.0, 0.2, 0.3),
+            move_event(6_000.0, 0.7, 0.8),
+        ];
+
+        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+
+        assert!(!segments.is_empty());
+        for seg in &segments {
+            assert!(
+                matches!(seg.mode, ZoomMode::Auto),
+                "all generated segments must be Auto mode"
+            );
+            assert!(seg.amount >= AMOUNT_MIN && seg.amount <= AMOUNT_MAX);
+        }
+    }
+
+    #[test]
+    fn interpolates_click_position_from_moves() {
+        let moves = vec![
+            move_event(1_000.0, 0.0, 0.0),
+            move_event(1_040.0, 0.4, 0.8),
+        ];
+
+        // 正中间时间 → 线性插值到中点。
+        let mid = interpolate_cursor_position(&moves, 1_020.0).unwrap();
+        assert!((mid.0 - 0.2).abs() < 1e-9);
+        assert!((mid.1 - 0.4).abs() < 1e-9);
+
+        // 早于首个样本 → 取首样本；晚于末样本 → 取末样本。
+        assert_eq!(interpolate_cursor_position(&moves, 0.0).unwrap(), (0.0, 0.0));
+        assert_eq!(interpolate_cursor_position(&moves, 9_999.0).unwrap(), (0.4, 0.8));
+        // 空 moves → None。
+        assert!(interpolate_cursor_position(&[], 1_000.0).is_none());
     }
 
     #[test]

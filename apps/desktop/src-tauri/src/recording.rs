@@ -3211,6 +3211,9 @@ impl ClickCluster {
     }
 }
 
+/// 相邻采样间隔超过该值（4 帧 @60Hz，单位 ms）视为中间缺数据，不做跨空洞插值。
+const INTERPOLATION_MAX_GAP_MS: f64 = 4.0 * 1000.0 / 60.0;
+
 /// 按 `time_ms` 在已排序的 moves 中插值反查光标位置（归一化 UV）。
 /// 逻辑对齐渲染层 `zoom_focus_interpolation::cursor_position_at`，保证生成与渲染同源。
 fn interpolate_cursor_position(
@@ -3236,8 +3239,7 @@ fn interpolate_cursor_position(
     let prev = &moves[idx - 1];
     let next = &moves[idx.min(moves.len() - 1)];
     let dt = next.time_ms - prev.time_ms;
-    // 采样间隔过大（>4帧@60Hz）说明中间缺数据，不强行插值，取前一点。
-    if dt > 66.67 {
+    if dt > INTERPOLATION_MAX_GAP_MS {
         return Some((prev.x, prev.y));
     }
     let t = if dt > 1e-9 {
@@ -3269,11 +3271,7 @@ fn place_clicks(clicks: &[CursorClickEvent], moves: &[CursorMoveEvent]) -> Vec<P
 /// 时空双阈值聚类：时间间隔 ≤ EPS 且空间距离 ≤ EPS 才归入同簇，否则开新簇。
 /// 替代原算法写死的 `MERGE_GAP=2500ms` 一刀切合并。
 fn cluster_placed_clicks(mut placed: Vec<PlacedClick>) -> Vec<ClickCluster> {
-    placed.sort_by(|a, b| {
-        a.time_ms
-            .partial_cmp(&b.time_ms)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    placed.sort_by(|a, b| a.time_ms.total_cmp(&b.time_ms));
 
     let mut clusters: Vec<ClickCluster> = Vec::new();
     for click in placed {
@@ -3352,11 +3350,7 @@ fn generate_zoom_segments_from_clicks_impl(
 
     // moves 必须有序，插值与停留检测都依赖此前提。
     let mut sorted_moves = moves;
-    sorted_moves.sort_by(|a, b| {
-        a.time_ms
-            .partial_cmp(&b.time_ms)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    sorted_moves.sort_by(|a, b| a.time_ms.total_cmp(&b.time_ms));
 
     // 1) 给点击插值坐标 → 时空双阈值聚类（主信号，MVP 核心）。
     let placed: Vec<PlacedClick> = place_clicks(&clicks, &sorted_moves)
@@ -3373,11 +3367,7 @@ fn generate_zoom_segments_from_clicks_impl(
     if clusters.is_empty() {
         return Vec::new();
     }
-    clusters.sort_by(|a, b| {
-        a.first_time_ms
-            .partial_cmp(&b.first_time_ms)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    clusters.sort_by(|a, b| a.first_time_ms.total_cmp(&b.first_time_ms));
 
     // 3) 每簇 → 一个 ZoomSegment：动态强度 + 单击/连击差异化尾延。
     let mut segments: Vec<ZoomSegment> = Vec::new();

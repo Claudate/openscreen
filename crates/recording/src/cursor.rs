@@ -861,6 +861,8 @@ mod ax {
     type AXError = i32;
 
     const KAX_ERROR_SUCCESS: AXError = 0;
+    // AXValueType 取值来源：macOS SDK HIServices/AXValue.h（kAXValueTypeCGPoint=1 /
+    // kAXValueTypeCGSize=2 / kAXValueTypeCGRect=3），与上方 repr(C) 结构体布局一一对应。
     const KAX_VALUE_CGPOINT: u32 = 1;
     const KAX_VALUE_CGSIZE: u32 = 2;
     const KAX_VALUE_CGRECT: u32 = 3;

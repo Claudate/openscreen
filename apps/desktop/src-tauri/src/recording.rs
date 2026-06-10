@@ -3395,20 +3395,22 @@ fn generate_zoom_segments_from_clicks_impl(
             continue;
         }
 
-        // 语义缩放：簇内若有有效 UI 元素矩形 → 用元素并集中心定位（Manual）+ 占屏比反推强度；
+        // 语义缩放：簇内若有有效 UI 元素矩形 → 用元素并集中心定位（Manual）+ 占屏比反推强度，
+        // 并把完整并集矩形透传给渲染层（贴边框选）；
         // 否则完全退回点击坐标聚类（Auto + 动态强度，由渲染层跟随光标）——兜底铁律：体验只升不降。
-        let (mode, amount) = match cluster.element_union() {
+        let (mode, amount, element_bounds) = match cluster.element_union() {
             Some(union) => {
                 let (cx, cy) = union.center();
                 (
                     ZoomMode::Manual {
-                        x: cx.clamp(0.0, 1.0),
-                        y: cy.clamp(0.0, 1.0),
+                        x: cx.clamp(0.0, 1.0) as f32,
+                        y: cy.clamp(0.0, 1.0) as f32,
                     },
                     ClickCluster::element_amount(&union),
+                    Some(union),
                 )
             }
-            None => (ZoomMode::Auto, cluster.dynamic_amount()),
+            None => (ZoomMode::Auto, cluster.dynamic_amount(), None),
         };
 
         segments.push(ZoomSegment {
@@ -3420,6 +3422,9 @@ fn generate_zoom_segments_from_clicks_impl(
             glide_speed: 0.5,
             instant_animation: false,
             edge_snap_ratio: 0.25,
+            element_bounds,
+            element_padding: None,
+            semantic_zoom: None,
         });
     }
 
@@ -4094,6 +4099,10 @@ mod tests {
                 "segments without element bounds must fall back to Auto mode"
             );
             assert!(seg.amount >= AMOUNT_MIN && seg.amount <= AMOUNT_MAX);
+            assert!(
+                seg.element_bounds.is_none(),
+                "non-semantic segments must not carry element_bounds"
+            );
         }
     }
 
@@ -4131,6 +4140,14 @@ mod tests {
             }
             ZoomMode::Auto => panic!("clicked element should produce Manual mode, got Auto"),
         }
+        // T2 透传：语义段必须携带完整并集矩形（贴边框选数据源），宽高不丢。
+        let carried = segments[0]
+            .element_bounds
+            .expect("semantic segment must carry element_bounds");
+        assert!((carried.x - bounds.x).abs() < 1e-9);
+        assert!((carried.y - bounds.y).abs() < 1e-9);
+        assert!((carried.width - bounds.width).abs() < 1e-9);
+        assert!((carried.height - bounds.height).abs() < 1e-9);
     }
 
     #[test]

@@ -1,7 +1,8 @@
 use cap_cursor_capture::CursorCropBounds;
 use cap_cursor_info::CursorShape;
 use cap_project::{
-    CursorClickEvent, CursorEvents, CursorMoveEvent, KeyPressEvent, KeyboardEvents, XY,
+    CursorClickEvent, CursorEvents, CursorMoveEvent, ElementBounds, KeyPressEvent, KeyboardEvents,
+    XY,
 };
 use cap_timestamp::Timestamps;
 use futures::{FutureExt, future::Shared};
@@ -228,6 +229,13 @@ pub fn spawn_cursor_recorder(
         let flush_interval = Duration::from_secs(CURSOR_FLUSH_INTERVAL_SECS);
         let mut last_cursor_id: Option<String> = None;
 
+        // AX 反查异步化：点击事件先以 `element_bounds: None` 占位立即入列（时间戳不受影响），
+        // 反查在阻塞线程池执行，结果带索引回传，在采集循环内回填——单次反查最长 0.25s
+        // 不再阻塞 16ms 采集节拍（同步等待会丢约 15 帧光标轨迹）。
+        let (ax_tx, mut ax_rx) =
+            tokio::sync::mpsc::unbounded_channel::<(usize, Option<ElementBounds>)>();
+        let mut pending_ax_lookups: usize = 0;
+
         loop {
             let sleep = tokio::time::sleep(Duration::from_millis(16));
             let Either::Right(_) =
@@ -320,14 +328,38 @@ pub fn spawn_cursor_recorder(
                     continue;
                 }
 
+                // 仅在按下瞬间反查命中的 UI 元素矩形（语义缩放）；松开不重复反查。
+                // 反查放入阻塞线程池异步执行（坐标取按下瞬间快照，索引锁定本事件），
+                // 失败（无障碍未授权 / 命中整窗口 / 录制结束未返回）时保持 None 占位，
+                // 消费侧自动退回点击坐标聚类——兜底铁律：体验只升不降。
+                if pressed {
+                    let click_index = response.clicks.len();
+                    let coords = mouse_state.coords;
+                    let ax_tx = ax_tx.clone();
+                    pending_ax_lookups += 1;
+                    tokio::task::spawn_blocking(move || {
+                        let bounds = click_element_bounds(coords, display, crop_bounds);
+                        let _ = ax_tx.send((click_index, bounds));
+                    });
+                }
+
                 let mouse_event = CursorClickEvent {
                     down: pressed,
                     active_modifiers: vec![],
                     cursor_num: num as u8,
                     cursor_id: cursor_id.clone(),
                     time_ms: elapsed,
+                    element_bounds: None,
                 };
                 response.clicks.push(mouse_event);
+            }
+
+            // 回收已完成的 AX 反查结果，按索引回填到对应点击事件（非阻塞）。
+            while let Ok((index, bounds)) = ax_rx.try_recv() {
+                pending_ax_lookups = pending_ax_lookups.saturating_sub(1);
+                if let Some(click) = response.clicks.get_mut(index) {
+                    click.element_bounds = bounds;
+                }
             }
 
             last_mouse_state = mouse_state;
@@ -372,6 +404,22 @@ pub fn spawn_cursor_recorder(
         }
 
         info!("cursor recorder done");
+
+        // 停止采集后，等未完成的 AX 反查回流再落盘（单次反查受 0.25s 消息超时约束，
+        // 这里给 1s 总余量防呆；超时则放弃剩余回填，None 占位即兜底）。
+        drop(ax_tx);
+        while pending_ax_lookups > 0 {
+            match tokio::time::timeout(Duration::from_secs(1), ax_rx.recv()).await {
+                Ok(Some((index, bounds))) => {
+                    pending_ax_lookups = pending_ax_lookups.saturating_sub(1);
+                    if let Some(click) = response.clicks.get_mut(index) {
+                        click.element_bounds = bounds;
+                    }
+                }
+                // channel 关闭（所有任务已结束）或超时：停止等待。
+                _ => break,
+            }
+        }
 
         if let Some(ref path) = incremental_outputs.cursor {
             flush_cursor_data(path, &response.moves, &response.clicks);

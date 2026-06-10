@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use specta::Type;
 
+use crate::cursor::ElementBounds;
+
 #[derive(Type, Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum AspectRatio {
@@ -655,15 +657,45 @@ pub struct ZoomSegment {
     pub instant_animation: bool,
     #[serde(default = "ZoomSegment::default_edge_snap_ratio")]
     pub edge_snap_ratio: f64,
+    /// 语义聚焦矩形（点击命中 UI 元素的并集包围盒，归一化 UV）。
+    /// 由生成层写入；`None`（含旧版工程文件）= 无语义信号，渲染层走既有中心点逻辑。
+    /// 双向兼容：旧版反序列化新文件忽略未知字段无碍，新版读旧文件得 `None`。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub element_bounds: Option<ElementBounds>,
+    /// 语义贴边框选的边距（归一化 UV，0~0.5）。`None` = 用内置默认值。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub element_padding: Option<f64>,
+    /// 语义缩放显式开关。`None` = 开（有 `element_bounds` 即生效）；
+    /// 显式 `false` 关闭渲染但保留矩形数据，UI 可随时再开。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub semantic_zoom: Option<bool>,
 }
 
 impl ZoomSegment {
+    /// 语义贴边框选的内置默认边距（归一化 UV）。
+    pub const DEFAULT_ELEMENT_PADDING: f64 = 0.05;
+
     fn default_glide_speed() -> f64 {
         0.5
     }
 
     fn default_edge_snap_ratio() -> f64 {
         0.25
+    }
+
+    /// 语义缩放是否生效：需同时满足「有有效矩形」且「未被显式关闭」。
+    pub fn semantic_zoom_enabled(&self) -> bool {
+        self.semantic_zoom.unwrap_or(true)
+            && self
+                .element_bounds
+                .is_some_and(|b| b.is_meaningful())
+    }
+
+    /// 语义边距（缺省取内置默认，并夹紧到合法区间）。
+    pub fn element_padding_or_default(&self) -> f64 {
+        self.element_padding
+            .unwrap_or(Self::DEFAULT_ELEMENT_PADDING)
+            .clamp(0.0, 0.5)
     }
 }
 

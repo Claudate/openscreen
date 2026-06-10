@@ -560,6 +560,7 @@ export type DisplayInformation = { name: string | null; physical_size: PhysicalS
 export type DownloadProgress = { progress: number; message: string }
 export type EditorPreviewQuality = "quarter" | "half" | "full"
 export type EditorStateChanged = { playhead_position: number }
+export type ElementBounds = { x: number; y: number; width: number; height: number }
 export type ExportCompression = "Maximum" | "Social" | "Web" | "Potato"
 export type ExportEstimates = { duration_seconds: number; estimated_time_seconds: number; estimated_size_mb: number }
 export type ExportPreviewResult = { jpeg_base64: string; estimated_size_mb: number; actual_width: number; actual_height: number; frame_render_time_ms: number; total_frames: number }
@@ -695,7 +696,7 @@ export type WindowPosition = { x: number; y: number; displayId?: DisplayId | nul
 export type WindowUnderCursor = { id: WindowId; app_name: string; bounds: LogicalBounds }
 export type XY<T> = { x: T; y: T }
 export type ZoomMode = "auto" | { manual: { x: number; y: number } }
-export type ZoomSegment = { start: number; end: number; amount: number; mode: ZoomMode; glideDirection?: GlideDirection; glideSpeed?: number; instantAnimation?: boolean; edgeSnapRatio?: number }
+export type ZoomSegment = { start: number; end: number; amount: number; mode: ZoomMode; glideDirection?: GlideDirection; glideSpeed?: number; instantAnimation?: boolean; edgeSnapRatio?: number; elementBounds?: ElementBounds | null; elementPadding?: number | null; semanticZoom?: boolean | null }
 
 /** tauri-specta globals **/
 

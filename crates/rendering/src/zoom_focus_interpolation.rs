@@ -644,6 +644,9 @@ mod tests {
             glide_speed: 0.5,
             instant_animation: false,
             edge_snap_ratio: 0.25,
+            element_bounds: None,
+            element_padding: None,
+            semantic_zoom: None,
         }];
         let interpolator = ZoomFocusInterpolator::new(
             &cursor,

@@ -72,6 +72,28 @@ impl SegmentBounds {
             let center =
                 Self::calculate_follow_center(focus_pos, segment.amount, segment.edge_snap_ratio);
             (segment.amount, center)
+        } else if let Some(rect) = segment
+            .element_bounds
+            .filter(|_| segment.semantic_zoom_enabled())
+        {
+            // 语义贴边框选（contain）：缩放比由「元素矩形 + 边距」反推，保证整个元素
+            // 连同边距完整可见；`amount` 退位成放大上限（生成层按占屏比反推 / 用户滑杆调节）。
+            let padding = segment.element_padding_or_default();
+            let padded_w = (rect.width + padding * 2.0).min(1.0);
+            let padded_h = (rect.height + padding * 2.0).min(1.0);
+            let contain_zoom = (1.0 / padded_w).min(1.0 / padded_h);
+            let zoom = contain_zoom.min(segment.amount).max(1.0);
+            let (cx, cy) = rect.center();
+            // 既有 Manual 几何把 focus∈[0,1] 线性映射为「视口贴左 … 贴右」（永不越界），
+            // 这里反解 focus 使视口中心 = 元素中心；贴边元素经 clamp 自动内收，天然无黑边。
+            let focus_for = |center: f64| {
+                if zoom > 1.0 + 1e-9 {
+                    ((center * zoom - 0.5) / (zoom - 1.0)).clamp(0.0, 1.0)
+                } else {
+                    0.5
+                }
+            };
+            (zoom, (focus_for(cx), focus_for(cy)))
         } else {
             (segment.amount, focus_pos)
         };
@@ -669,6 +691,9 @@ mod test {
             glide_speed: 0.05,
             instant_animation: false,
             edge_snap_ratio: 0.075,
+            element_bounds: None,
+            element_padding: None,
+            semantic_zoom: None,
         }
     }
 
@@ -682,7 +707,204 @@ mod test {
             glide_speed: 0.5,
             instant_animation: false,
             edge_snap_ratio: 0.25,
+            element_bounds: None,
+            element_padding: None,
+            semantic_zoom: None,
         }
+    }
+
+    fn test_semantic_segment(
+        amount: f64,
+        rect: cap_project::ElementBounds,
+        padding: Option<f64>,
+        semantic_zoom: Option<bool>,
+    ) -> ZoomSegment {
+        let (cx, cy) = rect.center();
+        ZoomSegment {
+            start: 2.0,
+            end: 4.0,
+            amount,
+            mode: ZoomMode::Manual {
+                x: cx as f32,
+                y: cy as f32,
+            },
+            glide_direction: GlideDirection::default(),
+            glide_speed: 0.05,
+            instant_animation: false,
+            edge_snap_ratio: 0.075,
+            element_bounds: Some(rect),
+            element_padding: padding,
+            semantic_zoom,
+        }
+    }
+
+    /// bounds → 视口区间 [left, right] × [top, bottom]（UV）。
+    fn viewport_of(bounds: &SegmentBounds) -> (f64, f64, f64, f64) {
+        let zoom = bounds.bottom_right.x - bounds.top_left.x;
+        let size = 1.0 / zoom;
+        let left = -bounds.top_left.x / zoom;
+        let top = -bounds.top_left.y / zoom;
+        (left, left + size, top, top + size)
+    }
+
+    #[test]
+    fn semantic_contain_fits_rect_with_padding() {
+        // 元素 0.1×0.06 + 默认边距 0.05 → padded 0.2×0.16 → contain = min(5, 6.25) = 5。
+        let rect = cap_project::ElementBounds {
+            x: 0.40,
+            y: 0.50,
+            width: 0.10,
+            height: 0.06,
+        };
+        // amount 上限给足（6.0 > 5），实际 zoom 应取 contain 的 5。
+        let segment = test_semantic_segment(6.0, rect, None, None);
+        let bounds = SegmentBounds::from_segment_with_cursor_constraint(
+            &segment,
+            Default::default(),
+            None,
+        );
+
+        let zoom = bounds.bottom_right.x - bounds.top_left.x;
+        assert_f64_near!(zoom, 5.0, "contain zoom");
+
+        // 元素矩形（含边距）必须完整落在视口内——贴边框选不裁元素。
+        let (l, r, t, b) = viewport_of(&bounds);
+        let pad = ZoomSegment::DEFAULT_ELEMENT_PADDING;
+        assert!(rect.x - pad >= l - 1e-9 && rect.x + rect.width + pad <= r + 1e-9);
+        assert!(rect.y - pad >= t - 1e-9 && rect.y + rect.height + pad <= b + 1e-9);
+    }
+
+    #[test]
+    fn semantic_contain_respects_amount_cap() {
+        // contain 算出 5 倍，但 amount 上限只有 2 → 实际 zoom = 2（不超过用户/生成层强度）。
+        let rect = cap_project::ElementBounds {
+            x: 0.40,
+            y: 0.50,
+            width: 0.10,
+            height: 0.06,
+        };
+        let segment = test_semantic_segment(2.0, rect, None, None);
+        let bounds = SegmentBounds::from_segment_with_cursor_constraint(
+            &segment,
+            Default::default(),
+            None,
+        );
+        let zoom = bounds.bottom_right.x - bounds.top_left.x;
+        assert_f64_near!(zoom, 2.0, "amount-capped zoom");
+    }
+
+    #[test]
+    fn semantic_contain_clamps_viewport_at_screen_edge() {
+        // 贴右下角的元素：视口中心应被 clamp，不放出画面外黑边。
+        let rect = cap_project::ElementBounds {
+            x: 0.88,
+            y: 0.90,
+            width: 0.10,
+            height: 0.08,
+        };
+        let segment = test_semantic_segment(2.8, rect, None, None);
+        let bounds = SegmentBounds::from_segment_with_cursor_constraint(
+            &segment,
+            Default::default(),
+            None,
+        );
+        let (l, r, t, b) = viewport_of(&bounds);
+        assert!(l >= -1e-9 && r <= 1.0 + 1e-9, "viewport x within screen: [{l}, {r}]");
+        assert!(t >= -1e-9 && b <= 1.0 + 1e-9, "viewport y within screen: [{t}, {b}]");
+        // 元素仍然完整可见。
+        assert!(rect.x >= l - 1e-9 && rect.x + rect.width <= r + 1e-9);
+        assert!(rect.y >= t - 1e-9 && rect.y + rect.height <= b + 1e-9);
+    }
+
+    #[test]
+    fn semantic_zoom_off_falls_back_to_manual_center() {
+        // 显式关闭语义开关 → 与「无矩形的纯 Manual」完全一致（数据保留，行为退回）。
+        let rect = cap_project::ElementBounds {
+            x: 0.40,
+            y: 0.50,
+            width: 0.10,
+            height: 0.06,
+        };
+        let (cx, cy) = rect.center();
+        let off = test_semantic_segment(2.0, rect, None, Some(false));
+        let plain = test_segment(2.0, 4.0, 2.0, cx, cy);
+
+        let off_bounds = SegmentBounds::from_segment_with_cursor_constraint(
+            &off,
+            Default::default(),
+            None,
+        );
+        let plain_bounds = SegmentBounds::from_segment_with_cursor_constraint(
+            &plain,
+            Default::default(),
+            None,
+        );
+        assert_f64_near!(off_bounds.top_left.x, plain_bounds.top_left.x);
+        assert_f64_near!(off_bounds.top_left.y, plain_bounds.top_left.y);
+        assert_f64_near!(off_bounds.bottom_right.x, plain_bounds.bottom_right.x);
+        assert_f64_near!(off_bounds.bottom_right.y, plain_bounds.bottom_right.y);
+    }
+
+    #[test]
+    fn semantic_padding_overrides_default() {
+        // 自定义边距 0.15：padded 0.4×0.36 → contain = min(2.5, 1/0.36≈2.78) = 2.5。
+        let rect = cap_project::ElementBounds {
+            x: 0.40,
+            y: 0.50,
+            width: 0.10,
+            height: 0.06,
+        };
+        let segment = test_semantic_segment(6.0, rect, Some(0.15), None);
+        let bounds = SegmentBounds::from_segment_with_cursor_constraint(
+            &segment,
+            Default::default(),
+            None,
+        );
+        let zoom = bounds.bottom_right.x - bounds.top_left.x;
+        assert_f64_near!(zoom, 2.5, "custom padding contain zoom");
+    }
+
+    /// 退出动画连续性：amount 渐变到 1（zoom.rs 的 eased_segment 路径）时，
+    /// 语义段的 zoom 应单调收敛到 1、视口平滑滑向全屏，无跳变。
+    #[test]
+    fn semantic_zoom_out_converges_continuously() {
+        let rect = cap_project::ElementBounds {
+            x: 0.70,
+            y: 0.20,
+            width: 0.12,
+            height: 0.10,
+        };
+        let mut prev_zoom = f64::INFINITY;
+        let mut prev_left = f64::NAN;
+        for i in (1..=28).rev() {
+            let eased_amount = 1.0 + (2.8 - 1.0) * (i as f64 / 28.0);
+            let segment = test_semantic_segment(eased_amount, rect, None, None);
+            let bounds = SegmentBounds::from_segment_with_cursor_constraint(
+                &segment,
+                Default::default(),
+                None,
+            );
+            let zoom = bounds.bottom_right.x - bounds.top_left.x;
+            assert!(zoom <= prev_zoom + 1e-9, "zoom must shrink monotonically");
+            let (l, _, _, _) = viewport_of(&bounds);
+            if !prev_left.is_nan() {
+                assert!(
+                    (l - prev_left).abs() < 0.12,
+                    "viewport jump too large: {prev_left} -> {l}"
+                );
+            }
+            prev_zoom = zoom;
+            prev_left = l;
+        }
+        // 终点 amount=1.0 → zoom=1 → 全屏。
+        let segment = test_semantic_segment(1.0, rect, None, None);
+        let bounds = SegmentBounds::from_segment_with_cursor_constraint(
+            &segment,
+            Default::default(),
+            None,
+        );
+        assert_f64_near!(bounds.top_left.x, 0.0, "full-screen top-left");
+        assert_f64_near!(bounds.bottom_right.x, 1.0, "full-screen bottom-right");
     }
 
     #[test]

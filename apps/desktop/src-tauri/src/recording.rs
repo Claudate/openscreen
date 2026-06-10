@@ -3070,9 +3070,13 @@ async fn finalize_studio_recording(
 
 // === 自动聚焦智能分段算法常量 ===
 // 设计参见共享记忆 p0-zoom-algo-upgrade-spec（架构师方案）+ p0-zoom-algo-code-facts（坐标系核实）。
-// 核心原则：生成阶段只决定「何时聚焦(start/end) + 聚焦多少(amount) + 怎么分段」，
-// 焦点坐标交给渲染层成熟的 Auto 跟随逻辑（zoom_focus_interpolation.rs 仅对 ZoomMode::Auto 生效），
-// 故全程输出 ZoomMode::Auto，moves 仅用于「给点击插值坐标做空间聚类」与「停留检测」，不输出坐标。
+// 核心原则：生成阶段决定「何时聚焦(start/end) + 聚焦多少(amount) + 聚焦到哪(mode) + 怎么分段」。
+// 两种聚焦模式（语义缩放升级，记忆 p2-semantic-zoom-feasibility）：
+//   1) 语义模式：簇内点击命中了有效 UI 元素矩形（macOS AX / Windows UIA 采集）
+//      → 输出 ZoomMode::Manual{元素并集中心}，强度按元素占屏比反推（小控件放大更多）。
+//   2) 坐标模式（兜底）：拿不到元素时退回 ZoomMode::Auto，焦点坐标交给渲染层成熟的
+//      跟随逻辑（zoom_focus_interpolation.rs 仅对 Auto 生效），强度按点击密度/范围动态算。
+// moves 用于「给点击插值坐标做空间聚类」与「停留检测」。兜底铁律：拿不到元素体验只升不降。
 const MS_PER_SECOND: f64 = 1000.0;
 const START_MIN_MS: f64 = 1.0;
 /// 点击前提前进入聚焦的时间（让放大略早于操作，观感更自然）。
@@ -3113,6 +3117,8 @@ struct PlacedClick {
     time_ms: f64,
     x: f64,
     y: f64,
+    /// 点击命中的 UI 元素矩形（语义缩放，归一化 UV）。拿不到时为 None。
+    element_bounds: Option<ElementBounds>,
 }
 
 /// 时空双维度聚类得到的「一次聚焦意图」。
@@ -3161,6 +3167,47 @@ impl ClickCluster {
         let spread = self.spread();
         (AMOUNT_BASE + DENSITY_GAIN * density - SPREAD_PENALTY * spread)
             .clamp(AMOUNT_MIN, AMOUNT_MAX)
+    }
+
+    /// 簇内带有效元素矩形的点击（语义缩放主信号）。
+    fn meaningful_element_bounds(&self) -> impl Iterator<Item = ElementBounds> + '_ {
+        self.clicks
+            .iter()
+            .filter_map(|c| c.element_bounds)
+            .filter(ElementBounds::is_meaningful)
+    }
+
+    /// 簇的语义聚焦矩形 = 簇内所有有效元素矩形的并集包围盒（归一化 UV）。
+    /// 无任何有效元素时返回 None → 消费侧退回点击坐标聚类（兜底铁律）。
+    fn element_union(&self) -> Option<ElementBounds> {
+        let (mut min_x, mut min_y) = (f64::INFINITY, f64::INFINITY);
+        let (mut max_x, mut max_y) = (f64::NEG_INFINITY, f64::NEG_INFINITY);
+        let mut found = false;
+        for b in self.meaningful_element_bounds() {
+            found = true;
+            min_x = min_x.min(b.x);
+            min_y = min_y.min(b.y);
+            max_x = max_x.max(b.x + b.width);
+            max_y = max_y.max(b.y + b.height);
+        }
+        if !found {
+            return None;
+        }
+        Some(ElementBounds {
+            x: min_x.clamp(0.0, 1.0),
+            y: min_y.clamp(0.0, 1.0),
+            width: (max_x - min_x).clamp(0.0, 1.0),
+            height: (max_y - min_y).clamp(0.0, 1.0),
+        })
+    }
+
+    /// 语义模式下按元素占屏比反推缩放强度：小控件放大更多，大面板放大更少。
+    /// 用面积比的平方根（线性尺度）映射：ratio→0 趋向 AMOUNT_MAX，ratio→1 趋向 AMOUNT_MIN。
+    fn element_amount(union: &ElementBounds) -> f64 {
+        // 线性占屏尺度（0~1）：取宽高比的较大者更稳健（细长控件不至于因面积极小而过度放大）。
+        let linear_ratio = union.width.max(union.height).clamp(0.0, 1.0);
+        // 反比映射：linear_ratio 越小 → 越接近 AMOUNT_MAX。
+        (AMOUNT_MAX - (AMOUNT_MAX - AMOUNT_MIN) * linear_ratio).clamp(AMOUNT_MIN, AMOUNT_MAX)
     }
 }
 
@@ -3213,6 +3260,7 @@ fn place_clicks(clicks: &[CursorClickEvent], moves: &[CursorMoveEvent]) -> Vec<P
                 time_ms: c.time_ms.floor(),
                 x,
                 y,
+                element_bounds: c.element_bounds,
             }
         })
         .collect()
@@ -3276,6 +3324,8 @@ fn detect_dwell_clusters(moves: &[CursorMoveEvent], click_cutoff_ms: f64) -> Vec
                     time_ms: anchor.time_ms.floor(),
                     x: anchor.x,
                     y: anchor.y,
+                    // 停留是无点击的弱信号，天然没有命中元素。
+                    element_bounds: None,
                 }));
             }
             anchor_idx = i;
@@ -3345,11 +3395,27 @@ fn generate_zoom_segments_from_clicks_impl(
             continue;
         }
 
+        // 语义缩放：簇内若有有效 UI 元素矩形 → 用元素并集中心定位（Manual）+ 占屏比反推强度；
+        // 否则完全退回点击坐标聚类（Auto + 动态强度，由渲染层跟随光标）——兜底铁律：体验只升不降。
+        let (mode, amount) = match cluster.element_union() {
+            Some(union) => {
+                let (cx, cy) = union.center();
+                (
+                    ZoomMode::Manual {
+                        x: cx.clamp(0.0, 1.0),
+                        y: cy.clamp(0.0, 1.0),
+                    },
+                    ClickCluster::element_amount(&union),
+                )
+            }
+            None => (ZoomMode::Auto, cluster.dynamic_amount()),
+        };
+
         segments.push(ZoomSegment {
             start: start_ms.round() / MS_PER_SECOND,
             end: end_ms.round() / MS_PER_SECOND,
-            amount: (cluster.dynamic_amount() * 1000.0).round() / 1000.0,
-            mode: ZoomMode::Auto,
+            amount: (amount * 1000.0).round() / 1000.0,
+            mode,
             glide_direction: GlideDirection::None,
             glide_speed: 0.5,
             instant_animation: false,
@@ -3770,6 +3836,7 @@ mod tests {
             cursor_id: "default".to_string(),
             time_ms,
             down,
+            element_bounds: None,
         }
     }
 
@@ -4010,8 +4077,8 @@ mod tests {
     }
 
     #[test]
-    fn always_emits_auto_mode_for_renderer_follow() {
-        // 生成阶段统一输出 Auto，把焦点跟随交给渲染层成熟逻辑（架构决策）。
+    fn emits_auto_mode_when_no_element_bounds() {
+        // 无元素矩形（旧录像/拿不到元素）→ 退回 Auto，焦点跟随交给渲染层成熟逻辑（兜底铁律）。
         let clicks = vec![click_event(2_000.0), click_event(6_000.0)];
         let moves = vec![
             move_event(2_000.0, 0.2, 0.3),
@@ -4024,10 +4091,115 @@ mod tests {
         for seg in &segments {
             assert!(
                 matches!(seg.mode, ZoomMode::Auto),
-                "all generated segments must be Auto mode"
+                "segments without element bounds must fall back to Auto mode"
             );
             assert!(seg.amount >= AMOUNT_MIN && seg.amount <= AMOUNT_MAX);
         }
+    }
+
+    fn click_event_with_bounds(time_ms: f64, bounds: ElementBounds) -> CursorClickEvent {
+        CursorClickEvent {
+            active_modifiers: vec![],
+            cursor_num: 0,
+            cursor_id: "default".to_string(),
+            time_ms,
+            down: true,
+            element_bounds: Some(bounds),
+        }
+    }
+
+    #[test]
+    fn semantic_zoom_uses_manual_mode_at_element_center() {
+        // 点击命中了 UI 元素（如一个按钮）→ Manual 模式，中心 = 元素矩形中心。
+        let bounds = ElementBounds {
+            x: 0.40,
+            y: 0.50,
+            width: 0.10,
+            height: 0.06,
+        };
+        let clicks = vec![click_event_with_bounds(2_000.0, bounds)];
+        let moves = vec![move_event(2_000.0, 0.45, 0.53)];
+
+        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+
+        assert_eq!(segments.len(), 1);
+        match segments[0].mode {
+            ZoomMode::Manual { x, y } => {
+                // 元素中心 = (0.40+0.05, 0.50+0.03) = (0.45, 0.53)
+                assert!((x - 0.45).abs() < 1e-6, "manual x should be element center, got {x}");
+                assert!((y - 0.53).abs() < 1e-6, "manual y should be element center, got {y}");
+            }
+            ZoomMode::Auto => panic!("clicked element should produce Manual mode, got Auto"),
+        }
+    }
+
+    #[test]
+    fn semantic_zoom_small_element_zooms_more_than_large() {
+        // 小控件（占屏小）应比大面板放大更多。
+        let small = ElementBounds { x: 0.45, y: 0.48, width: 0.05, height: 0.04 };
+        let large = ElementBounds { x: 0.10, y: 0.10, width: 0.70, height: 0.60 };
+
+        let small_seg = generate_zoom_segments_from_clicks_impl(
+            vec![click_event_with_bounds(2_000.0, small)],
+            vec![move_event(2_000.0, 0.47, 0.50)],
+            20.0,
+        );
+        let large_seg = generate_zoom_segments_from_clicks_impl(
+            vec![click_event_with_bounds(2_000.0, large)],
+            vec![move_event(2_000.0, 0.45, 0.40)],
+            20.0,
+        );
+
+        assert_eq!(small_seg.len(), 1);
+        assert_eq!(large_seg.len(), 1);
+        assert!(
+            small_seg[0].amount > large_seg[0].amount,
+            "small element ({}) should zoom more than large ({})",
+            small_seg[0].amount,
+            large_seg[0].amount
+        );
+        // 强度必须仍在合法区间。
+        for seg in small_seg.iter().chain(large_seg.iter()) {
+            assert!(seg.amount >= AMOUNT_MIN && seg.amount <= AMOUNT_MAX);
+        }
+    }
+
+    #[test]
+    fn semantic_zoom_mixed_cluster_uses_element_union() {
+        // 一个簇内既有带元素的点击也有无元素的点击 → 仍走语义模式（用有效元素并集）。
+        let b1 = ElementBounds { x: 0.30, y: 0.30, width: 0.08, height: 0.05 };
+        let clicks = vec![
+            click_event_with_bounds(2_000.0, b1),
+            click_event(2_300.0), // 同簇内的无元素点击（时间空间都近）
+        ];
+        let moves = vec![
+            move_event(2_000.0, 0.34, 0.32),
+            move_event(2_300.0, 0.35, 0.33),
+        ];
+
+        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+
+        assert_eq!(segments.len(), 1, "near clicks stay one cluster");
+        assert!(
+            matches!(segments[0].mode, ZoomMode::Manual { .. }),
+            "mixed cluster with a valid element should use semantic Manual mode"
+        );
+    }
+
+    #[test]
+    fn semantic_zoom_ignores_full_screen_element() {
+        // 命中近乎整屏的元素（如桌面/根窗口）无意义 → 视为拿不到元素，退回 Auto。
+        let full = ElementBounds { x: 0.0, y: 0.0, width: 0.99, height: 0.99 };
+        let clicks = vec![click_event_with_bounds(2_000.0, full)];
+        let moves = vec![move_event(2_000.0, 0.5, 0.5)];
+
+        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+
+        assert_eq!(segments.len(), 1);
+        assert!(
+            matches!(segments[0].mode, ZoomMode::Auto),
+            "full-screen element hit should fall back to Auto"
+        );
     }
 
     #[test]

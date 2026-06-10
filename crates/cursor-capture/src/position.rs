@@ -19,6 +19,16 @@ impl RawCursorPosition {
         }
     }
 
+    /// 从任意全局坐标构造，坐标系与 [`RawCursorPosition::get`] 完全一致
+    /// （macOS 为逻辑坐标、Windows 为物理坐标，top-left 原点）。
+    ///
+    /// 用途：把无障碍 API（macOS AX / Windows UIA）反查到的元素矩形角点，
+    /// 喂入与光标相同的 `relative_to_display → normalize → with_crop` 换算链，
+    /// 保证语义缩放的元素坐标与现有光标坐标对齐到同一 UV 空间。
+    pub fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+
     pub fn relative_to_display(&self, display: Display) -> Option<RelativeCursorPosition> {
         RelativeCursorPosition::from_raw(*self, display)
     }

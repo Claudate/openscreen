@@ -24,6 +24,49 @@ impl PartialOrd for CursorMoveEvent {
     }
 }
 
+/// 点击发生时，命中的 UI 元素（按钮/输入框/链接等）在屏幕上的矩形，
+/// 已归一化到与 `CursorMoveEvent` 相同的 0–1 UV 坐标系（display + crop 之后）。
+///
+/// 由采集层经平台无障碍 API（macOS AX / Windows UIA）在点击当下抓取。
+/// 缺失（旧录像 / 无障碍拿不到元素 / 命中整窗口）时为 `None`，消费侧自动退回点击坐标聚类。
+#[derive(Serialize, Deserialize, Clone, Copy, Type, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ElementBounds {
+    /// 元素左上角 X（归一化 0–1）。
+    pub x: f64,
+    /// 元素左上角 Y（归一化 0–1）。
+    pub y: f64,
+    /// 元素宽度（归一化，相对裁剪后画面宽）。
+    pub width: f64,
+    /// 元素高度（归一化，相对裁剪后画面高）。
+    pub height: f64,
+}
+
+impl ElementBounds {
+    /// 元素中心点（归一化 UV）。
+    pub fn center(&self) -> (f64, f64) {
+        (self.x + self.width / 2.0, self.y + self.height / 2.0)
+    }
+
+    /// 元素占屏面积比（0–1），用于反推缩放强度（小元素放大更多）。
+    pub fn area_ratio(&self) -> f64 {
+        (self.width * self.height).clamp(0.0, 1.0)
+    }
+
+    /// 几何合法性：尺寸为正、坐标有限、且不是"整屏/越界"这种无意义命中。
+    pub fn is_meaningful(&self) -> bool {
+        self.x.is_finite()
+            && self.y.is_finite()
+            && self.width.is_finite()
+            && self.height.is_finite()
+            && self.width > 0.0
+            && self.height > 0.0
+            // 命中近乎整屏（如桌面/根窗口）对"聚焦控件"无意义，视为拿不到元素。
+            && self.width < 0.95
+            && self.height < 0.95
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Type, Debug, PartialEq)]
 pub struct CursorClickEvent {
     pub active_modifiers: Vec<String>,
@@ -31,6 +74,9 @@ pub struct CursorClickEvent {
     pub cursor_id: String,
     pub time_ms: f64,
     pub down: bool,
+    /// 点击命中的 UI 元素矩形（语义缩放）。旧录像/拿不到元素时为 `None`。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub element_bounds: Option<ElementBounds>,
 }
 
 impl PartialOrd for CursorClickEvent {
@@ -296,6 +342,7 @@ mod tests {
             cursor_num: 0,
             down: true,
             time_ms,
+            element_bounds: None,
         }
     }
 

@@ -732,3 +732,215 @@ fn get_cursor_data() -> Option<CursorData> {
         })
     }
 }
+
+/// 反查点击命中的 UI 元素矩形，并归一化到与 [`CursorMoveEvent`] 相同的 0–1 UV 坐标系。
+///
+/// macOS 走无障碍 (AX) 树；非 macOS 暂未实现（Windows 后续可用 UIA `ElementFromPoint`
+/// + `CurrentBoundingRectangle` 对称补齐），返回 `None` 时消费侧自动退回点击坐标聚类。
+#[cfg(target_os = "macos")]
+fn click_element_bounds(
+    coords: (i32, i32),
+    display: scap_targets::Display,
+    crop_bounds: CursorCropBounds,
+) -> Option<ElementBounds> {
+    let (fx, fy, fw, fh) = ax::element_frame_at(coords.0 as f64, coords.1 as f64)?;
+
+    // 元素矩形的左上 / 右下两角，各经与光标完全相同的 display→normalize→crop 链换算到 UV，
+    // 保证语义元素坐标与既有光标轨迹严格对齐（含多屏负坐标、Retina 逻辑像素、录制裁剪）。
+    let to_uv = |px: f64, py: f64| -> Option<(f64, f64)> {
+        let norm = cap_cursor_capture::RawCursorPosition::new(px.round() as i32, py.round() as i32)
+            .relative_to_display(display)?
+            .normalize()?
+            .with_crop(crop_bounds);
+        Some((norm.x(), norm.y()))
+    };
+
+    let (tlx, tly) = to_uv(fx, fy)?;
+    let (brx, bry) = to_uv(fx + fw, fy + fh)?;
+
+    let bounds = ElementBounds {
+        x: tlx,
+        y: tly,
+        width: brx - tlx,
+        height: bry - tly,
+    };
+
+    // is_meaningful 过滤整屏 / 越界 / 零尺寸命中——拿不到有效控件即降级回坐标聚类。
+    bounds.is_meaningful().then_some(bounds)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn click_element_bounds(
+    _coords: (i32, i32),
+    _display: scap_targets::Display,
+    _crop_bounds: CursorCropBounds,
+) -> Option<ElementBounds> {
+    None
+}
+
+/// macOS 无障碍 (AX) 反查：给定全局逻辑坐标，取命中 UI 元素的屏幕矩形。
+///
+/// 直接声明 ApplicationServices 的 AX C-API（零新增 crate 依赖）；所有 +1 引用的返回对象
+/// 一律用 `CFType`（create rule）托管，离开作用域自动 `CFRelease`，并设单次消息超时防卡死。
+#[cfg(target_os = "macos")]
+mod ax {
+    use core_foundation::base::{CFType, CFTypeRef, TCFType};
+    use core_foundation::string::{CFString, CFStringRef};
+    use std::os::raw::c_void;
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct CGPoint {
+        x: f64,
+        y: f64,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct CGSize {
+        width: f64,
+        height: f64,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct CGRect {
+        origin: CGPoint,
+        size: CGSize,
+    }
+
+    type AXUIElementRef = CFTypeRef;
+    type AXError = i32;
+
+    const KAX_ERROR_SUCCESS: AXError = 0;
+    const KAX_VALUE_CGPOINT: u32 = 1;
+    const KAX_VALUE_CGSIZE: u32 = 2;
+    const KAX_VALUE_CGRECT: u32 = 3;
+
+    #[link(name = "ApplicationServices", kind = "framework")]
+    unsafe extern "C" {
+        fn AXUIElementCreateSystemWide() -> AXUIElementRef;
+        fn AXUIElementCopyElementAtPosition(
+            application: AXUIElementRef,
+            x: f32,
+            y: f32,
+            element: *mut AXUIElementRef,
+        ) -> AXError;
+        fn AXUIElementCopyAttributeValue(
+            element: AXUIElementRef,
+            attribute: CFStringRef,
+            value: *mut CFTypeRef,
+        ) -> AXError;
+        fn AXUIElementSetMessagingTimeout(
+            element: AXUIElementRef,
+            timeout_in_seconds: f32,
+        ) -> AXError;
+        fn AXValueGetValue(value: CFTypeRef, the_type: u32, value_ptr: *mut c_void) -> u8;
+    }
+
+    /// 反查 `(x, y)`（全局逻辑坐标，top-left 原点）命中的元素矩形 `(x, y, w, h)`。
+    /// 无权限 / 未命中 / 超时均返回 `None`，由调用方降级。
+    pub(super) fn element_frame_at(x: f64, y: f64) -> Option<(f64, f64, f64, f64)> {
+        // SAFETY: 均为标准 AX C-API；返回的 +1 对象用 CFType(create rule) 托管自动释放，
+        // 消息超时受 AXUIElementSetMessagingTimeout 限制，坐标为合法有限浮点。
+        unsafe {
+            let system_wide = AXUIElementCreateSystemWide();
+            if system_wide.is_null() {
+                return None;
+            }
+            let system_wide = CFType::wrap_under_create_rule(system_wide);
+
+            // 单次消息上限 0.25s，目标 App 无响应时也不拖垮高频采集线程。
+            AXUIElementSetMessagingTimeout(system_wide.as_CFTypeRef(), 0.25);
+
+            let mut element: AXUIElementRef = std::ptr::null();
+            let err = AXUIElementCopyElementAtPosition(
+                system_wide.as_CFTypeRef(),
+                x as f32,
+                y as f32,
+                &mut element,
+            );
+            if err != KAX_ERROR_SUCCESS || element.is_null() {
+                return None;
+            }
+            let element = CFType::wrap_under_create_rule(element);
+            let element_ref = element.as_CFTypeRef();
+
+            // 优先 AXFrame（一次拿全矩形）；个别元素仅暴露 AXPosition+AXSize 时兜底拼装。
+            if let Some(rect) = copy_rect(element_ref, "AXFrame") {
+                return Some(rect);
+            }
+            let (px, py) = copy_point(element_ref, "AXPosition")?;
+            let (sw, sh) = copy_size(element_ref, "AXSize")?;
+            Some((px, py, sw, sh))
+        }
+    }
+
+    fn copy_value(element: CFTypeRef, attr: &str) -> Option<CFType> {
+        let attr = CFString::new(attr);
+        let mut value: CFTypeRef = std::ptr::null();
+        // SAFETY: element 为有效 AXUIElement；value 按 create rule 托管。
+        let err =
+            unsafe { AXUIElementCopyAttributeValue(element, attr.as_concrete_TypeRef(), &mut value) };
+        if err != KAX_ERROR_SUCCESS || value.is_null() {
+            return None;
+        }
+        Some(unsafe { CFType::wrap_under_create_rule(value) })
+    }
+
+    fn copy_rect(element: CFTypeRef, attr: &str) -> Option<(f64, f64, f64, f64)> {
+        let value = copy_value(element, attr)?;
+        let mut rect = CGRect {
+            origin: CGPoint { x: 0.0, y: 0.0 },
+            size: CGSize {
+                width: 0.0,
+                height: 0.0,
+            },
+        };
+        // SAFETY: value 为 AXValue(CGRect)，写入同布局的 repr(C) CGRect 缓冲。
+        let ok = unsafe {
+            AXValueGetValue(
+                value.as_CFTypeRef(),
+                KAX_VALUE_CGRECT,
+                (&mut rect as *mut CGRect).cast(),
+            )
+        } != 0;
+        ok.then_some((
+            rect.origin.x,
+            rect.origin.y,
+            rect.size.width,
+            rect.size.height,
+        ))
+    }
+
+    fn copy_point(element: CFTypeRef, attr: &str) -> Option<(f64, f64)> {
+        let value = copy_value(element, attr)?;
+        let mut point = CGPoint { x: 0.0, y: 0.0 };
+        // SAFETY: value 为 AXValue(CGPoint)，写入同布局的 repr(C) CGPoint 缓冲。
+        let ok = unsafe {
+            AXValueGetValue(
+                value.as_CFTypeRef(),
+                KAX_VALUE_CGPOINT,
+                (&mut point as *mut CGPoint).cast(),
+            )
+        } != 0;
+        ok.then_some((point.x, point.y))
+    }
+
+    fn copy_size(element: CFTypeRef, attr: &str) -> Option<(f64, f64)> {
+        let value = copy_value(element, attr)?;
+        let mut size = CGSize {
+            width: 0.0,
+            height: 0.0,
+        };
+        // SAFETY: value 为 AXValue(CGSize)，写入同布局的 repr(C) CGSize 缓冲。
+        let ok = unsafe {
+            AXValueGetValue(
+                value.as_CFTypeRef(),
+                KAX_VALUE_CGSIZE,
+                (&mut size as *mut CGSize).cast(),
+            )
+        } != 0;
+        ok.then_some((size.width, size.height))
+    }
+}

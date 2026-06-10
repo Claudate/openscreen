@@ -613,6 +613,7 @@ mod tests {
             cursor_num: 0,
             time_ms,
             down,
+            element_bounds: None,
         }
     }
 

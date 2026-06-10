@@ -1,0 +1,175 @@
+name: "Build Desktop (Unsigned)"
+
+# Fork 专用云端打包：无任何官方 secrets（CrabNebula / Apple 签名 / SignPath / Sentry），
+# 产出未签名安装包上传到 Actions artifact。macOS 用 ad-hoc 签名（首次打开需右键 → 打开）。
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Which platform(s) to build"
+        required: false
+        default: "macos"
+        type: choice
+        options:
+          - macos
+          - windows
+          - both
+
+env:
+  # 与 ci.yml 相同的公开 DSN（仅编译期注入用）
+  CAP_DESKTOP_SENTRY_URL: https://6a3b6a09e6ae976c2ad6fff710e88748@o4506859771527168.ingest.us.sentry.io/4508330917101568
+
+jobs:
+  build-macos:
+    name: Build macOS (aarch64, unsigned)
+    if: ${{ inputs.platform == 'macos' || inputs.platform == 'both' }}
+    runs-on: macos-latest
+    env:
+      TARGET: aarch64-apple-darwin
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@1.88.0
+        with:
+          targets: ${{ env.TARGET }}
+
+      - uses: ./.github/actions/setup-rust-cache
+        with:
+          target: ${{ env.TARGET }}
+
+      - uses: ./.github/actions/setup-js
+
+      - name: Create .env file
+        shell: bash
+        run: |
+          {
+            echo "VITE_ENVIRONMENT=production"
+            echo "CAP_DESKTOP_SENTRY_URL=${{ env.CAP_DESKTOP_SENTRY_URL }}"
+            echo "NEXT_PUBLIC_WEB_URL=https://cap.so"
+            echo "NEXTAUTH_URL=https://cap.so"
+            echo "VITE_SERVER_URL=https://cap.so"
+            echo "RUST_TARGET_TRIPLE=${{ env.TARGET }}"
+          } >> .env
+          cp .env apps/desktop/.env
+
+      - name: Run cap-setup (native deps, ad-hoc signing)
+        shell: bash
+        run: pnpm -w cap-setup
+        env:
+          RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+
+      - name: Build sidecar binaries
+        shell: bash
+        run: ./scripts/build-desktop-binaries.sh ${{ env.TARGET }}
+
+      - name: Write unsigned bundle config override
+        shell: bash
+        # createUpdaterArtifacts 在默认配置中为 true，会强制要求 TAURI_SIGNING_PRIVATE_KEY；
+        # fork 没有该 secret，必须关掉（不影响 .app/.dmg 产物）。
+        run: |
+          cat > apps/desktop/src-tauri/ci-unsigned.conf.json <<'EOF'
+          {
+            "bundle": {
+              "createUpdaterArtifacts": false
+            }
+          }
+          EOF
+
+      - name: Build app (unsigned bundle)
+        working-directory: apps/desktop
+        run: pnpm build:tauri --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
+        env:
+          # https://github.com/tauri-apps/tauri-action/issues/740
+          CI: false
+          RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+
+      - name: Zip .app bundle (preserve symlinks/permissions)
+        shell: bash
+        run: |
+          BUNDLE_DIR="target/${{ env.TARGET }}/release/bundle/macos"
+          cd "$BUNDLE_DIR"
+          APP_NAME="$(ls -d *.app | head -n 1)"
+          ditto -c -k --keepParent "$APP_NAME" Cap-macos-aarch64-app.zip
+          ls -la
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cap-macos-aarch64-unsigned
+          path: |
+            target/${{ env.TARGET }}/release/bundle/dmg/*.dmg
+            target/${{ env.TARGET }}/release/bundle/macos/Cap-macos-aarch64-app.zip
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Windows (x86_64, unsigned)
+    if: ${{ inputs.platform == 'windows' || inputs.platform == 'both' }}
+    runs-on: windows-2022
+    env:
+      TARGET: x86_64-pc-windows-msvc
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@1.88.0
+        with:
+          targets: ${{ env.TARGET }}
+
+      - uses: ./.github/actions/setup-rust-cache
+        with:
+          target: ${{ env.TARGET }}
+
+      - uses: ./.github/actions/setup-js
+
+      - name: Create .env file
+        shell: bash
+        run: |
+          {
+            echo "VITE_ENVIRONMENT=production"
+            echo "CAP_DESKTOP_SENTRY_URL=${{ env.CAP_DESKTOP_SENTRY_URL }}"
+            echo "NEXT_PUBLIC_WEB_URL=https://cap.so"
+            echo "NEXTAUTH_URL=https://cap.so"
+            echo "VITE_SERVER_URL=https://cap.so"
+            echo "RUST_TARGET_TRIPLE=${{ env.TARGET }}"
+          } >> .env
+          cp .env apps/desktop/.env
+
+      - name: Run cap-setup (ffmpeg, MSVC check)
+        shell: bash
+        run: pnpm -w cap-setup
+        env:
+          RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+
+      - name: Build sidecar binaries
+        shell: bash
+        run: ./scripts/build-desktop-binaries.sh ${{ env.TARGET }}
+
+      - name: Write unsigned bundle config override
+        shell: bash
+        run: |
+          cat > apps/desktop/src-tauri/ci-unsigned.conf.json <<'EOF'
+          {
+            "bundle": {
+              "createUpdaterArtifacts": false
+            }
+          }
+          EOF
+
+      - name: Build app (unsigned bundle)
+        working-directory: apps/desktop
+        run: pnpm build:tauri --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
+        env:
+          CI: false
+          RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cap-windows-x64-unsigned
+          path: |
+            target/${{ env.TARGET }}/release/bundle/nsis/*.exe
+            target/${{ env.TARGET }}/release/bundle/msi/*.msi
+          if-no-files-found: error

@@ -92,6 +92,7 @@ import IconLucidePalette from "~icons/lucide/palette";
 import IconLucideRabbit from "~icons/lucide/rabbit";
 import IconLucideScanSearch from "~icons/lucide/scan-search";
 import IconLucideScissors from "~icons/lucide/scissors";
+import IconLucideSlidersHorizontal from "~icons/lucide/sliders-horizontal";
 import IconLucideSparkles from "~icons/lucide/sparkles";
 import IconLucideTimer from "~icons/lucide/timer";
 import IconLucideType from "~icons/lucide/type";
@@ -3972,6 +3973,115 @@ function ZoomSemanticControls(props: {
 	);
 }
 
+// === 缩放预设（Zoom Presets）===
+// V-next P2：subtle / normal / dramatic 三档一键应用，对齐 Screen Studio 可调式体验。
+// 每档批量写入现有 ZoomSegment 字段（amount / glideSpeed / edgeSnapRatio /
+// elementPadding），batch 包裹保证单次 undo。Custom 为纯派生 UI 状态：当前字段与某档
+// 全部匹配则该档高亮，否则视为手动微调（Custom），零新增数据字段。
+// TODO(config-presets)：三档数值为前端先行拍板（amount 对齐生成层 AMOUNT_MIN/MAX
+// 1.5~2.8、padding 对齐 T1 默认 0.05），待架构师参数 config 化契约定稿后校准。
+const ZOOM_PRESETS = [
+	{
+		id: "subtle",
+		label: "Subtle",
+		amount: 1.5,
+		glideSpeed: 0.3,
+		edgeSnapRatio: 0.35,
+		elementPadding: 0.1,
+	},
+	{
+		id: "normal",
+		label: "Normal",
+		amount: 2,
+		glideSpeed: 0.5,
+		edgeSnapRatio: 0.25,
+		elementPadding: 0.05,
+	},
+	{
+		id: "dramatic",
+		label: "Dramatic",
+		amount: 2.8,
+		glideSpeed: 0.8,
+		edgeSnapRatio: 0.15,
+		elementPadding: 0.02,
+	},
+] as const;
+
+// 浮点字段与预设值的相等容差（仅判定 UI 高亮，不参与任何时间轴计算）。
+const PRESET_MATCH_EPS = 1e-6;
+
+/**
+ * One-click zoom presets for a single zoom segment. Each preset writes a
+ * curated combination of the existing per-segment fields in a single `batch`
+ * (one undo step). The active preset is derived purely from field values —
+ * tweaking any slider below makes the segment "Custom" (no preset highlighted,
+ * badge shown), and no extra field is persisted.
+ */
+function ZoomPresetControls(props: {
+	segmentIndex: number;
+	segment: ZoomSegment;
+}) {
+	const { setProject } = useEditorContext();
+
+	const updateZoomField = <K extends keyof ZoomSegment>(
+		field: K,
+		value: ZoomSegment[K],
+	) => setProject("timeline", "zoomSegments", props.segmentIndex, field, value);
+
+	const activePresetId = () =>
+		ZOOM_PRESETS.find(
+			(p) =>
+				Math.abs(props.segment.amount - p.amount) < PRESET_MATCH_EPS &&
+				Math.abs(
+					(props.segment.glideSpeed ?? DEFAULT_GLIDE_SPEED) - p.glideSpeed,
+				) < PRESET_MATCH_EPS &&
+				Math.abs(
+					(props.segment.edgeSnapRatio ?? DEFAULT_EDGE_SNAP_RATIO) -
+						p.edgeSnapRatio,
+				) < PRESET_MATCH_EPS &&
+				Math.abs(
+					(props.segment.elementPadding ?? DEFAULT_FRAMING_PADDING) -
+						p.elementPadding,
+				) < PRESET_MATCH_EPS,
+		)?.id ?? null;
+
+	const applyPreset = (preset: (typeof ZOOM_PRESETS)[number]) => {
+		batch(() => {
+			updateZoomField("amount", preset.amount);
+			updateZoomField("glideSpeed", preset.glideSpeed);
+			updateZoomField("edgeSnapRatio", preset.edgeSnapRatio);
+			updateZoomField("elementPadding", preset.elementPadding);
+		});
+	};
+
+	return (
+		<Field
+			name="Preset"
+			icon={<IconLucideSlidersHorizontal class="size-4" />}
+			value={
+				<Show when={activePresetId() === null}>
+					<span class="text-[11px] font-medium text-gray-10">Custom</span>
+				</Show>
+			}
+		>
+			<div class="grid grid-cols-3 gap-1.5">
+				<For each={ZOOM_PRESETS}>
+					{(preset) => (
+						<button
+							type="button"
+							aria-pressed={activePresetId() === preset.id}
+							onClick={() => applyPreset(preset)}
+							class="flex justify-center items-center h-9 text-sm rounded-lg border transition-colors duration-100 outline-hidden border-gray-3 text-gray-11 hover:bg-gray-3 aria-pressed:bg-blue-9 aria-pressed:border-blue-9 aria-pressed:text-gray-1 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-9"
+						>
+							{preset.label}
+						</button>
+					)}
+				</For>
+			</div>
+		</Field>
+	);
+}
+
 function ZoomSegmentConfig(props: {
 	segmentIndex: number;
 	segment: ZoomSegment;
@@ -4010,6 +4120,10 @@ function ZoomSegmentConfig(props: {
 					formatTooltip="x"
 				/>
 			</Field>
+			<ZoomPresetControls
+				segment={props.segment}
+				segmentIndex={props.segmentIndex}
+			/>
 			<Field name="Zoom Mode" icon={<IconCapSettings />}>
 				<KTabs
 					class="space-y-6"

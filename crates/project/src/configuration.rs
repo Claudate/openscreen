@@ -1263,6 +1263,124 @@ impl Annotation {
     }
 }
 
+/// 自动缩放观感预设（生成层参数基线，前端三档切换）。
+#[derive(Type, Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum AutoZoomPreset {
+    /// 克制：放大更轻、停留聚焦关闭，适合界面密集/快节奏演示。
+    Subtle,
+    /// 默认：与内置常量一致的均衡观感。
+    Normal,
+    /// 强烈：放大更重、停留聚焦更明显，适合教学/讲解类录屏。
+    Dramatic,
+}
+
+/// 自动缩放生成参数（项目级可调，驱动「重新生成 zoom 段」）。
+/// 全部 Option：`None` = 跟随 preset（preset 也缺省则用内置默认）；
+/// 显式字段 > preset 基线 > 内置默认。serde 兼容铁律：旧工程文件缺字段零影响。
+#[derive(Type, Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AutoZoomConfiguration {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preset: Option<AutoZoomPreset>,
+    /// 聚类时间阈值（ms）：相邻点击间隔 ≤ 此值才可能归入同一聚焦段。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cluster_time_eps_ms: Option<f64>,
+    /// 聚类空间阈值（归一化 UV）：点击到簇质心距离 ≤ 此值才归入同簇。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cluster_space_eps: Option<f64>,
+    /// 停留聚焦开关（无点击的长停留也产生轻度聚焦段）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dwell_enabled: Option<bool>,
+    /// 停留聚焦最短停留时长（ms）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dwell_min_duration_ms: Option<f64>,
+    /// 动态强度下限。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub amount_min: Option<f64>,
+    /// 动态强度上限。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub amount_max: Option<f64>,
+}
+
+/// 解析后的自动缩放生成参数（运行时值，非序列化契约）。
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ResolvedAutoZoom {
+    pub cluster_time_eps_ms: f64,
+    pub cluster_space_eps: f64,
+    pub dwell_enabled: bool,
+    pub dwell_min_duration_ms: f64,
+    /// 停留段的固定温和强度（弱信号弱表达，由 preset 决定，不单独暴露字段）。
+    pub dwell_amount: f64,
+    pub amount_min: f64,
+    pub amount_max: f64,
+}
+
+impl Default for ResolvedAutoZoom {
+    /// 内置默认 = Normal 预设 = 既有硬编码常量值（行为零变化基线）。
+    fn default() -> Self {
+        Self {
+            cluster_time_eps_ms: 1200.0,
+            cluster_space_eps: 0.18,
+            dwell_enabled: true,
+            dwell_min_duration_ms: 1500.0,
+            dwell_amount: 1.6,
+            amount_min: 1.5,
+            amount_max: 2.8,
+        }
+    }
+}
+
+impl AutoZoomConfiguration {
+    /// 解析三层优先级：显式字段 > preset 基线 > 内置默认（Normal）。
+    /// 数值做防呆 clamp，保证任意输入下生成层参数合法。
+    pub fn resolve(config: Option<&AutoZoomConfiguration>) -> ResolvedAutoZoom {
+        let mut resolved = match config.and_then(|c| c.preset) {
+            Some(AutoZoomPreset::Subtle) => ResolvedAutoZoom {
+                dwell_enabled: false,
+                dwell_amount: 1.4,
+                amount_min: 1.4,
+                amount_max: 2.2,
+                ..ResolvedAutoZoom::default()
+            },
+            Some(AutoZoomPreset::Dramatic) => ResolvedAutoZoom {
+                dwell_amount: 1.8,
+                amount_min: 1.7,
+                amount_max: 3.4,
+                ..ResolvedAutoZoom::default()
+            },
+            Some(AutoZoomPreset::Normal) | None => ResolvedAutoZoom::default(),
+        };
+
+        if let Some(config) = config {
+            if let Some(v) = config.cluster_time_eps_ms {
+                resolved.cluster_time_eps_ms = v.clamp(100.0, 10_000.0);
+            }
+            if let Some(v) = config.cluster_space_eps {
+                resolved.cluster_space_eps = v.clamp(0.01, 1.0);
+            }
+            if let Some(v) = config.dwell_enabled {
+                resolved.dwell_enabled = v;
+            }
+            if let Some(v) = config.dwell_min_duration_ms {
+                resolved.dwell_min_duration_ms = v.clamp(300.0, 30_000.0);
+            }
+            if let Some(v) = config.amount_min {
+                resolved.amount_min = v.clamp(1.0, 5.0);
+            }
+            if let Some(v) = config.amount_max {
+                resolved.amount_max = v.clamp(1.0, 5.0);
+            }
+            // 防呆：上下限倒挂时取并集中点排序。
+            if resolved.amount_min > resolved.amount_max {
+                std::mem::swap(&mut resolved.amount_min, &mut resolved.amount_max);
+            }
+        }
+
+        resolved
+    }
+}
+
 #[derive(Type, Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ProjectConfiguration {
@@ -1283,6 +1401,9 @@ pub struct ProjectConfiguration {
     pub screen_motion_blur: f32,
     #[serde(default)]
     pub screen_movement_spring: ScreenMovementSpring,
+    /// 自动缩放生成参数（`None` = 内置默认；serde 兼容旧工程文件）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auto_zoom: Option<AutoZoomConfiguration>,
 }
 
 fn camera_config_needs_migration(value: &Value) -> bool {
@@ -1313,6 +1434,7 @@ impl Default for ProjectConfiguration {
             hidden_text_segments: Default::default(),
             screen_motion_blur: Self::default_screen_motion_blur(),
             screen_movement_spring: Default::default(),
+            auto_zoom: Default::default(),
         }
     }
 }
@@ -1414,6 +1536,67 @@ pub const FAST_VELOCITY_THRESHOLD: f64 = 0.015;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn auto_zoom_missing_field_deserializes_to_none() {
+        // 旧版工程文件没有 autoZoom 字段 → 反序列化为 None（兼容铁律）。
+        let value = serde_json::to_value(ProjectConfiguration::default()).unwrap();
+        assert!(value.get("autoZoom").is_none(), "None must not serialize");
+        let parsed: ProjectConfiguration = serde_json::from_value(value).unwrap();
+        assert!(parsed.auto_zoom.is_none());
+    }
+
+    #[test]
+    fn auto_zoom_preset_roundtrip() {
+        let config = AutoZoomConfiguration {
+            preset: Some(AutoZoomPreset::Dramatic),
+            ..Default::default()
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        assert!(json.contains("\"dramatic\""), "camelCase preset, got {json}");
+        let parsed: AutoZoomConfiguration = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed, config);
+    }
+
+    #[test]
+    fn auto_zoom_resolve_default_matches_builtin_constants() {
+        // None 配置 → 与既有硬编码常量完全一致（行为零变化基线）。
+        let resolved = AutoZoomConfiguration::resolve(None);
+        assert_eq!(resolved, ResolvedAutoZoom::default());
+        assert_eq!(resolved.cluster_time_eps_ms, 1200.0);
+        assert_eq!(resolved.cluster_space_eps, 0.18);
+        assert_eq!(resolved.amount_min, 1.5);
+        assert_eq!(resolved.amount_max, 2.8);
+        assert!(resolved.dwell_enabled);
+    }
+
+    #[test]
+    fn auto_zoom_resolve_priority_explicit_over_preset() {
+        // 显式字段 > preset 基线：subtle 关 dwell，但显式 dwell_enabled=true 应胜出。
+        let config = AutoZoomConfiguration {
+            preset: Some(AutoZoomPreset::Subtle),
+            dwell_enabled: Some(true),
+            amount_max: Some(2.0),
+            ..Default::default()
+        };
+        let resolved = AutoZoomConfiguration::resolve(Some(&config));
+        assert!(resolved.dwell_enabled, "explicit field must override preset");
+        assert_eq!(resolved.amount_max, 2.0, "explicit cap wins");
+        assert_eq!(resolved.amount_min, 1.4, "untouched fields follow preset");
+    }
+
+    #[test]
+    fn auto_zoom_resolve_clamps_and_swaps_invalid_amounts() {
+        let config = AutoZoomConfiguration {
+            amount_min: Some(4.0),
+            amount_max: Some(0.5), // clamp 到 1.0，且与 min 倒挂
+            ..Default::default()
+        };
+        let resolved = AutoZoomConfiguration::resolve(Some(&config));
+        assert!(resolved.amount_min <= resolved.amount_max);
+        assert_eq!(resolved.amount_min, 1.0);
+        assert_eq!(resolved.amount_max, 4.0);
+    }
 
     fn write_config_with_motion_blur_values(
         project_path: &std::path::Path,

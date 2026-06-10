@@ -4,10 +4,10 @@ use cap_media_info::ffmpeg_sample_format_for;
 use cap_project::CursorMoveEvent;
 use cap_project::cursor::SHORT_CURSOR_SHAPE_DEBOUNCE_MS;
 use cap_project::{
-    CameraShape, CursorClickEvent, GlideDirection, InstantRecordingMeta, MultipleSegments,
-    Platform, ProjectConfiguration, RecordingMeta, RecordingMetaInner, SharingMeta,
-    StudioRecordingMeta, StudioRecordingStatus, TimelineConfiguration, TimelineSegment, ZoomMode,
-    ZoomSegment, cursor::CursorEvents,
+    AutoZoomConfiguration, CameraShape, CursorClickEvent, GlideDirection, InstantRecordingMeta,
+    MultipleSegments, Platform, ProjectConfiguration, RecordingMeta, RecordingMetaInner,
+    ResolvedAutoZoom, SharingMeta, StudioRecordingMeta, StudioRecordingStatus,
+    TimelineConfiguration, TimelineSegment, ZoomMode, ZoomSegment, cursor::CursorEvents,
 };
 #[cfg(target_os = "macos")]
 use cap_recording::SendableShareableContent;
@@ -3105,9 +3105,15 @@ const DENSITY_GAIN: f64 = 0.7;
 const SPREAD_PENALTY: f64 = 0.6;
 
 /// 停留检测：速度低于此（UV/秒）视为「停在原地」。
+/// 依据：1920px 宽屏下 ≈96px/s，比正常光标移动（500~2000px/s）低一个量级，
+/// 高于手抖噪声（<50px/s），不易把缓慢阅读扫视误判成移动。
 const DWELL_VELOCITY_THRESH: f64 = 0.05;
-/// 停留检测：持续低速至少这么久才算一次有效停留聚焦点。
-const DWELL_MIN_DURATION_MS: f64 = 800.0;
+/// 停留检测：窗口内光标包围盒对角线上限（UV）。
+/// 依据：≈77px@1920，覆盖手抖/微调；排除「持续低速但累计漂移很远」的慢速拖动——
+/// 这是纯速度阈值无法区分「真静止」与「漂移」的根因，总位移阈值补上这一防线。
+const DWELL_MAX_DRIFT: f64 = 0.04;
+/// 停留段聚焦尾延（短于点击段：弱信号弱表达）。
+const DWELL_POST_PADDING_MS: f64 = 800.0;
 /// 段最短时长：短于此的段视为碎段丢弃（防抖）。
 const MIN_SEGMENT_MS: f64 = 800.0;
 
@@ -3129,6 +3135,8 @@ struct ClickCluster {
     sum_x: f64,
     sum_y: f64,
     clicks: Vec<PlacedClick>,
+    /// 来自停留检测的弱信号簇（轻度聚焦：固定温和强度 + 短尾延）。
+    is_dwell: bool,
 }
 
 impl ClickCluster {
@@ -3139,6 +3147,7 @@ impl ClickCluster {
             sum_x: click.x,
             sum_y: click.y,
             clicks: vec![click],
+            is_dwell: false,
         }
     }
 
@@ -3172,14 +3181,15 @@ impl ClickCluster {
     }
 
     /// 按密度（点击数 / 时长）与范围动态计算放大强度。
-    fn dynamic_amount(&self) -> f64 {
+    /// 公式不随配置变化，仅最终强度被 clamp 进可配置的 [amount_min, amount_max]。
+    fn dynamic_amount(&self, params: &ResolvedAutoZoom) -> f64 {
         let duration_s = ((self.last_time_ms - self.first_time_ms) / MS_PER_SECOND).max(0.001);
         // 单击时长≈0 会让密度爆表，用 1 次点击的有效窗口（尾延）做下限归一。
         let effective_s = duration_s.max(ISOLATED_POST_PADDING_MS / MS_PER_SECOND);
         let density = (self.clicks.len() as f64 / effective_s / 3.0).clamp(0.0, 1.0);
         let spread = self.spread();
         (AMOUNT_BASE + DENSITY_GAIN * density - SPREAD_PENALTY * spread)
-            .clamp(AMOUNT_MIN, AMOUNT_MAX)
+            .clamp(params.amount_min, params.amount_max)
     }
 
     /// 簇内带有效元素矩形的点击（语义缩放主信号）。
@@ -3215,12 +3225,13 @@ impl ClickCluster {
     }
 
     /// 语义模式下按元素占屏比反推缩放强度：小控件放大更多，大面板放大更少。
-    /// 用面积比的平方根（线性尺度）映射：ratio→0 趋向 AMOUNT_MAX，ratio→1 趋向 AMOUNT_MIN。
-    fn element_amount(union: &ElementBounds) -> f64 {
+    /// 线性映射到可配置的 [amount_min, amount_max] 区间。
+    fn element_amount(union: &ElementBounds, params: &ResolvedAutoZoom) -> f64 {
         // 线性占屏尺度（0~1）：取宽高比的较大者更稳健（细长控件不至于因面积极小而过度放大）。
         let linear_ratio = union.width.max(union.height).clamp(0.0, 1.0);
-        // 反比映射：linear_ratio 越小 → 越接近 AMOUNT_MAX。
-        (AMOUNT_MAX - (AMOUNT_MAX - AMOUNT_MIN) * linear_ratio).clamp(AMOUNT_MIN, AMOUNT_MAX)
+        // 反比映射：linear_ratio 越小 → 越接近 amount_max。
+        (params.amount_max - (params.amount_max - params.amount_min) * linear_ratio)
+            .clamp(params.amount_min, params.amount_max)
     }
 }
 
@@ -3289,7 +3300,10 @@ fn place_clicks(clicks: &[CursorClickEvent], moves: &[CursorMoveEvent]) -> Vec<P
 /// `EPS×N` 的漂移簇（包围盒拉大 → spread 惩罚压低强度、元素并集聚合无关控件、
 /// 定位中心漂移）；质心锚定后簇半径上限收紧到 ≈EPS 量级。
 /// 两点簇语义与旧实现完全一致（第二点到质心 = 到首点距离）。
-fn cluster_placed_clicks(mut placed: Vec<PlacedClick>) -> Vec<ClickCluster> {
+///
+/// 时空阈值由 `config` 提供（`ResolvedAutoZoom`，缺省解析为内置常量
+/// `CLUSTER_TIME_EPS_MS` / `CLUSTER_SPACE_EPS`，行为零变化）。
+fn cluster_placed_clicks(mut placed: Vec<PlacedClick>, config: &ResolvedAutoZoom) -> Vec<ClickCluster> {
     placed.sort_by(|a, b| a.time_ms.total_cmp(&b.time_ms));
 
     let mut clusters: Vec<ClickCluster> = Vec::new();
@@ -3299,7 +3313,7 @@ fn cluster_placed_clicks(mut placed: Vec<PlacedClick>) -> Vec<ClickCluster> {
             let dt = click.time_ms - last.last_time_ms;
             let (cx, cy) = last.centroid();
             let dist = ((click.x - cx).powi(2) + (click.y - cy).powi(2)).sqrt();
-            if dt <= CLUSTER_TIME_EPS_MS && dist <= CLUSTER_SPACE_EPS {
+            if dt <= config.cluster_time_eps_ms && dist <= config.cluster_space_eps {
                 last.push(click);
                 continue;
             }
@@ -3312,16 +3326,72 @@ fn cluster_placed_clicks(mut placed: Vec<PlacedClick>) -> Vec<ClickCluster> {
 /// 从 moves 中检测「停留」：长时间低速停在小区域，即使没点击也值得轻度聚焦。
 /// 作为点击聚类的补充候选（弱信号），用于纯阅读/讲解类场景。
 ///
-/// 【P1 预留】MVP 暂不启用：纯速度阈值无法区分「真静止」与「小幅抖动」，
-/// 需配合「窗口内总位移阈值 + 场景感知（滚动/打字）」才能避免误触发，留作后续专项迭代接入点。
-#[allow(dead_code)]
-fn detect_dwell_clusters(moves: &[CursorMoveEvent], click_cutoff_ms: f64) -> Vec<ClickCluster> {
+/// 【双重防误触发】单纯速度阈值无法区分「真静止」与「持续小幅漂移的慢速拖动」，
+/// 故停留段成立需同时满足两个条件：
+///   ① 时长 ≥ `config.dwell_min_duration_ms`（停得够久）；
+///   ② 窗口内光标包围盒对角线 ≤ `DWELL_MAX_DRIFT`（停得够稳，排除累计漂移）。
+/// 段定位取窗口质心（非起点），避免漂移窗口聚焦到边缘。命中的停留段标 `is_dwell`，
+/// 消费侧用固定温和强度 + 短尾延（弱信号弱表达）。
+fn detect_dwell_clusters(
+    moves: &[CursorMoveEvent],
+    click_cutoff_ms: f64,
+    config: &ResolvedAutoZoom,
+) -> Vec<ClickCluster> {
     if moves.len() < 2 {
         return Vec::new();
     }
 
+    // 把连续的低速移动收敛成一个停留窗口，窗口结束时按时长+漂移双条件结算。
     let mut dwells: Vec<ClickCluster> = Vec::new();
-    let mut anchor_idx = 0usize;
+    let mut window_start = 0usize;
+
+    // 结算 [start, end_exclusive) 这段低速窗口为一个候选停留簇。
+    let mut flush_window = |start: usize, end_exclusive: usize, dwells: &mut Vec<ClickCluster>| {
+        if end_exclusive <= start + 1 {
+            return;
+        }
+        let window = &moves[start..end_exclusive];
+        let anchor_time = window[0].time_ms;
+        let dwell_ms = window[window.len() - 1].time_ms - anchor_time;
+        if dwell_ms < config.dwell_min_duration_ms || anchor_time >= click_cutoff_ms {
+            return;
+        }
+
+        // 窗口包围盒对角线（漂移量）+ 质心（定位锚点），单遍统计。
+        let (mut min_x, mut max_x) = (f64::INFINITY, f64::NEG_INFINITY);
+        let (mut min_y, mut max_y) = (f64::INFINITY, f64::NEG_INFINITY);
+        let (mut sum_x, mut sum_y) = (0.0_f64, 0.0_f64);
+        for m in window {
+            min_x = min_x.min(m.x);
+            max_x = max_x.max(m.x);
+            min_y = min_y.min(m.y);
+            max_y = max_y.max(m.y);
+            sum_x += m.x;
+            sum_y += m.y;
+        }
+        let drift = {
+            let w = (max_x - min_x).max(0.0);
+            let h = (max_y - min_y).max(0.0);
+            (w * w + h * h).sqrt()
+        };
+        if drift > DWELL_MAX_DRIFT {
+            return; // 累计漂移过大 → 是慢速拖动而非静止停留，丢弃。
+        }
+
+        let n = window.len() as f64;
+        let mut cluster = ClickCluster::new(PlacedClick {
+            time_ms: anchor_time.floor(),
+            x: sum_x / n,
+            y: sum_y / n,
+            // 停留是无点击的弱信号，天然没有命中元素。
+            element_bounds: None,
+        });
+        cluster.is_dwell = true;
+        // 停留是一段时长（非瞬时点击）：保留窗口结束时间，让段时长与重叠判定反映真实停留跨度。
+        cluster.last_time_ms = window[window.len() - 1].time_ms.floor();
+        dwells.push(cluster);
+    };
+
     for i in 1..moves.len() {
         let prev = &moves[i - 1];
         let cur = &moves[i];
@@ -3330,21 +3400,14 @@ fn detect_dwell_clusters(moves: &[CursorMoveEvent], click_cutoff_ms: f64) -> Vec
         let velocity = if dt > 1e-9 { dist / (dt / MS_PER_SECOND) } else { 0.0 };
 
         if velocity > DWELL_VELOCITY_THRESH {
-            // 速度超阈值 → 结算上一段停留窗口。
-            let anchor = &moves[anchor_idx];
-            let dwell_ms = prev.time_ms - anchor.time_ms;
-            if dwell_ms >= DWELL_MIN_DURATION_MS && anchor.time_ms < click_cutoff_ms {
-                dwells.push(ClickCluster::new(PlacedClick {
-                    time_ms: anchor.time_ms.floor(),
-                    x: anchor.x,
-                    y: anchor.y,
-                    // 停留是无点击的弱信号，天然没有命中元素。
-                    element_bounds: None,
-                }));
-            }
-            anchor_idx = i;
+            // 速度超阈值 → 当前低速窗口在 prev（含）处结束。
+            flush_window(window_start, i, &mut dwells);
+            window_start = i;
         }
     }
+    // 收尾：末尾仍处于低速窗口。
+    flush_window(window_start, moves.len(), &mut dwells);
+
     dwells
 }
 
@@ -3352,6 +3415,7 @@ fn generate_zoom_segments_from_clicks_impl(
     clicks: Vec<CursorClickEvent>,
     moves: Vec<CursorMoveEvent>,
     max_duration: f64,
+    config: &ResolvedAutoZoom,
 ) -> Vec<ZoomSegment> {
     if max_duration <= 0.0 {
         return Vec::new();
@@ -3368,17 +3432,33 @@ fn generate_zoom_segments_from_clicks_impl(
     let mut sorted_moves = moves;
     sorted_moves.sort_by(|a, b| a.time_ms.total_cmp(&b.time_ms));
 
-    // 1) 给点击插值坐标 → 时空双阈值聚类（主信号，MVP 核心）。
+    // 1) 给点击插值坐标 → 时空双阈值聚类（主信号，点击驱动）。
     let placed: Vec<PlacedClick> = place_clicks(&clicks, &sorted_moves)
         .into_iter()
         .filter(|c| c.time_ms < click_cutoff_ms)
         .collect();
-    let mut clusters = cluster_placed_clicks(placed);
+    let mut clusters = cluster_placed_clicks(placed, config);
 
-    // 2) 停留检测（P1 弱信号增强，MVP 暂不启用）：
-    //    纯低速判定无法区分「真静止停留」与「持续小幅抖动」，易误触发放大，
-    //    故 MVP 阶段只走点击驱动；dwell 接入点保留在 `detect_dwell_clusters`，
-    //    后续配合「总位移阈值 + 场景感知」专项迭代时在此合并。
+    // 2) 停留检测（弱信号增强）：无点击的「讲解/阅读型」停留也产生轻度聚焦段。
+    //    由 config.dwell_enabled 门控（Subtle 预设关闭）；双重防误触发（时长+漂移）在
+    //    detect_dwell_clusters 内部把关。仅保留与任一已有点击簇时间不重叠的停留，
+    //    避免对同一聚焦意图重复放大。
+    if config.dwell_enabled {
+        let dwell_clusters = detect_dwell_clusters(&sorted_moves, click_cutoff_ms, config);
+        for dwell in dwell_clusters {
+            // 停留是一个时间区间 [first,last]；只要它与任一点击簇（含前后聚焦留白）
+            // 时间区间相交，就视为同一聚焦意图，丢弃该停留避免重复放大。
+            // 区间相交判据：a_start ≤ b_end 且 b_start ≤ a_end。
+            let overlaps_click = clusters.iter().any(|c| {
+                let c_start = c.first_time_ms - CLICK_PRE_PADDING_MS;
+                let c_end = c.last_time_ms + CLUSTER_POST_PADDING_MS;
+                dwell.first_time_ms <= c_end && c_start <= dwell.last_time_ms
+            });
+            if !overlaps_click {
+                clusters.push(dwell);
+            }
+        }
+    }
 
     if clusters.is_empty() {
         return Vec::new();
@@ -3388,8 +3468,11 @@ fn generate_zoom_segments_from_clicks_impl(
     // 3) 每簇 → 一个 ZoomSegment：动态强度 + 单击/连击差异化尾延。
     let mut segments: Vec<ZoomSegment> = Vec::new();
     for cluster in &clusters {
-        let is_isolated = cluster.clicks.len() <= 1;
-        let post_padding = if is_isolated {
+        // 停留簇是无点击弱信号：固定温和强度 + 短尾延（弱信号弱表达）；
+        // 点击簇按单击/连击差异化尾延。
+        let post_padding = if cluster.is_dwell {
+            DWELL_POST_PADDING_MS
+        } else if cluster.clicks.len() <= 1 {
             ISOLATED_POST_PADDING_MS
         } else {
             CLUSTER_POST_PADDING_MS
@@ -3404,19 +3487,24 @@ fn generate_zoom_segments_from_clicks_impl(
         // 语义缩放：簇内若有有效 UI 元素矩形 → 用元素并集中心定位（Manual）+ 占屏比反推强度，
         // 并把完整并集矩形透传给渲染层（贴边框选）；
         // 否则完全退回点击坐标聚类（Auto + 动态强度，由渲染层跟随光标）——兜底铁律：体验只升不降。
-        let (mode, amount, element_bounds) = match cluster.element_union() {
-            Some(union) => {
-                let (cx, cy) = union.center();
-                (
-                    ZoomMode::Manual {
-                        x: cx.clamp(0.0, 1.0) as f32,
-                        y: cy.clamp(0.0, 1.0) as f32,
-                    },
-                    ClickCluster::element_amount(&union),
-                    Some(union),
-                )
+        // 停留簇天然无元素矩形，走 Auto + 固定 dwell_amount（不参与密度公式）。
+        let (mode, amount, element_bounds) = if cluster.is_dwell {
+            (ZoomMode::Auto, config.dwell_amount, None)
+        } else {
+            match cluster.element_union() {
+                Some(union) => {
+                    let (cx, cy) = union.center();
+                    (
+                        ZoomMode::Manual {
+                            x: cx.clamp(0.0, 1.0) as f32,
+                            y: cy.clamp(0.0, 1.0) as f32,
+                        },
+                        ClickCluster::element_amount(&union, config),
+                        Some(union),
+                    )
+                }
+                None => (ZoomMode::Auto, cluster.dynamic_amount(config), None),
             }
-            None => (ZoomMode::Auto, cluster.dynamic_amount(), None),
         };
 
         segments.push(ZoomSegment {
@@ -3442,6 +3530,7 @@ fn generate_zoom_segments_from_clicks_impl(
 pub fn generate_zoom_segments_from_clicks(
     recording: &studio_recording::CompletedRecording,
     recordings: &ProjectRecordingsMeta,
+    auto_zoom: Option<&AutoZoomConfiguration>,
 ) -> Vec<ZoomSegment> {
     // Build a temporary RecordingMeta so we can use the common implementation
     let recording_meta = RecordingMeta {
@@ -3453,14 +3542,17 @@ pub fn generate_zoom_segments_from_clicks(
         upload: None,
     };
 
-    generate_zoom_segments_for_project(&recording_meta, recordings)
+    generate_zoom_segments_for_project(&recording_meta, recordings, auto_zoom)
 }
 
 /// Generates zoom segments from clicks for an existing project.
 /// Used in the editor context where we have RecordingMeta.
+///
+/// `auto_zoom` 为项目级自动缩放生成参数（`None` = 内置默认观感，行为零变化）。
 pub fn generate_zoom_segments_for_project(
     recording_meta: &RecordingMeta,
     recordings: &ProjectRecordingsMeta,
+    auto_zoom: Option<&AutoZoomConfiguration>,
 ) -> Vec<ZoomSegment> {
     let RecordingMetaInner::Studio(studio_meta) = &recording_meta.inner else {
         return Vec::new();
@@ -3493,7 +3585,8 @@ pub fn generate_zoom_segments_for_project(
         }
     }
 
-    generate_zoom_segments_from_clicks_impl(all_clicks, all_moves, recordings.duration())
+    let resolved = AutoZoomConfiguration::resolve(auto_zoom);
+    generate_zoom_segments_from_clicks_impl(all_clicks, all_moves, recordings.duration(), &resolved)
 }
 
 fn project_config_from_recording(
@@ -3554,7 +3647,11 @@ fn project_config_from_recording(
         .collect::<Vec<_>>();
 
     let zoom_segments = if settings.auto_zoom_on_clicks {
-        generate_zoom_segments_from_clicks(completed_recording, recordings)
+        generate_zoom_segments_from_clicks(
+            completed_recording,
+            recordings,
+            config.auto_zoom.as_ref(),
+        )
     } else {
         Vec::new()
     };
@@ -3869,6 +3966,24 @@ mod tests {
         }
     }
 
+    /// 点击驱动测试的默认配置：与内置常量一致，但**关闭 dwell**，
+    /// 让点击聚类断言不受弱信号停留段干扰（dwell 行为由专项测试覆盖）。
+    fn click_only_config() -> ResolvedAutoZoom {
+        ResolvedAutoZoom {
+            dwell_enabled: false,
+            ..ResolvedAutoZoom::default()
+        }
+    }
+
+    /// 测试便捷包装：以「点击驱动」默认配置生成 zoom 段。
+    fn gen_zoom(
+        clicks: Vec<CursorClickEvent>,
+        moves: Vec<CursorMoveEvent>,
+        max_duration: f64,
+    ) -> Vec<ZoomSegment> {
+        generate_zoom_segments_from_clicks_impl(clicks, moves, max_duration, &click_only_config())
+    }
+
     #[test]
     fn mic_feed_locked_detects_feed_lock_errors() {
         assert!(mic_feed_locked(&anyhow::Error::new(
@@ -3890,7 +4005,7 @@ mod tests {
     #[test]
     fn skips_trailing_stop_click() {
         let segments =
-            generate_zoom_segments_from_clicks_impl(vec![click_event(11_900.0)], vec![], 12.0);
+            gen_zoom(vec![click_event(11_900.0)], vec![], 12.0);
 
         assert!(
             segments.is_empty(),
@@ -3912,7 +4027,7 @@ mod tests {
             move_event(2_600.0, 0.41, 0.47),
         ];
 
-        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+        let segments = gen_zoom(clicks, moves, 20.0);
 
         assert_eq!(segments.len(), 1, "tight burst should merge into one segment");
         let first = &segments[0];
@@ -3935,7 +4050,7 @@ mod tests {
             move_event(4_180.0, 0.74, 0.78),
         ];
 
-        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+        let segments = gen_zoom(clicks, moves, 20.0);
 
         assert_eq!(segments.len(), 2, "3s-apart clicks are two focus intents");
         assert_eq!(segments[0].start, 0.9); // 1200 - 300
@@ -3960,7 +4075,7 @@ mod tests {
             move_event(19_364.0, 0.44, 0.95),
         ];
 
-        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 19.436_667);
+        let segments = gen_zoom(clicks, moves, 19.436_667);
 
         // 2271 孤立成段；9137/9915 间隔 778ms 且同位置 → 合并；19404 落在尾部忽略窗口被丢弃。
         assert_eq!(segments.len(), 2);
@@ -3975,7 +4090,7 @@ mod tests {
         // 单次 down 点击（mouse-up 不重复计为聚焦意图）→ 一段温和聚焦。
         let clicks = vec![click_event(1_000.0), click_up_event(2_500.0)];
 
-        let segments = generate_zoom_segments_from_clicks_impl(clicks, vec![], 10.0);
+        let segments = gen_zoom(clicks, vec![], 10.0);
 
         assert_eq!(segments.len(), 1);
         assert_eq!(segments[0].start, 0.7); // 1000 - 300
@@ -3993,7 +4108,7 @@ mod tests {
         // 连击簇的自然尾延会越过录制末尾，应被 clamp 到 end_limit（录制结束前 800ms）。
         let clicks = vec![click_event(7_000.0), click_event(8_200.0)];
 
-        let segments = generate_zoom_segments_from_clicks_impl(clicks, vec![], 10.0);
+        let segments = gen_zoom(clicks, vec![], 10.0);
 
         assert_eq!(segments.len(), 1);
         assert_eq!(segments[0].start, 6.7); // 7000 - 300
@@ -4011,7 +4126,7 @@ mod tests {
             })
             .collect::<Vec<_>>();
 
-        let segments = generate_zoom_segments_from_clicks_impl(Vec::new(), jitter_moves, 15.0);
+        let segments = gen_zoom(Vec::new(), jitter_moves, 15.0);
 
         assert!(
             segments.is_empty(),
@@ -4022,7 +4137,7 @@ mod tests {
     #[test]
     fn dense_burst_zooms_in_more_than_isolated_click() {
         // 同一处密集连击（如填表/连点菜单）应比孤立单击放大更多。
-        let isolated = generate_zoom_segments_from_clicks_impl(
+        let isolated = gen_zoom(
             vec![click_event(2_000.0)],
             vec![move_event(2_000.0, 0.5, 0.5)],
             20.0,
@@ -4031,7 +4146,7 @@ mod tests {
         let burst_moves: Vec<_> = (0..6)
             .map(|i| move_event(2_000.0 + i as f64 * 180.0, 0.50, 0.50))
             .collect();
-        let burst = generate_zoom_segments_from_clicks_impl(burst_clicks, burst_moves, 20.0);
+        let burst = gen_zoom(burst_clicks, burst_moves, 20.0);
 
         assert_eq!(isolated.len(), 1);
         assert_eq!(burst.len(), 1);
@@ -4064,7 +4179,7 @@ mod tests {
             move_event(2_800.0, 0.53, 0.53),
         ];
 
-        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+        let segments = gen_zoom(clicks, moves, 20.0);
 
         assert_eq!(segments.len(), 1, "clicks within space/time eps stay one cluster");
         assert!(
@@ -4089,7 +4204,7 @@ mod tests {
             })
             .collect();
 
-        let clusters = cluster_placed_clicks(placed);
+        let clusters = cluster_placed_clicks(placed, &click_only_config());
 
         assert_eq!(
             clusters.len(),
@@ -4107,6 +4222,17 @@ mod tests {
     }
 
     #[test]
+    fn auto_zoom_defaults_match_hardcoded_constants() {
+        // 契约锁定：config 默认值必须与生成层既有硬编码常量一字不差，
+        // 保证「不传 autoZoom 配置」时行为与历史版本完全一致（零回归）。
+        let resolved = ResolvedAutoZoom::default();
+        assert_eq!(resolved.cluster_time_eps_ms, CLUSTER_TIME_EPS_MS);
+        assert_eq!(resolved.cluster_space_eps, CLUSTER_SPACE_EPS);
+        assert_eq!(resolved.amount_min, AMOUNT_MIN);
+        assert_eq!(resolved.amount_max, AMOUNT_MAX);
+    }
+
+    #[test]
     fn distant_clicks_split_by_space_threshold() {
         // 时间很近但空间相距很远的两次点击 → 视为两个聚焦意图（双阈值的空间维度）。
         let clicks = vec![click_event(2_000.0), click_event(2_300.0)];
@@ -4115,7 +4241,7 @@ mod tests {
             move_event(2_300.0, 0.90, 0.90), // 距离 ≈1.13 ≫ 0.18 阈值
         ];
 
-        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+        let segments = gen_zoom(clicks, moves, 20.0);
 
         assert_eq!(segments.len(), 2, "far-apart clicks split despite close timing");
     }
@@ -4129,7 +4255,7 @@ mod tests {
             move_event(6_000.0, 0.7, 0.8),
         ];
 
-        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+        let segments = gen_zoom(clicks, moves, 20.0);
 
         assert!(!segments.is_empty());
         for seg in &segments {
@@ -4168,7 +4294,7 @@ mod tests {
         let clicks = vec![click_event_with_bounds(2_000.0, bounds)];
         let moves = vec![move_event(2_000.0, 0.45, 0.53)];
 
-        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+        let segments = gen_zoom(clicks, moves, 20.0);
 
         assert_eq!(segments.len(), 1);
         match segments[0].mode {
@@ -4195,12 +4321,12 @@ mod tests {
         let small = ElementBounds { x: 0.45, y: 0.48, width: 0.05, height: 0.04 };
         let large = ElementBounds { x: 0.10, y: 0.10, width: 0.70, height: 0.60 };
 
-        let small_seg = generate_zoom_segments_from_clicks_impl(
+        let small_seg = gen_zoom(
             vec![click_event_with_bounds(2_000.0, small)],
             vec![move_event(2_000.0, 0.47, 0.50)],
             20.0,
         );
-        let large_seg = generate_zoom_segments_from_clicks_impl(
+        let large_seg = gen_zoom(
             vec![click_event_with_bounds(2_000.0, large)],
             vec![move_event(2_000.0, 0.45, 0.40)],
             20.0,
@@ -4233,7 +4359,7 @@ mod tests {
             move_event(2_300.0, 0.35, 0.33),
         ];
 
-        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+        let segments = gen_zoom(clicks, moves, 20.0);
 
         assert_eq!(segments.len(), 1, "near clicks stay one cluster");
         assert!(
@@ -4249,12 +4375,90 @@ mod tests {
         let clicks = vec![click_event_with_bounds(2_000.0, full)];
         let moves = vec![move_event(2_000.0, 0.5, 0.5)];
 
-        let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
+        let segments = gen_zoom(clicks, moves, 20.0);
 
         assert_eq!(segments.len(), 1);
         assert!(
             matches!(segments[0].mode, ZoomMode::Auto),
             "full-screen element hit should fall back to Auto"
+        );
+    }
+
+    /// 在 (cx,cy) 周围生成一段「低速微抖动」轨迹：每步位移远小于速度阈值窗口，
+    /// 总漂移受 jitter 控制。用于构造停留检测的输入。
+    fn dwell_moves(start_ms: f64, end_ms: f64, cx: f64, cy: f64, jitter: f64) -> Vec<CursorMoveEvent> {
+        let step = 200.0;
+        let mut moves = Vec::new();
+        let mut t = start_ms;
+        let mut k = 0u32;
+        while t <= end_ms {
+            // 在 ±jitter 内确定性来回微抖，保证相邻步位移与总漂移都可控。
+            let phase = (k % 2) as f64;
+            moves.push(move_event(t, cx + jitter * phase, cy + jitter * (1.0 - phase)));
+            t += step;
+            k += 1;
+        }
+        moves
+    }
+
+    #[test]
+    fn dwell_long_stable_hover_creates_focus_segment() {
+        // 无点击，但在小区域低速停留 2s（> dwell_min_duration 1.5s）→ 应生成一个轻度聚焦段。
+        let config = ResolvedAutoZoom::default(); // dwell 默认开启
+        let moves = dwell_moves(2_000.0, 4_000.0, 0.5, 0.5, 0.005);
+        let segments =
+            generate_zoom_segments_from_clicks_impl(Vec::new(), moves, 20.0, &config);
+
+        assert_eq!(segments.len(), 1, "stable hover should yield one dwell segment");
+        assert!(
+            matches!(segments[0].mode, ZoomMode::Auto),
+            "dwell segment has no element → Auto mode"
+        );
+        assert!(
+            (segments[0].amount - config.dwell_amount).abs() < 1e-9,
+            "dwell uses fixed gentle amount {}, got {}",
+            config.dwell_amount,
+            segments[0].amount
+        );
+    }
+
+    #[test]
+    fn dwell_disabled_yields_no_segment() {
+        // 同样的停留轨迹，dwell 关闭（如 Subtle 预设）→ 不产生任何段（点击驱动零输入）。
+        let moves = dwell_moves(2_000.0, 4_000.0, 0.5, 0.5, 0.005);
+        let segments = gen_zoom(Vec::new(), moves, 20.0); // gen_zoom 关闭 dwell
+        assert!(segments.is_empty(), "dwell disabled → no dwell segment");
+    }
+
+    #[test]
+    fn dwell_rejects_slow_drift_drag() {
+        // 持续低速但累计漂移很大（慢速拖动）→ 漂移超 DWELL_MAX_DRIFT → 不算停留。
+        let config = ResolvedAutoZoom::default();
+        // 每步缓慢右移 0.008（速度 0.04 < 阈值 0.05，但 10 步累计漂移 ≈0.08 > 0.04）。
+        let mut moves = Vec::new();
+        for i in 0..11 {
+            moves.push(move_event(2_000.0 + i as f64 * 200.0, 0.3 + i as f64 * 0.008, 0.5));
+        }
+        let segments =
+            generate_zoom_segments_from_clicks_impl(Vec::new(), moves, 20.0, &config);
+        assert!(
+            segments.is_empty(),
+            "slow drift drag must not be treated as a stationary dwell"
+        );
+    }
+
+    #[test]
+    fn dwell_does_not_duplicate_click_focus() {
+        // 停留窗口内若已有点击聚焦 → 不再叠加 dwell 段（避免对同一意图重复放大）。
+        let config = ResolvedAutoZoom::default();
+        let clicks = vec![click_event(2_500.0)];
+        let moves = dwell_moves(2_000.0, 4_000.0, 0.5, 0.5, 0.005);
+        let segments =
+            generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0, &config);
+        assert_eq!(
+            segments.len(),
+            1,
+            "click-overlapping dwell must be suppressed, expected single click segment"
         );
     }
 

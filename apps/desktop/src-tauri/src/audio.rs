@@ -1,4 +1,45 @@
 use cap_audio::AudioData;
+use std::collections::HashMap;
+use std::sync::{Arc, LazyLock, Mutex, Weak};
+
+/// 波形 sidecar 缓存：键 = `AudioData` 实例指针（`Arc` 存活期内即身份），
+/// 值携带 `Weak` 自动失效——编辑器实例销毁 → `Arc` 释放 → `Weak::upgrade` 失败
+/// → 条目在下次插入时被清理，无需手动失效钩子。
+///
+/// 为什么放这里而不是 `SegmentMedia`：`AudioData` 挂在上游 crate（cap-editor）
+/// 的 `SegmentMedia` 上，加缓存字段会改上游结构（fork 同步风险）；sidecar 缓存
+/// 零上游改动。内存量级：波形 1 点/100ms，1 小时录制 ≈ 144KB/轨，可忽略。
+static WAVEFORM_CACHE: LazyLock<Mutex<HashMap<usize, (Weak<AudioData>, Arc<Vec<f32>>)>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// 取（或计算并缓存）一条音轨的波形。
+///
+/// - 命中：`Weak::upgrade` 成功且与入参同实例（指针比对防 ABA：地址被释放后
+///   新分配可能复用同地址）→ 直接返回缓存。
+/// - 未命中：`spawn_blocking` 计算（`get_waveform` 遍历全样本 CPU 密集，
+///   不能占住 tokio worker 线程），回填缓存。
+pub async fn cached_waveform(audio: &Arc<AudioData>) -> Arc<Vec<f32>> {
+    let key = Arc::as_ptr(audio) as usize;
+
+    if let Some((weak, waveform)) = WAVEFORM_CACHE.lock().unwrap().get(&key)
+        && let Some(live) = weak.upgrade()
+        && Arc::ptr_eq(&live, audio)
+    {
+        return waveform.clone();
+    }
+
+    let audio_for_compute = audio.clone();
+    let waveform = Arc::new(
+        tokio::task::spawn_blocking(move || get_waveform(&audio_for_compute))
+            .await
+            .unwrap_or_default(),
+    );
+
+    let mut cache = WAVEFORM_CACHE.lock().unwrap();
+    cache.retain(|_, (weak, _)| weak.upgrade().is_some());
+    cache.insert(key, (Arc::downgrade(audio), waveform.clone()));
+    waveform
+}
 
 fn play_audio(bytes: &'static [u8]) {
     use rodio::{Decoder, OutputStream, Sink};

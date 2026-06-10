@@ -3125,6 +3125,9 @@ struct PlacedClick {
 struct ClickCluster {
     first_time_ms: f64,
     last_time_ms: f64,
+    /// 质心增量累计（聚类空间锚点，防链式漂移）。
+    sum_x: f64,
+    sum_y: f64,
     clicks: Vec<PlacedClick>,
 }
 
@@ -3133,6 +3136,8 @@ impl ClickCluster {
         Self {
             first_time_ms: click.time_ms,
             last_time_ms: click.time_ms,
+            sum_x: click.x,
+            sum_y: click.y,
             clicks: vec![click],
         }
     }
@@ -3140,7 +3145,15 @@ impl ClickCluster {
     fn push(&mut self, click: PlacedClick) {
         self.first_time_ms = self.first_time_ms.min(click.time_ms);
         self.last_time_ms = self.last_time_ms.max(click.time_ms);
+        self.sum_x += click.x;
+        self.sum_y += click.y;
         self.clicks.push(click);
+    }
+
+    /// 簇质心（O(1)，由 push 增量维护）。
+    fn centroid(&self) -> (f64, f64) {
+        let n = self.clicks.len() as f64;
+        (self.sum_x / n, self.sum_y / n)
     }
 
     /// 簇内操作范围的包围盒对角线长度（UV），越大说明操作铺得越开。
@@ -3270,19 +3283,22 @@ fn place_clicks(clicks: &[CursorClickEvent], moves: &[CursorMoveEvent]) -> Vec<P
 
 /// 时空双阈值聚类：时间间隔 ≤ EPS 且空间距离 ≤ EPS 才归入同簇，否则开新簇。
 /// 替代原算法写死的 `MERGE_GAP=2500ms` 一刀切合并。
+///
+/// 空间距离与「簇质心」比较（时间仍与簇内最后一次点击比较，保持时间链语义）：
+/// 早期实现与「簇内最后一个点击」比距离，连续小步直线点击会形成首尾相距
+/// `EPS×N` 的漂移簇（包围盒拉大 → spread 惩罚压低强度、元素并集聚合无关控件、
+/// 定位中心漂移）；质心锚定后簇半径上限收紧到 ≈EPS 量级。
+/// 两点簇语义与旧实现完全一致（第二点到质心 = 到首点距离）。
 fn cluster_placed_clicks(mut placed: Vec<PlacedClick>) -> Vec<ClickCluster> {
     placed.sort_by(|a, b| a.time_ms.total_cmp(&b.time_ms));
 
     let mut clusters: Vec<ClickCluster> = Vec::new();
     for click in placed {
         if let Some(last) = clusters.last_mut() {
-            let prev = last
-                .clicks
-                .last()
-                .copied()
-                .unwrap_or(click);
-            let dt = click.time_ms - prev.time_ms;
-            let dist = ((click.x - prev.x).powi(2) + (click.y - prev.y).powi(2)).sqrt();
+            // 排序后 last_time_ms 即簇内最后一次点击时间。
+            let dt = click.time_ms - last.last_time_ms;
+            let (cx, cy) = last.centroid();
+            let dist = ((click.x - cx).powi(2) + (click.y - cy).powi(2)).sqrt();
             if dt <= CLUSTER_TIME_EPS_MS && dist <= CLUSTER_SPACE_EPS {
                 last.push(click);
                 continue;
@@ -4034,17 +4050,18 @@ mod tests {
 
     #[test]
     fn wide_spread_clicks_zoom_in_less() {
-        // 同一时间窗内但铺得很开的点击 → 放大更少以保留全局视野。
+        // 同一时间窗内但铺得较开的点击 → 放大更少以保留全局视野。
+        // 数据按质心聚类语义构造：每个点击到簇质心 ≤ 0.18（保证同簇），
+        // 但包围盒对角线 ≈0.23 → spread 惩罚生效（amount ≈2.13 < 密集同点连击的 2.5）。
         let clicks = vec![
             click_event(2_000.0),
             click_event(2_400.0),
             click_event(2_800.0),
         ];
-        // 相邻空间距离 < 0.18 阈值（保证同簇），但累积包围盒对角线较大 → spread 惩罚生效。
         let moves = vec![
-            move_event(2_000.0, 0.35, 0.35),
-            move_event(2_400.0, 0.45, 0.45),
-            move_event(2_800.0, 0.55, 0.55),
+            move_event(2_000.0, 0.45, 0.45),
+            move_event(2_400.0, 0.37, 0.37),
+            move_event(2_800.0, 0.53, 0.53),
         ];
 
         let segments = generate_zoom_segments_from_clicks_impl(clicks, moves, 20.0);
@@ -4055,6 +4072,38 @@ mod tests {
             "wide spread should temper zoom amount, got {}",
             segments[0].amount
         );
+    }
+
+    #[test]
+    fn chained_drifting_clicks_split_by_centroid_anchor() {
+        // 漂移簇回归：连续小步直线点击（单步 0.17 ≤ EPS=0.18，5 步首尾累计 0.68）。
+        // 与「最后一个点击」比距离的链式算法会把它们归成一个漂移簇；
+        // 质心锚定下，偏离簇质心 >EPS 的点击必须拆簇 → 5 击拆成 3 簇：
+        // {0.10, 0.27}（质心 0.185）/ {0.44, 0.61}（质心 0.525）/ {0.78}。
+        let placed: Vec<PlacedClick> = (0..5)
+            .map(|i| PlacedClick {
+                time_ms: 2_000.0 + i as f64 * 400.0,
+                x: 0.10 + i as f64 * 0.17,
+                y: 0.50,
+                element_bounds: None,
+            })
+            .collect();
+
+        let clusters = cluster_placed_clicks(placed);
+
+        assert_eq!(
+            clusters.len(),
+            3,
+            "centroid anchor must split the drifting chain"
+        );
+        for cluster in &clusters {
+            // 簇空间范围受控：包围盒对角线不超过 2×EPS（链式漂移簇可达 EPS×N）。
+            assert!(
+                cluster.spread() <= 2.0 * CLUSTER_SPACE_EPS + 1e-9,
+                "cluster spread must stay bounded, got {}",
+                cluster.spread()
+            );
+        }
     }
 
     #[test]

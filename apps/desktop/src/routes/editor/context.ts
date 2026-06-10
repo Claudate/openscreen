@@ -7,6 +7,7 @@ import { trackStore } from "@solid-primitives/deep";
 import { createEventListener } from "@solid-primitives/event-listener";
 import { createUndoHistory } from "@solid-primitives/history";
 import { createQuery, skipToken } from "@tanstack/solid-query";
+import { invoke as TAURI_INVOKE } from "@tauri-apps/api/core";
 import {
 	type Accessor,
 	batch,
@@ -19,10 +20,8 @@ import {
 	onCleanup,
 } from "solid-js";
 import { createStore, produce, reconcile, unwrap } from "solid-js/store";
-
 import { generalSettingsStore } from "~/store";
 import { defaultKeyboardSettings } from "~/store/keyboard";
-
 import { createPresets } from "~/utils/createPresets";
 import { createCustomDomainQuery } from "~/utils/queries";
 import {
@@ -53,7 +52,6 @@ import {
 	sortTrackSegments,
 } from "./timelineTracks";
 import { createProgressBar } from "./utils";
-import { invoke as TAURI_INVOKE } from "@tauri-apps/api/core";
 
 /**
  * 静音检测参数（镜像 Rust `audio::SilenceDetectOptions`）。
@@ -280,7 +278,13 @@ export const [EditorContextProvider, useEditorContext] = createContextProvider(
 		);
 
 		const projectActions = {
-			splitClipSegment: (time: number) => {
+			/**
+			 * 在编辑后时间轴的 `time`（秒）处把所在 clip 片段切成两段。
+			 * @returns 新右段的索引（`produce` 同步执行，返回时 store 已更新）；
+			 * 未切（时间越界）时返回 null。
+			 */
+			splitClipSegment: (time: number): number | null => {
+				let newRightIndex: number | null = null;
 				setProject(
 					"timeline",
 					"segments",
@@ -311,8 +315,10 @@ export const [EditorContextProvider, useEditorContext] = createContextProvider(
 						});
 						segments[currentSegmentIndex].end =
 							segment.start + splitPositionInRecording;
+						newRightIndex = currentSegmentIndex + 1;
 					}),
 				);
+				return newRightIndex;
 			},
 			deleteClipSegment: (segmentIndex: number) => {
 				if (!project.timeline) return;
@@ -632,7 +638,9 @@ export const [EditorContextProvider, useEditorContext] = createContextProvider(
 			 * 至少保留 1 个 clip 片段（deleteClipSegment 自带该保护）。
 			 * @returns 实际删除的片段数
 			 */
-			removeSilenceRanges: (editedSilences: { start: number; end: number }[]) => {
+			removeSilenceRanges: (
+				editedSilences: { start: number; end: number }[],
+			) => {
 				if (!project.timeline) return 0;
 				const ranges = [...editedSilences]
 					.filter((r) => r.end - r.start > 0.05) // 丢弃 <50ms 的碎段
@@ -650,25 +658,17 @@ export const [EditorContextProvider, useEditorContext] = createContextProvider(
 					// 越界保护：区间必须落在当前时间轴内。
 					if (start < 0 || end > totalBefore + 1e-6 || end <= start) continue;
 
-					// 在 end 处切一刀（除非 end 已是时间轴末尾）。
+					// 在 end 处切一刀（除非 end 已是时间轴末尾），返回值无需使用。
 					if (totalBefore - end > 1e-6) projectActions.splitClipSegment(end);
-					// 在 start 处切一刀（除非 start 已是时间轴开头）。
-					if (start > 1e-6) projectActions.splitClipSegment(start);
-
-					// 切完后，静音段是「起点累计时长 == start」的那个片段。
-					const segs = project.timeline.segments;
-					let acc = 0;
-					let targetIndex = -1;
-					for (let j = 0; j < segs.length; j++) {
-						const segStart = acc;
-						acc += (segs[j].end - segs[j].start) / segs[j].timescale;
-						if (Math.abs(segStart - start) < 1e-3) {
-							targetIndex = j;
-							break;
-						}
+					// 在 start 处切一刀（除非 start 已是时间轴开头）：返回的新右段索引
+					// 即静音段，无需按累计时长反查（消除多段连删时的浮点累计误差）。
+					let targetIndex = 0; // start≈0 未切时，静音段必为首段。
+					if (start > 1e-6) {
+						const rightIndex = projectActions.splitClipSegment(start);
+						if (rightIndex === null) continue; // 切刀未命中（越界），跳过该区间
+						targetIndex = rightIndex;
 					}
-					if (targetIndex === -1) continue;
-					if (segs.length < 2) break; // 只剩一段则不再删，保留视频
+					if (project.timeline.segments.length < 2) break; // 只剩一段则不再删，保留视频
 					projectActions.deleteClipSegment(targetIndex);
 					removed++;
 				}

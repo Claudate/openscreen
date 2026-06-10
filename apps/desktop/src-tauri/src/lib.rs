@@ -3813,11 +3813,17 @@ async fn get_display_frame_for_cropping(
 #[specta::specta]
 #[instrument(skip(editor_instance))]
 async fn get_mic_waveforms(editor_instance: WindowEditorInstance) -> Result<Vec<Vec<f32>>, String> {
-    let mut out = Vec::new();
+    // 先克隆 Arc 句柄再逐个 await：避免跨 await 持有 segment_medias 元素借用。
+    let tracks: Vec<_> = editor_instance
+        .segment_medias
+        .iter()
+        .map(|segment| segment.audio.clone())
+        .collect();
 
-    for segment in editor_instance.segment_medias.iter() {
-        if let Some(audio) = &segment.audio {
-            out.push(audio::get_waveform(audio));
+    let mut out = Vec::new();
+    for audio in tracks {
+        if let Some(audio) = audio {
+            out.push((*audio::cached_waveform(&audio).await).clone());
         } else {
             out.push(Vec::new());
         }
@@ -3832,11 +3838,16 @@ async fn get_mic_waveforms(editor_instance: WindowEditorInstance) -> Result<Vec<
 async fn get_system_audio_waveforms(
     editor_instance: WindowEditorInstance,
 ) -> Result<Vec<Vec<f32>>, String> {
-    let mut out = Vec::new();
+    let tracks: Vec<_> = editor_instance
+        .segment_medias
+        .iter()
+        .map(|segment| segment.system_audio.clone())
+        .collect();
 
-    for segment in editor_instance.segment_medias.iter() {
-        if let Some(audio) = &segment.system_audio {
-            out.push(audio::get_waveform(audio));
+    let mut out = Vec::new();
+    for audio in tracks {
+        if let Some(audio) = audio {
+            out.push((*audio::cached_waveform(&audio).await).clone());
         } else {
             out.push(Vec::new());
         }
@@ -3856,16 +3867,29 @@ async fn detect_silence_segments(
     options: Option<audio::SilenceDetectOptions>,
 ) -> Result<Vec<Vec<audio::SilenceSpan>>, String> {
     let opts = options.unwrap_or_default();
-    let mut out = Vec::new();
+    let tracks: Vec<_> = editor_instance
+        .segment_medias
+        .iter()
+        .map(|segment| (segment.audio.clone(), segment.system_audio.clone()))
+        .collect();
 
-    for segment in editor_instance.segment_medias.iter() {
-        let mic_wf = segment.audio.as_ref().map(audio::get_waveform);
-        let sys_wf = segment.system_audio.as_ref().map(audio::get_waveform);
+    let mut out = Vec::new();
+    for (mic, sys) in tracks {
+        // 波形走 sidecar 缓存：与 get_mic_waveforms / get_system_audio_waveforms
+        // 共享同一份计算结果，重复调用不再全样本重算。
+        let mic_wf = match &mic {
+            Some(audio) => Some(audio::cached_waveform(audio).await),
+            None => None,
+        };
+        let sys_wf = match &sys {
+            Some(audio) => Some(audio::cached_waveform(audio).await),
+            None => None,
+        };
 
         let combined = match (mic_wf, sys_wf) {
             (Some(m), Some(s)) => audio::max_dbfs_per_bucket(&m, &s),
-            (Some(m), None) => m,
-            (None, Some(s)) => s,
+            (Some(m), None) => (*m).clone(),
+            (None, Some(s)) => (*s).clone(),
             (None, None) => {
                 out.push(Vec::new());
                 continue;

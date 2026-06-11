@@ -31,6 +31,7 @@
 		"@solid-primitives/event-bus": "^1.1.1",
 		"@solid-primitives/event-listener": "^2.3.3",
 		"@solid-primitives/history": "^0.1.5",
+		"@solid-primitives/i18n": "^2.2.1",
 		"@solid-primitives/memo": "^1.4.2",
 		"@solid-primitives/mouse": "^2.1.2",
 		"@solid-primitives/refs": "^1.0.8",

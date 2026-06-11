@@ -1,0 +1,8 @@
+{
+	"build": {
+		"beforeBuildCommand": "cmd /c echo skip-frontend-build"
+	},
+	"bundle": {
+		"createUpdaterArtifacts": false
+	}
+}

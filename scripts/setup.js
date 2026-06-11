@@ -183,16 +183,39 @@ async function main() {
 		);
 		console.log("Copied ffmpeg/lib and ffmpeg/include to target/native-deps");
 
-		const { stdout: vcInstallDir } = await exec(
-			// biome-ignore lint/suspicious/noTemplateCurlyInString: PowerShell syntax, not JS template literal
-			'$(& "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath)',
-			{ shell: "powershell.exe" },
+		const programFilesX86 =
+			process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)";
+		const vswherePath = path.join(
+			programFilesX86,
+			"Microsoft Visual Studio",
+			"Installer",
+			"vswhere.exe",
 		);
 
-		const libclangPath = path.join(
-			vcInstallDir.trim(),
+		const { stdout: vcInstallDir } = await execFile(vswherePath, [
+			"-all",
+			"-products",
+			"*",
+			"-requires",
+			"Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+			"-property",
+			"installationPath",
+		]);
+
+		const vcRoot = vcInstallDir
+			.trim()
+			.split(/\r?\n/)
+			.map((line) => line.trim())
+			.filter(Boolean)[0];
+
+		const vsLibclangPath = path.join(
+			vcRoot ?? "",
 			"VC/Tools/LLVM/x64/bin/libclang.dll",
 		);
+		const standaloneLibclangPath = "C:/Program Files/LLVM/bin/libclang.dll";
+		const libclangPath = (await fileExists(vsLibclangPath))
+			? vsLibclangPath
+			: standaloneLibclangPath;
 
 		cargoConfigContents += `LIBCLANG_PATH = "${libclangPath.replaceAll(
 			"\\",
@@ -381,7 +404,7 @@ async function ensureMsvcVersion() {
 	}
 
 	const { stdout } = await execFile(vswherePath, [
-		"-latest",
+		"-all",
 		"-products",
 		"*",
 		"-requires",
@@ -390,7 +413,12 @@ async function ensureMsvcVersion() {
 		"installationVersion",
 	]);
 
-	const raw = stdout.trim();
+	const raw = stdout
+		.trim()
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter(Boolean)
+		.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0];
 	if (!raw) {
 		throw new Error(
 			`No Visual Studio 2022 installation with MSVC v143 was found. ` +

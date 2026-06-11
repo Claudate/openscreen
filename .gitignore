@@ -77,3 +77,6 @@ analysis/
 analysis/plans/
 .ralphy
 tmp/
+
+# Local Windows build logs / installer工具 / 临时脚本（不入库）
+.vs-install-logs/

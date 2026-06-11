@@ -40,6 +40,7 @@ import {
 	generalSettingsStore,
 	recordingSettingsStore,
 } from "~/store";
+import { t } from "~/i18n";
 import { createSignInMutation } from "~/utils/auth";
 import { createTauriEventListener } from "~/utils/createEventListener";
 import {
@@ -374,8 +375,8 @@ function CameraListItem(props: {
 			<button
 				type="button"
 				disabled={props.disabled}
-				title="Device settings"
-				aria-label="Device settings"
+				title={t("main.deviceSettings")}
+				aria-label={t("main.deviceSettings")}
 				onPointerDown={(event) => event.stopPropagation()}
 				onClick={(event) => {
 					event.preventDefault();
@@ -469,8 +470,8 @@ function MicrophoneListItem(props: {
 			<button
 				type="button"
 				disabled={props.disabled}
-				title="Device settings"
-				aria-label="Device settings"
+				title={t("main.deviceSettings")}
+				aria-label={t("main.deviceSettings")}
 				onPointerDown={(event) => event.stopPropagation()}
 				onClick={(event) => {
 					event.preventDefault();
@@ -555,7 +556,7 @@ function CameraSettingsPanel(props: {
 				)}
 			>
 				<div class="flex-1 min-w-0">
-					<div class="truncate">Default</div>
+					<div class="truncate">{t("common.default")}</div>
 					<Show when={defaultSetting()}>
 						{(setting) => (
 							<div
@@ -682,7 +683,7 @@ function MicrophoneSettingsPanel(props: {
 				)}
 			>
 				<div class="flex-1 min-w-0">
-					<div class="truncate">Default</div>
+					<div class="truncate">{t("common.default")}</div>
 					<Show when={defaultSetting()}>
 						{(setting) => (
 							<div
@@ -914,7 +915,9 @@ function DeviceListPanel(props: DeviceListPanelProps) {
 				</div>
 			</Show>
 			<Show when={props.isLoading}>
-				<div class="py-6 text-sm text-center text-gray-11">Loading...</div>
+				<div class="py-6 text-sm text-center text-gray-11">
+					{t("common.loading")}
+				</div>
 			</Show>
 			<Show when={!props.isLoading && !props.errorMessage}>
 				<button
@@ -936,7 +939,9 @@ function DeviceListPanel(props: DeviceListPanelProps) {
 				>
 					<IconLucideCircleOff class="size-4 shrink-0" />
 					<span class="truncate flex-1">
-						{props.variant === "camera" ? "No Camera" : "No Microphone"}
+						{props.variant === "camera"
+							? t("main.noCamera")
+							: t("main.noMicrophone")}
 					</span>
 					<Show when={isNoneSelected()}>
 						<IconLucideCheck class="size-4 shrink-0" />
@@ -1079,37 +1084,39 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 	};
 
 	const settingsSubtitle = () =>
-		props.variant === "camera" ? "Camera settings" : "Microphone settings";
+		props.variant === "camera"
+			? t("main.cameraSettings")
+			: t("main.microphoneSettings");
 
 	const settingsTitle = () => {
 		const target = settingsTarget();
 		if (!target) return "";
 		return "device_id" in target ? target.display_name : target.name;
 	};
-	const placeholder =
+	const placeholder = () =>
 		props.variant === "display"
-			? "Search displays"
+			? t("main.searchDisplays")
 			: props.variant === "window"
-				? "Search windows"
+				? t("main.searchWindows")
 				: props.variant === "recording"
-					? "Search recordings"
+					? t("main.searchRecordings")
 					: props.variant === "screenshot"
-						? "Search screenshots"
+						? t("main.searchScreenshots")
 						: props.variant === "camera"
-							? "Search cameras"
-							: "Search microphones";
-	const noResultsMessage =
+							? t("main.searchCameras")
+							: t("main.searchMicrophones");
+	const noResultsMessage = () =>
 		props.variant === "display"
-			? "No matching displays"
+			? t("main.noMatchingDisplays")
 			: props.variant === "window"
-				? "No matching windows"
+				? t("main.noMatchingWindows")
 				: props.variant === "recording"
-					? "No matching recordings"
+					? t("main.noMatchingRecordings")
 					: props.variant === "screenshot"
-						? "No matching screenshots"
+						? t("main.noMatchingScreenshots")
 						: props.variant === "camera"
-							? "No matching cameras"
-							: "No matching microphones";
+							? t("main.noMatchingCameras")
+							: t("main.noMatchingMicrophones");
 
 	const handleVideoImport = async () => {
 		try {
@@ -1308,7 +1315,7 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 							}
 							disabled={cameraProps.disabled}
 							emptyMessage={
-								trimmedSearch() ? noResultsMessage : "No cameras found"
+								trimmedSearch() ? noResultsMessage() : t("main.noCamerasFound")
 							}
 							permissions={cameraProps.permissions}
 							deviceSettings={cameraProps.deviceSettings}
@@ -1366,7 +1373,7 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 							onSettingsRequested={(mic) => handleSettingsTargetChange(mic)}
 							disabled={micProps.disabled}
 							emptyMessage={
-								trimmedSearch() ? noResultsMessage : "No microphones found"
+								trimmedSearch() ? noResultsMessage() : t("main.noMicrophonesFound")
 							}
 							permissions={micProps.permissions}
 							deviceSettings={micProps.deviceSettings}
@@ -1399,10 +1406,10 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 					class="flex h-[36px] gap-1 items-center shrink-0 rounded-md px-2 text-xs
 					text-gray-11 transition-colors hover:text-gray-12 hover:bg-gray-4
 					focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-9 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-1"
-					aria-label={inSettingsMode() ? "Back to list" : "Back"}
+					aria-label={inSettingsMode() ? t("common.backToList") : t("common.back")}
 				>
 					<IconLucideArrowLeft class="size-3 text-gray-11" />
-					<span class="font-medium text-gray-12">Back</span>
+					<span class="font-medium text-gray-12">{t("common.back")}</span>
 				</button>
 				<Show
 					when={inSettingsMode()}
@@ -1421,12 +1428,12 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 											setSearch("");
 										}
 									}}
-									placeholder={placeholder}
+									placeholder={placeholder()}
 									autoCapitalize="off"
 									autocorrect="off"
 									autocomplete="off"
 									spellcheck={false}
-									aria-label={placeholder}
+									aria-label={placeholder()}
 								/>
 							</div>
 							<Show
@@ -1447,7 +1454,9 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 								>
 									<IconLucideImport class="size-3.5" />
 									<span>
-										{props.variant === "screenshot" ? "Import image" : "Import"}
+										{props.variant === "screenshot"
+											? t("common.importImage")
+											: t("common.import")}
 									</span>
 								</Button>
 							</Show>
@@ -1489,7 +1498,7 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 							onSelect={props.onSelect}
 							disabled={props.disabled}
 							highlightQuery={trimmedSearch()}
-							emptyMessage={trimmedSearch() ? noResultsMessage : undefined}
+							emptyMessage={trimmedSearch() ? noResultsMessage() : undefined}
 						/>
 					) : props.variant === "window" ? (
 						<TargetMenuGrid
@@ -1500,7 +1509,7 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 							onSelect={props.onSelect}
 							disabled={props.disabled}
 							highlightQuery={trimmedSearch()}
-							emptyMessage={trimmedSearch() ? noResultsMessage : undefined}
+							emptyMessage={trimmedSearch() ? noResultsMessage() : undefined}
 						/>
 					) : props.variant === "recording" ? (
 						<TargetMenuGrid
@@ -1511,7 +1520,7 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 							onSelect={props.onSelect}
 							disabled={props.disabled}
 							highlightQuery={trimmedSearch()}
-							emptyMessage={trimmedSearch() ? noResultsMessage : undefined}
+							emptyMessage={trimmedSearch() ? noResultsMessage() : undefined}
 							uploadProgress={props.uploadProgress}
 							reuploadingPaths={props.reuploadingPaths}
 							onReupload={props.onReupload}
@@ -1531,7 +1540,7 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 							onSelect={props.onSelect}
 							disabled={props.disabled}
 							highlightQuery={trimmedSearch()}
-							emptyMessage={trimmedSearch() ? noResultsMessage : undefined}
+							emptyMessage={trimmedSearch() ? noResultsMessage() : undefined}
 							onViewAll={props.onViewAll}
 						/>
 					)}
@@ -1567,10 +1576,10 @@ function createUpdateCheck() {
 			if (result) update = result;
 		} catch (e) {
 			console.error("Failed to check for updates:", e);
-			await dialog.message(
-				"Unable to check for updates. Please download the latest version manually from cap.so/download. Your data will not be lost.\n\nIf this issue persists, please contact support.",
-				{ title: "Update Error", kind: "error" },
-			);
+			await dialog.message(t("update.checkFailed"), {
+				title: t("update.checkFailedTitle"),
+				kind: "error",
+			});
 			return;
 		}
 
@@ -1579,8 +1588,12 @@ function createUpdateCheck() {
 		let shouldUpdate: boolean | undefined;
 		try {
 			shouldUpdate = await dialog.confirm(
-				`Version ${update.version} of Cap is available, would you like to install it?`,
-				{ title: "Update Cap", okLabel: "Update", cancelLabel: "Ignore" },
+				t("update.available", { version: update.version }),
+				{
+					title: t("update.availableTitle"),
+					okLabel: t("update.update"),
+					cancelLabel: t("update.ignore"),
+				},
 			);
 		} catch (e) {
 			console.error("Failed to show update dialog:", e);
@@ -1594,7 +1607,7 @@ function createUpdateCheck() {
 
 function MainWindowHelpButton() {
 	return (
-		<Tooltip content={<span>Help & Tour</span>}>
+		<Tooltip content={<span>{t("main.helpAndTour")}</span>}>
 			<button
 				type="button"
 				onClick={() => {
@@ -1988,12 +2001,12 @@ function Page() {
 
 	const displayErrorMessage = () => {
 		if (!displayTargets.error) return undefined;
-		return "Unable to load displays. Try using the Display button.";
+		return t("main.unableToLoadDisplays");
 	};
 
 	const windowErrorMessage = () => {
 		if (!windowTargets.error) return undefined;
-		return "Unable to load windows. Try using the Window button.";
+		return t("main.unableToLoadWindows");
 	};
 
 	const selectDisplayTarget = async (target: CaptureDisplayWithThumbnail) => {
@@ -2342,7 +2355,7 @@ function Page() {
 					`Failed to stop recording: ${
 						error instanceof Error ? error.message : String(error)
 					}`,
-					{ title: "Stop Recording", kind: "error" },
+					{ title: t("main.stopRecording"), kind: "error" },
 				);
 			}
 		},
@@ -2458,7 +2471,7 @@ function Page() {
 								onClick={() => {
 									toggleTargetMode("display");
 								}}
-								name="Display"
+								name={t("main.display")}
 								class="flex-1 rounded-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 pl-5"
 							/>
 							<TargetDropdownButton
@@ -2479,7 +2492,7 @@ function Page() {
 									});
 								}}
 								aria-haspopup="menu"
-								aria-label="Choose display"
+								aria-label={t("main.chooseDisplay")}
 							/>
 						</div>
 						<div
@@ -2496,7 +2509,7 @@ function Page() {
 								onClick={() => {
 									toggleTargetMode("window");
 								}}
-								name="Window"
+								name={t("main.window")}
 								class="flex-1 rounded-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 pl-5"
 							/>
 							<TargetDropdownButton
@@ -2517,7 +2530,7 @@ function Page() {
 									});
 								}}
 								aria-haspopup="menu"
-								aria-label="Choose window"
+								aria-label={t("main.chooseWindow")}
 							/>
 						</div>
 					</div>
@@ -2529,7 +2542,7 @@ function Page() {
 							onClick={() => {
 								toggleTargetMode("area");
 							}}
-							name="Area"
+							name={t("main.area")}
 							class="flex-1"
 						/>
 						<TargetTypeButton
@@ -2539,7 +2552,7 @@ function Page() {
 							onClick={() => {
 								toggleTargetMode("camera");
 							}}
-							name="Camera Only"
+							name={t("main.cameraOnly")}
 							class="flex-1"
 						/>
 					</div>
@@ -2582,7 +2595,7 @@ function Page() {
 					<MainWindowHelpButton />
 					<div class="flex-1 min-h-9 min-w-0" data-tauri-drag-region />
 					<div class="flex gap-1 items-center shrink-0" data-tauri-drag-region>
-						<Tooltip content={<span>Settings</span>}>
+						<Tooltip content={<span>{t("common.settings")}</span>}>
 							<button
 								type="button"
 								onClick={async () => {
@@ -2594,7 +2607,7 @@ function Page() {
 								<IconLucideSettings class="transition-colors text-gray-11 size-4 hover:text-gray-12" />
 							</button>
 						</Tooltip>
-						<Tooltip content={<span>Screenshots</span>}>
+						<Tooltip content={<span>{t("common.screenshots")}</span>}>
 							<button
 								type="button"
 								onClick={() => {
@@ -2613,7 +2626,7 @@ function Page() {
 								<IconLucideImage class="transition-colors text-gray-11 size-4 hover:text-gray-12" />
 							</button>
 						</Tooltip>
-						<Tooltip content={<span>Recordings</span>}>
+						<Tooltip content={<span>{t("common.recordings")}</span>}>
 							<button
 								type="button"
 								onClick={() => {
@@ -2681,7 +2694,7 @@ function Page() {
 										}}
 										class="text-[0.6rem] ml-2 rounded-lg border border-gray-5 px-1 py-0.5 bg-gray-3 hover:bg-gray-5"
 									>
-										Personal
+										{t("main.personal")}
 									</button>
 								</Show>
 							</Suspense>
@@ -2704,7 +2717,7 @@ function Page() {
 				<Show when={signIn.isPending}>
 					<div class="flex absolute inset-0 justify-center items-center bg-gray-1 animate-in fade-in">
 						<div class="flex flex-col gap-4 justify-center items-center">
-							<span>Signing In...</span>
+							<span>{t("main.signingIn")}</span>
 
 							<Button
 								onClick={() => {
@@ -2714,7 +2727,7 @@ function Page() {
 								variant="gray"
 								class="w-full"
 							>
-								Cancel Sign In
+								{t("main.cancelSignIn")}
 							</Button>
 						</div>
 					</div>
@@ -2754,7 +2767,7 @@ function Page() {
 									targets={recordingsData()}
 									isLoading={recordings.isPending}
 									errorMessage={
-										recordings.error ? "Failed to load recordings" : undefined
+										recordings.error ? t("main.failedToLoadRecordings") : undefined
 									}
 									onSelect={async (recording) => {
 										if (recording.mode === "studio") {
@@ -2804,7 +2817,7 @@ function Page() {
 									targets={screenshotsData()}
 									isLoading={screenshots.isPending}
 									errorMessage={
-										screenshots.error ? "Failed to load screenshots" : undefined
+										screenshots.error ? t("main.failedToLoadScreenshots") : undefined
 									}
 									onSelect={async (screenshot) => {
 										await commands.showWindow({
@@ -2907,7 +2920,7 @@ function Page() {
 							>
 								<IconCapStopCircle class="size-4" />
 							</Show>
-							<span>Stop Recording</span>
+							<span>{t("main.stopRecording")}</span>
 						</button>
 					</div>
 				</div>

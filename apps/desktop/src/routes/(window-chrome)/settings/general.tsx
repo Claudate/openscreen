@@ -25,6 +25,7 @@ import toast from "solid-toast";
 import themePreviewAuto from "~/assets/theme-previews/auto.jpg";
 import themePreviewDark from "~/assets/theme-previews/dark.jpg";
 import themePreviewLight from "~/assets/theme-previews/light.jpg";
+import { LOCALE_OPTIONS, locale, setLocale, t } from "~/i18n";
 import { Input } from "~/routes/editor/ui";
 import { authStore, generalSettingsStore } from "~/store";
 import { clientEnv } from "~/utils/env";
@@ -129,6 +130,40 @@ export default function GeneralSettings() {
 		<Show when={store.state === "ready" && ([store()] as const)}>
 			{(store) => <Inner initialStore={store()[0] ?? null} />}
 		</Show>
+	);
+}
+
+function LanguageSection() {
+	return (
+		<Section
+			title={t("settings.language")}
+			description={t("settings.languageDescription")}
+		>
+			<SectionCard padded>
+				<div class="grid grid-cols-2 gap-3">
+					<For each={LOCALE_OPTIONS}>
+						{(option) => {
+							const isSelected = () => locale() === option.value;
+							return (
+								<button
+									type="button"
+									aria-checked={isSelected()}
+									onClick={() => setLocale(option.value)}
+									class={cx(
+										"flex items-center justify-center rounded-lg border-2 px-3 py-2.5 text-[13px] font-medium transition-[border-color,background-color,color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-9 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-1",
+										isSelected()
+											? "border-blue-9 bg-blue-3 text-gray-12"
+											: "border-gray-4 bg-gray-2 text-gray-11 hover:border-gray-6 hover:text-gray-12",
+									)}
+								>
+									{option.label}
+								</button>
+							);
+						}}
+					</For>
+				</div>
+			</SectionCard>
+		</Section>
 	);
 }
 
@@ -481,6 +516,8 @@ function Inner(props: { initialStore: GeneralSettingsStore | null }) {
 						generalSettingsStore.set({ theme: newTheme });
 					}}
 				/>
+
+				<LanguageSection />
 
 				{ostype === "macos" && (
 					<Section

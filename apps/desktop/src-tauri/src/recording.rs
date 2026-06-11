@@ -4,7 +4,8 @@ use cap_media_info::ffmpeg_sample_format_for;
 use cap_project::CursorMoveEvent;
 use cap_project::cursor::SHORT_CURSOR_SHAPE_DEBOUNCE_MS;
 use cap_project::{
-    AutoZoomConfiguration, CameraShape, CursorClickEvent, GlideDirection, InstantRecordingMeta,
+    AutoZoomConfiguration, CameraShape, CursorClickEvent, ElementBounds, GlideDirection,
+    InstantRecordingMeta,
     MultipleSegments, Platform, ProjectConfiguration, RecordingMeta, RecordingMetaInner,
     ResolvedAutoZoom, SharingMeta, StudioRecordingMeta, StudioRecordingStatus,
     TimelineConfiguration, TimelineSegment, ZoomMode, ZoomSegment, cursor::CursorEvents,

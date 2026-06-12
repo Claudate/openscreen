@@ -2083,6 +2083,17 @@ function Page() {
 
 	createUpdateCheck();
 
+	{
+		const handleEscapeKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape" && !activeMenu()) {
+				e.preventDefault();
+				getCurrentWindow().close();
+			}
+		};
+		window.addEventListener("keydown", handleEscapeKey);
+		onCleanup(() => window.removeEventListener("keydown", handleEscapeKey));
+	}
+
 	onMount(async () => {
 		if (document.activeElement instanceof HTMLElement) {
 			document.activeElement.blur();

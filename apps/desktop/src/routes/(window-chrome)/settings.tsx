@@ -477,7 +477,7 @@ export default function Settings(props: RouteSectionProps) {
 					</div>
 				</button>
 				<ul class="cap-settings-nav min-w-48 h-full p-2.5 space-y-1 text-gray-12">
-					<For each={settingsItems}>
+					<For each={settingsItems()}>
 						{(item) => (
 							<li>
 								<A

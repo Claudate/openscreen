@@ -274,7 +274,7 @@ export function CameraSelectBase(props: {
 
 					Promise.all([
 						CheckMenuItem.new({
-							text: NO_CAMERA,
+							text: t("main.noCamera"),
 							checked: props.value === null,
 							action: () => onChange(null),
 						}),
@@ -296,7 +296,7 @@ export function CameraSelectBase(props: {
 			>
 				<IconCapCamera class={props.iconClass} />
 				<p class="flex-1 text-sm text-left truncate">
-					{props.value?.display_name ?? NO_CAMERA}
+					{props.value?.display_name ?? t("main.noCamera")}
 				</p>
 				<div class="flex items-center gap-1">
 					{showHiddenIndicator() && (

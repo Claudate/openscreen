@@ -1889,7 +1889,7 @@ function Page() {
 		try {
 			await commands.uploadExportedVideo(
 				path,
-				t("main.reupload"),
+				"Reupload",
 				new Channel<UploadProgress>(() => {}),
 				null,
 			);

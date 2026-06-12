@@ -3288,8 +3288,12 @@ async fn upload_screenshot(
 
     println!("Uploading screenshot: {screenshot_path:?}");
 
-    let screenshot_dir = screenshot_path.parent().unwrap().to_path_buf();
-    let mut meta = RecordingMeta::load_for_project(&screenshot_dir).unwrap();
+    let screenshot_dir = screenshot_path
+        .parent()
+        .ok_or_else(|| format!("Invalid screenshot path: {}", screenshot_path.display()))?
+        .to_path_buf();
+    let mut meta = RecordingMeta::load_for_project(&screenshot_dir)
+        .map_err(|e| format!("Failed to load screenshot metadata: {e}"))?;
 
     let share_link = if let Some(sharing) = meta.sharing.as_ref() {
         println!("Screenshot already uploaded, using existing link");
@@ -3461,7 +3465,7 @@ fn get_recording_meta(
 #[specta::specta]
 #[instrument(skip(app))]
 fn list_recordings(app: AppHandle) -> Result<Vec<(PathBuf, RecordingMetaWithMetadata)>, String> {
-    let recordings_dir = recordings_path(&app);
+    let recordings_dir = recordings_path(&app)?;
 
     if !recordings_dir.exists() {
         return Ok(Vec::new());
@@ -3508,7 +3512,7 @@ fn list_recordings(app: AppHandle) -> Result<Vec<(PathBuf, RecordingMetaWithMeta
 #[specta::specta]
 #[instrument(skip(app))]
 fn list_screenshots(app: AppHandle) -> Result<Vec<(PathBuf, RecordingMeta)>, String> {
-    let screenshots_dir = screenshots_path(&app);
+    let screenshots_dir = screenshots_path(&app)?;
 
     let mut result = std::fs::read_dir(&screenshots_dir)
         .map_err(|e| format!("Failed to read screenshots directory: {e}"))?
@@ -5496,7 +5500,7 @@ fn reopen_main_window(app: &AppHandle) {
 }
 
 async fn resume_uploads(app: AppHandle) -> Result<(), String> {
-    let recordings_dir = recordings_path(&app);
+    let recordings_dir = recordings_path(&app)?;
     if !recordings_dir.exists() {
         return Err("Recording directory missing".to_string());
     }
@@ -5855,20 +5859,28 @@ async fn wait_for_recording_ready(app: &AppHandle, path: &Path) -> Result<(), St
     Ok(())
 }
 
-fn recordings_path(app: &AppHandle) -> PathBuf {
-    let path = app.path().app_data_dir().unwrap().join("recordings");
+fn recordings_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let path = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?
+        .join("recordings");
     std::fs::create_dir_all(&path).unwrap_or_default();
-    path
+    Ok(path)
 }
 
 // fn recording_path(app: &AppHandle, recording_id: &str) -> PathBuf {
 //     recordings_path(app).join(format!("{recording_id}.cap"))
 // }
 
-fn screenshots_path(app: &AppHandle) -> PathBuf {
-    let path = app.path().app_data_dir().unwrap().join("screenshots");
+fn screenshots_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let path = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?
+        .join("screenshots");
     std::fs::create_dir_all(&path).unwrap_or_default();
-    path
+    Ok(path)
 }
 
 // fn screenshot_path(app: &AppHandle, screenshot_id: &str) -> PathBuf {

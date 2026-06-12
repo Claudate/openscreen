@@ -482,8 +482,8 @@ pub fn create_d3d_device()
                 error = ?error,
                 "capture_pipeline: pinned-adapter D3D11CreateDevice failed, falling back"
             );
-        } else {
-            return Ok(device.unwrap());
+        } else if let Some(device) = device.take() {
+            return Ok(device);
         }
     }
 
@@ -549,5 +549,10 @@ pub fn create_d3d_device()
         }
     }
 
-    Ok(device.unwrap())
+    device.ok_or_else(|| {
+        windows::core::Error::new(
+            windows::Win32::Foundation::E_FAIL,
+            "D3D11CreateDevice succeeded but returned no device",
+        )
+    })
 }

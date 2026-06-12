@@ -1561,10 +1561,18 @@ impl ShowCapWindow {
 
                 #[cfg(windows)]
                 {
-                    let position = display.raw_handle().physical_position().unwrap();
-                    let logical_size = display.logical_size().unwrap();
-                    let physical_size = display.physical_size().unwrap();
-                    use tauri::{LogicalSize, PhysicalPosition, PhysicalSize};
+                    use tauri::{LogicalSize, PhysicalPosition};
+                    let (Some(position), Some(logical_size), Some(physical_size)) = (
+                        display.raw_handle().physical_position(),
+                        display.logical_size(),
+                        display.physical_size(),
+                    ) else {
+                        warn!(
+                            "Display metrics unavailable for target select overlay; display may have been disconnected"
+                        );
+                        window.close().ok();
+                        return Err(tauri::Error::WindowNotFound);
+                    };
                     let _ = window.set_size(LogicalSize::new(
                         logical_size.width(),
                         logical_size.height(),
@@ -1572,8 +1580,9 @@ impl ShowCapWindow {
                     let _ = window.set_position(PhysicalPosition::new(position.x(), position.y()));
                     tokio::time::sleep(std::time::Duration::from_millis(5)).await;
 
-                    let actual_physical_size = window.inner_size().unwrap();
-                    if physical_size.width() != actual_physical_size.width as f64 {
+                    if let Ok(actual_physical_size) = window.inner_size()
+                        && physical_size.width() != actual_physical_size.width as f64
+                    {
                         let _ = window.set_size(LogicalSize::new(
                             logical_size.width(),
                             logical_size.height(),
@@ -2187,9 +2196,15 @@ impl ShowCapWindow {
                 let position = display.raw_handle().logical_position();
 
                 #[cfg(windows)]
-                let position = display.raw_handle().physical_position().unwrap();
+                let Some(position) = display.raw_handle().physical_position() else {
+                    warn!("Display position unavailable for capture occluder");
+                    return Err(tauri::Error::WindowNotFound);
+                };
 
-                let bounds = display.physical_size().unwrap();
+                let Some(bounds) = display.physical_size() else {
+                    warn!("Display size unavailable for capture occluder");
+                    return Err(tauri::Error::WindowNotFound);
+                };
 
                 let mut window_builder = self
                     .window_builder(app, "/window-capture-occluder")
@@ -2208,7 +2223,11 @@ impl ShowCapWindow {
                 let window = window_builder.build()?;
                 lock_window_text_scale(&window);
 
-                window.set_ignore_cursor_events(true).unwrap();
+                if let Err(e) = window.set_ignore_cursor_events(true) {
+                    warn!("Failed to make capture occluder click-through, closing it: {e}");
+                    window.close().ok();
+                    return Err(e);
+                }
 
                 #[cfg(target_os = "macos")]
                 {

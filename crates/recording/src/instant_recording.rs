@@ -645,8 +645,8 @@ pub async fn spawn_instant_recording_actor(
 fn current_time_f64() -> f64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs_f64()
+        .map(|d| d.as_secs_f64())
+        .unwrap_or_default()
 }
 
 fn clamp_size(input: (u32, u32), max: (u32, u32)) -> (u32, u32) {

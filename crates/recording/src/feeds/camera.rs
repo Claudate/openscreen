@@ -368,10 +368,17 @@ fn spawn_camera_setup(
     let ready_tx_thread = ready_tx;
 
     let join_handle = std::thread::spawn(move || {
-        let runtime = tokio::runtime::Builder::new_current_thread()
+        let runtime = match tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .expect("Failed to build camera tokio runtime");
+        {
+            Ok(runtime) => runtime,
+            Err(error) => {
+                error!("Failed to build camera tokio runtime: {error}");
+                let _ = ready_tx_thread.send(Err(SetInputError::BuildStreamCrashed));
+                return;
+            }
+        };
 
         {
             #[cfg(target_os = "macos")]

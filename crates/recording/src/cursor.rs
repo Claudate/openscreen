@@ -215,7 +215,9 @@ pub fn spawn_cursor_recorder(
 
         let mut last_position = cap_cursor_capture::RawCursorPosition::get();
 
-        std::fs::create_dir_all(&cursors_dir).unwrap();
+        if let Err(e) = std::fs::create_dir_all(&cursors_dir) {
+            error!("Failed to create cursors directory: {e}");
+        }
 
         let mut response = CursorActorResponse {
             cursors: prev_cursors,

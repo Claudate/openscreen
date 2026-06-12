@@ -638,7 +638,10 @@ impl WindowsSegmentedCameraMuxer {
             .recv()
             .map_err(|_| anyhow!("Camera encoder thread ended unexpectedly"))??;
 
-        output.lock().unwrap().write_header()?;
+        output
+            .lock()
+            .map_err(|_| anyhow!("Camera encoder output mutex poisoned"))?
+            .write_header()?;
 
         self.current_state = Some(SegmentState {
             video_tx,

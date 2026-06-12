@@ -46,10 +46,10 @@ fn play_audio(bytes: &'static [u8]) {
     use std::io::Cursor;
 
     std::thread::spawn(move || {
-        if let Ok((_, stream)) = OutputStream::try_default() {
-            let file = Cursor::new(bytes);
-            let source = Decoder::new(file).unwrap();
-            let sink = Sink::try_new(&stream).unwrap();
+        if let Ok((_, stream)) = OutputStream::try_default()
+            && let Ok(source) = Decoder::new(Cursor::new(bytes))
+            && let Ok(sink) = Sink::try_new(&stream)
+        {
             sink.append(source);
             sink.sleep_until_end();
         }

@@ -1672,8 +1672,8 @@ fn ensure_dir(path: &PathBuf) -> Result<PathBuf, MediaError> {
 fn current_time_f64() -> f64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs_f64()
+        .map(|d| d.as_secs_f64())
+        .unwrap_or_default()
 }
 
 fn persist_final_recording_meta(recording_dir: &Path, studio_meta: &StudioRecordingMeta) {

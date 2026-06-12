@@ -614,7 +614,10 @@ impl WindowsSegmentedMuxer {
             .recv()
             .map_err(|_| anyhow!("Encoder thread ended unexpectedly"))??;
 
-        output.lock().unwrap().write_header()?;
+        output
+            .lock()
+            .map_err(|_| anyhow!("Encoder output mutex poisoned"))?
+            .write_header()?;
 
         self.current_state = Some(SegmentState {
             video_tx,

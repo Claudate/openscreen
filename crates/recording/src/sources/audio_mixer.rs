@@ -758,13 +758,13 @@ fn construct_filter_graph(infos: &[AudioInfo]) -> Result<FilterGraphParts, ffmpe
         debug!("audio mixer input {i}: {args}");
 
         let mut abuffer = filter_graph.add(
-            &ffmpeg::filter::find("abuffer").expect("Failed to find abuffer filter"),
+            &ffmpeg::filter::find("abuffer").ok_or(ffmpeg::Error::FilterNotFound)?,
             &format!("src{i}"),
             &args,
         )?;
 
         let mut resample = filter_graph.add(
-            &ffmpeg::filter::find("aresample").expect("Failed to find aresample filter"),
+            &ffmpeg::filter::find("aresample").ok_or(ffmpeg::Error::FilterNotFound)?,
             &format!("resample{i}"),
             &format!(
                 "out_sample_rate={target_rate}:out_sample_fmt={target_sample_fmt}:out_chlayout=0x{target_channel_layout_bits:x}"
@@ -778,7 +778,7 @@ fn construct_filter_graph(infos: &[AudioInfo]) -> Result<FilterGraphParts, ffmpe
     }
 
     let mut amix = filter_graph.add(
-        &ffmpeg::filter::find("amix").expect("Failed to find amix filter"),
+        &ffmpeg::filter::find("amix").ok_or(ffmpeg::Error::FilterNotFound)?,
         "amix",
         &format!("inputs={}:duration=longest", abuffers.len()),
     )?;
@@ -788,13 +788,13 @@ fn construct_filter_graph(infos: &[AudioInfo]) -> Result<FilterGraphParts, ffmpe
     );
 
     let mut aformat = filter_graph.add(
-        &ffmpeg::filter::find("aformat").expect("Failed to find aformat filter"),
+        &ffmpeg::filter::find("aformat").ok_or(ffmpeg::Error::FilterNotFound)?,
         "aformat",
         &aformat_args,
     )?;
 
     let mut abuffersink = filter_graph.add(
-        &ffmpeg::filter::find("abuffersink").expect("Failed to find abuffersink filter"),
+        &ffmpeg::filter::find("abuffersink").ok_or(ffmpeg::Error::FilterNotFound)?,
         "sink",
         "",
     )?;

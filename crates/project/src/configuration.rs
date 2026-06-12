@@ -685,10 +685,7 @@ impl ZoomSegment {
 
     /// 语义缩放是否生效：需同时满足「有有效矩形」且「未被显式关闭」。
     pub fn semantic_zoom_enabled(&self) -> bool {
-        self.semantic_zoom.unwrap_or(true)
-            && self
-                .element_bounds
-                .is_some_and(|b| b.is_meaningful())
+        self.semantic_zoom.unwrap_or(true) && self.element_bounds.is_some_and(|b| b.is_meaningful())
     }
 
     /// 语义边距（缺省取内置默认，并夹紧到合法区间）。
@@ -1553,7 +1550,10 @@ mod tests {
             ..Default::default()
         };
         let json = serde_json::to_string(&config).unwrap();
-        assert!(json.contains("\"dramatic\""), "camelCase preset, got {json}");
+        assert!(
+            json.contains("\"dramatic\""),
+            "camelCase preset, got {json}"
+        );
         let parsed: AutoZoomConfiguration = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed, config);
     }
@@ -1580,7 +1580,10 @@ mod tests {
             ..Default::default()
         };
         let resolved = AutoZoomConfiguration::resolve(Some(&config));
-        assert!(resolved.dwell_enabled, "explicit field must override preset");
+        assert!(
+            resolved.dwell_enabled,
+            "explicit field must override preset"
+        );
         assert_eq!(resolved.amount_max, 2.0, "explicit cap wins");
         assert_eq!(resolved.amount_min, 1.4, "untouched fields follow preset");
     }

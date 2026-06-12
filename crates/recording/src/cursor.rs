@@ -930,8 +930,9 @@ mod ax {
         let attr = CFString::new(attr);
         let mut value: CFTypeRef = std::ptr::null();
         // SAFETY: element 为有效 AXUIElement；value 按 create rule 托管。
-        let err =
-            unsafe { AXUIElementCopyAttributeValue(element, attr.as_concrete_TypeRef(), &mut value) };
+        let err = unsafe {
+            AXUIElementCopyAttributeValue(element, attr.as_concrete_TypeRef(), &mut value)
+        };
         if err != KAX_ERROR_SUCCESS || value.is_null() {
             return None;
         }

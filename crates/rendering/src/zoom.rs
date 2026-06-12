@@ -758,11 +758,8 @@ mod test {
         };
         // amount 上限给足（6.0 > 5），实际 zoom 应取 contain 的 5。
         let segment = test_semantic_segment(6.0, rect, None, None);
-        let bounds = SegmentBounds::from_segment_with_cursor_constraint(
-            &segment,
-            Default::default(),
-            None,
-        );
+        let bounds =
+            SegmentBounds::from_segment_with_cursor_constraint(&segment, Default::default(), None);
 
         let zoom = bounds.bottom_right.x - bounds.top_left.x;
         assert_f64_near!(zoom, 5.0, "contain zoom");
@@ -784,11 +781,8 @@ mod test {
             height: 0.06,
         };
         let segment = test_semantic_segment(2.0, rect, None, None);
-        let bounds = SegmentBounds::from_segment_with_cursor_constraint(
-            &segment,
-            Default::default(),
-            None,
-        );
+        let bounds =
+            SegmentBounds::from_segment_with_cursor_constraint(&segment, Default::default(), None);
         let zoom = bounds.bottom_right.x - bounds.top_left.x;
         assert_f64_near!(zoom, 2.0, "amount-capped zoom");
     }
@@ -803,14 +797,17 @@ mod test {
             height: 0.08,
         };
         let segment = test_semantic_segment(2.8, rect, None, None);
-        let bounds = SegmentBounds::from_segment_with_cursor_constraint(
-            &segment,
-            Default::default(),
-            None,
-        );
+        let bounds =
+            SegmentBounds::from_segment_with_cursor_constraint(&segment, Default::default(), None);
         let (l, r, t, b) = viewport_of(&bounds);
-        assert!(l >= -1e-9 && r <= 1.0 + 1e-9, "viewport x within screen: [{l}, {r}]");
-        assert!(t >= -1e-9 && b <= 1.0 + 1e-9, "viewport y within screen: [{t}, {b}]");
+        assert!(
+            l >= -1e-9 && r <= 1.0 + 1e-9,
+            "viewport x within screen: [{l}, {r}]"
+        );
+        assert!(
+            t >= -1e-9 && b <= 1.0 + 1e-9,
+            "viewport y within screen: [{t}, {b}]"
+        );
         // 元素仍然完整可见。
         assert!(rect.x >= l - 1e-9 && rect.x + rect.width <= r + 1e-9);
         assert!(rect.y >= t - 1e-9 && rect.y + rect.height <= b + 1e-9);
@@ -829,16 +826,10 @@ mod test {
         let off = test_semantic_segment(2.0, rect, None, Some(false));
         let plain = test_segment(2.0, 4.0, 2.0, cx, cy);
 
-        let off_bounds = SegmentBounds::from_segment_with_cursor_constraint(
-            &off,
-            Default::default(),
-            None,
-        );
-        let plain_bounds = SegmentBounds::from_segment_with_cursor_constraint(
-            &plain,
-            Default::default(),
-            None,
-        );
+        let off_bounds =
+            SegmentBounds::from_segment_with_cursor_constraint(&off, Default::default(), None);
+        let plain_bounds =
+            SegmentBounds::from_segment_with_cursor_constraint(&plain, Default::default(), None);
         assert_f64_near!(off_bounds.top_left.x, plain_bounds.top_left.x);
         assert_f64_near!(off_bounds.top_left.y, plain_bounds.top_left.y);
         assert_f64_near!(off_bounds.bottom_right.x, plain_bounds.bottom_right.x);
@@ -855,11 +846,8 @@ mod test {
             height: 0.06,
         };
         let segment = test_semantic_segment(6.0, rect, Some(0.15), None);
-        let bounds = SegmentBounds::from_segment_with_cursor_constraint(
-            &segment,
-            Default::default(),
-            None,
-        );
+        let bounds =
+            SegmentBounds::from_segment_with_cursor_constraint(&segment, Default::default(), None);
         let zoom = bounds.bottom_right.x - bounds.top_left.x;
         assert_f64_near!(zoom, 2.5, "custom padding contain zoom");
     }
@@ -898,11 +886,8 @@ mod test {
         }
         // 终点 amount=1.0 → zoom=1 → 全屏。
         let segment = test_semantic_segment(1.0, rect, None, None);
-        let bounds = SegmentBounds::from_segment_with_cursor_constraint(
-            &segment,
-            Default::default(),
-            None,
-        );
+        let bounds =
+            SegmentBounds::from_segment_with_cursor_constraint(&segment, Default::default(), None);
         assert_f64_near!(bounds.top_left.x, 0.0, "full-screen top-left");
         assert_f64_near!(bounds.bottom_right.x, 1.0, "full-screen bottom-right");
     }

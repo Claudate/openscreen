@@ -164,10 +164,7 @@ impl Default for SilenceDetectOptions {
 /// 4) 每段向内收缩 edge_padding（两端各留白），收缩后仍 > 0 才输出。
 ///
 /// 时间换算：帧索引 i 对应区间 [i*bucket, (i+1)*bucket)，bucket = WAVEFORM_BUCKET_SECONDS。
-pub fn detect_silence_segments(
-    waveform: &[f32],
-    opts: SilenceDetectOptions,
-) -> Vec<SilenceSpan> {
+pub fn detect_silence_segments(waveform: &[f32], opts: SilenceDetectOptions) -> Vec<SilenceSpan> {
     let bucket = WAVEFORM_BUCKET_SECONDS;
     if waveform.is_empty() || bucket <= 0.0 {
         return Vec::new();
@@ -237,10 +234,7 @@ pub fn max_dbfs_per_bucket(a: &[f32], b: &[f32]) -> Vec<f32> {
 
 /// 把「删除静音」转成「保留区间」(keep ranges)，给时间轴 split/delete 链路或导出用。
 /// 输入静音段（须已按 start 升序、不重叠），总时长 total_seconds；输出补集（要保留的片段）。
-pub fn silence_to_keep_ranges(
-    silences: &[SilenceSpan],
-    total_seconds: f64,
-) -> Vec<SilenceSpan> {
+pub fn silence_to_keep_ranges(silences: &[SilenceSpan], total_seconds: f64) -> Vec<SilenceSpan> {
     let mut keeps: Vec<SilenceSpan> = Vec::new();
     let mut cursor = 0.0_f64;
     for s in silences {
@@ -293,7 +287,10 @@ mod tests {
         // 10 帧 loud + 3 帧 quiet(300ms < 500ms min) + 10 帧 loud → 不删。
         let wf = waveform_from_pattern(&[(false, 10), (true, 3), (false, 10)]);
         let spans = detect_silence_segments(&wf, SilenceDetectOptions::default());
-        assert!(spans.is_empty(), "300ms pause must be preserved, got {spans:?}");
+        assert!(
+            spans.is_empty(),
+            "300ms pause must be preserved, got {spans:?}"
+        );
     }
 
     #[test]
@@ -303,7 +300,11 @@ mod tests {
         let wf = waveform_from_pattern(&[(false, 10), (true, 20), (false, 10)]);
         let spans = detect_silence_segments(&wf, SilenceDetectOptions::default());
         assert_eq!(spans.len(), 1);
-        assert!((spans[0].start - 1.1).abs() < 1e-9, "start={}", spans[0].start);
+        assert!(
+            (spans[0].start - 1.1).abs() < 1e-9,
+            "start={}",
+            spans[0].start
+        );
         assert!((spans[0].end - 2.9).abs() < 1e-9, "end={}", spans[0].end);
     }
 
@@ -313,20 +314,19 @@ mod tests {
         let wf = waveform_from_pattern(&[(false, 5), (true, 12)]);
         let spans = detect_silence_segments(&wf, SilenceDetectOptions::default());
         assert_eq!(spans.len(), 1);
-        assert!((spans[0].start - 0.6).abs() < 1e-9, "start={}", spans[0].start);
+        assert!(
+            (spans[0].start - 0.6).abs() < 1e-9,
+            "start={}",
+            spans[0].start
+        );
         assert!((spans[0].end - 1.6).abs() < 1e-9, "end={}", spans[0].end);
     }
 
     #[test]
     fn multiple_silences_are_split() {
         // loud / quiet(1s) / loud / quiet(1s) / loud → 两段。
-        let wf = waveform_from_pattern(&[
-            (false, 8),
-            (true, 10),
-            (false, 8),
-            (true, 10),
-            (false, 8),
-        ]);
+        let wf =
+            waveform_from_pattern(&[(false, 8), (true, 10), (false, 8), (true, 10), (false, 8)]);
         let spans = detect_silence_segments(&wf, SilenceDetectOptions::default());
         assert_eq!(spans.len(), 2, "expected two silences, got {spans:?}");
     }
@@ -336,7 +336,11 @@ mod tests {
         // 一段 -45dBFS（中等安静）：默认阈值 -40 → 视为静音；阈值收紧到 -50 → 不算。
         let wf: Vec<f32> = std::iter::repeat_n(-45.0_f32, 20).collect();
         let detected_default = detect_silence_segments(&wf, SilenceDetectOptions::default());
-        assert_eq!(detected_default.len(), 1, "-45 should be silent at -40 thresh");
+        assert_eq!(
+            detected_default.len(),
+            1,
+            "-45 should be silent at -40 thresh"
+        );
 
         let strict = SilenceDetectOptions {
             threshold_db: -50.0,
@@ -352,23 +356,50 @@ mod tests {
     #[test]
     fn keep_ranges_are_complement_of_silence() {
         // 总时长 10s，静音 [3,5) → 保留 [0,3) 和 [5,10)。
-        let silences = vec![SilenceSpan { start: 3.0, end: 5.0 }];
+        let silences = vec![SilenceSpan {
+            start: 3.0,
+            end: 5.0,
+        }];
         let keeps = silence_to_keep_ranges(&silences, 10.0);
         assert_eq!(keeps.len(), 2);
-        assert_eq!(keeps[0], SilenceSpan { start: 0.0, end: 3.0 });
-        assert_eq!(keeps[1], SilenceSpan { start: 5.0, end: 10.0 });
+        assert_eq!(
+            keeps[0],
+            SilenceSpan {
+                start: 0.0,
+                end: 3.0
+            }
+        );
+        assert_eq!(
+            keeps[1],
+            SilenceSpan {
+                start: 5.0,
+                end: 10.0
+            }
+        );
     }
 
     #[test]
     fn keep_ranges_handle_leading_and_trailing_silence() {
         // 静音覆盖首尾：[0,2) 和 [8,10)，总 10s → 只保留中间 [2,8)。
         let silences = vec![
-            SilenceSpan { start: 0.0, end: 2.0 },
-            SilenceSpan { start: 8.0, end: 10.0 },
+            SilenceSpan {
+                start: 0.0,
+                end: 2.0,
+            },
+            SilenceSpan {
+                start: 8.0,
+                end: 10.0,
+            },
         ];
         let keeps = silence_to_keep_ranges(&silences, 10.0);
         assert_eq!(keeps.len(), 1);
-        assert_eq!(keeps[0], SilenceSpan { start: 2.0, end: 8.0 });
+        assert_eq!(
+            keeps[0],
+            SilenceSpan {
+                start: 2.0,
+                end: 8.0
+            }
+        );
     }
 
     #[test]

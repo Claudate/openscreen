@@ -2,6 +2,7 @@ import { Popover } from "@kobalte/core/popover";
 import { Select as KSelect } from "@kobalte/core/select";
 import { cx } from "cva";
 import { batch, Show, type ValidComponent } from "solid-js";
+import { t } from "~/i18n";
 import IconCapChevronDown from "~icons/cap/chevron-down";
 import IconCapCorners from "~icons/cap/corners";
 import { useScreenshotEditorContext } from "../context";
@@ -16,9 +17,12 @@ import {
 
 export type CornerRoundingType = "rounded" | "squircle";
 const CORNER_STYLE_OPTIONS = [
-	{ name: "Squircle", value: "squircle" },
-	{ name: "Rounded", value: "rounded" },
-] satisfies Array<{ name: string; value: CornerRoundingType }>;
+	{ nameKey: "squircle" as const, value: "squircle" as const },
+	{ nameKey: "rounded" as const, value: "rounded" as const },
+] satisfies Array<{
+	nameKey: "squircle" | "rounded";
+	value: CornerRoundingType;
+}>;
 
 function hasNoVisibleBackground(source: {
 	type: string;
@@ -78,13 +82,15 @@ export function RoundingPopover() {
 					setActivePopover(activePopover() === "rounding" ? null : "rounding")
 				}
 				leftIcon={<IconCapCorners class="size-4" />}
-				tooltipText="Corner Rounding"
+				tooltipText={t("screenshotEditor.popover.cornerRounding")}
 			/>
 			<Popover.Portal>
 				<Popover.Content class="z-50 w-[240px] overflow-hidden rounded-xl border border-gray-3 bg-gray-1 shadow-xl animate-in fade-in zoom-in-95 p-4">
 					<div class="flex flex-col gap-4">
 						<div class="flex flex-col gap-2">
-							<span class="text-xs font-medium text-gray-11">Rounding</span>
+							<span class="text-xs font-medium text-gray-11">
+								{t("screenshotEditor.popover.cornerRounding")}
+							</span>
 							<Slider
 								value={[project.background.rounding]}
 								onChange={handleRoundingChange}
@@ -95,7 +101,7 @@ export function RoundingPopover() {
 							/>
 						</div>
 						<CornerStyleSelect
-							label="Corner Style"
+							label={t("screenshotEditor.popover.cornerStyle")}
 							value={project.background.roundingType || "squircle"}
 							onChange={(v) => setProject("background", "roundingType", v)}
 						/>
@@ -120,10 +126,10 @@ function CornerStyleSelect(props: {
 					</span>
 				)}
 			</Show>
-			<KSelect<{ name: string; value: CornerRoundingType }>
+			<KSelect<{ nameKey: "squircle" | "rounded"; value: CornerRoundingType }>
 				options={CORNER_STYLE_OPTIONS}
 				optionValue="value"
-				optionTextValue="name"
+				optionTextValue="nameKey"
 				value={CORNER_STYLE_OPTIONS.find(
 					(option) => option.value === props.value,
 				)}
@@ -135,17 +141,23 @@ function CornerStyleSelect(props: {
 						item={itemProps.item}
 					>
 						<KSelect.ItemLabel class="flex-1">
-							{itemProps.item.rawValue.name}
+							{t(`screenshotEditor.popover.${itemProps.item.rawValue.nameKey}`)}
 						</KSelect.ItemLabel>
 					</MenuItem>
 				)}
 			>
 				<KSelect.Trigger class="flex flex-row gap-2 items-center px-2 w-full h-8 rounded-lg transition-colors bg-gray-3 disabled:text-gray-11">
 					<KSelect.Value<{
-						name: string;
+						nameKey: "squircle" | "rounded";
 						value: CornerRoundingType;
 					}> class="flex-1 text-sm text-left truncate text-(--gray-500) font-normal">
-						{(state) => <span>{state.selectedOption().name}</span>}
+						{(state) => (
+							<span>
+								{t(
+									`screenshotEditor.popover.${state.selectedOption().nameKey}`,
+								)}
+							</span>
+						)}
 					</KSelect.Value>
 					<KSelect.Icon<ValidComponent>
 						as={(iconProps) => (

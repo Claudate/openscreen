@@ -25,6 +25,7 @@ import toast from "solid-toast";
 import { SignInButton } from "~/components/SignInButton";
 import Tooltip from "~/components/Tooltip";
 import CaptionControlsWindows11 from "~/components/titlebar/controls/CaptionControlsWindows11";
+import { t } from "~/i18n";
 import { authStore } from "~/store";
 import { trackEvent } from "~/utils/analytics";
 import { createSignInMutation } from "~/utils/auth";
@@ -766,7 +767,7 @@ export function ExportPage() {
 						class="flex items-center gap-1.5"
 					>
 						<IconLucideArrowLeft class="size-4" />
-						<span>Back to Editor</span>
+						<span>{t("editor.export.backToEditor")}</span>
 					</Button>
 					<div data-tauri-drag-region class="flex-1 h-full" />
 					{ostype() === "windows" && <CaptionControlsWindows11 />}
@@ -776,7 +777,9 @@ export function ExportPage() {
 			<div class="flex-1 min-h-0 flex relative">
 				<div class="flex-1 min-h-0 p-5 flex flex-col">
 					<div class="flex items-center gap-1.5 mb-2">
-						<span class="text-sm font-medium text-gray-11">Preview</span>
+						<span class="text-sm font-medium text-gray-11">
+							{t("editor.export.preview")}
+						</span>
 						<Tooltip content="This is a rendered frame from your video. Adjust the settings below to see the quality of the final exported video.">
 							<IconLucideInfo class="size-3.5 text-gray-9 hover:text-gray-11 cursor-help transition-colors" />
 						</Tooltip>
@@ -901,7 +904,10 @@ export function ExportPage() {
 
 				<div class="w-[400px] border-l border-gray-3 flex flex-col bg-gray-1 dark:bg-gray-2">
 					<div class="flex-1 overflow-y-auto p-4 space-y-5">
-						<Field name="Destination" icon={<IconCapUpload class="size-4" />}>
+						<Field
+							name={t("editor.export.destination")}
+							icon={<IconCapUpload class="size-4" />}
+						>
 							<div class="flex gap-1.5">
 								<For each={EXPORT_TO_OPTIONS}>
 									{(option) => {
@@ -1005,7 +1011,10 @@ export function ExportPage() {
 							</Suspense>
 						</Field>
 
-						<Field name="Format" icon={<IconLucideVideo class="size-4" />}>
+						<Field
+							name={t("editor.export.format")}
+							icon={<IconLucideVideo class="size-4" />}
+						>
 							<div class="flex gap-1.5">
 								<For each={FORMAT_OPTIONS}>
 									{(option) => {
@@ -1440,7 +1449,9 @@ export function ExportPage() {
 			>
 				<div class="p-4">
 					<div class="flex items-center justify-between mb-4">
-						<h2 class="text-gray-12 font-medium">Quality Preview</h2>
+						<h2 class="text-gray-12 font-medium">
+							{t("editor.export.qualityPreview")}
+						</h2>
 						<button
 							type="button"
 							onClick={() => setPreviewDialogOpen(false)}
@@ -1643,7 +1654,7 @@ export function ExportPage() {
 													) : (
 														<IconLucideCheck class="transition-colors duration-200 text-gray-1 size-4 svgpathanimation group-hover:text-gray-12" />
 													)}
-													<p>Copy Link</p>
+													<p>{t("editor.export.copyLink")}</p>
 												</Button>
 												<a href={link()} target="_blank" rel="noreferrer">
 													<Button

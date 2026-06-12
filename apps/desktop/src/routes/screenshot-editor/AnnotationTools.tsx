@@ -1,6 +1,7 @@
 import { cx } from "cva";
 import type { Component } from "solid-js";
 import Tooltip from "~/components/Tooltip";
+import { t } from "~/i18n";
 import IconLucideArrowUpRight from "~icons/lucide/arrow-up-right";
 import IconLucideCircle from "~icons/lucide/circle";
 import IconLucideEyeOff from "~icons/lucide/eye-off";
@@ -18,7 +19,7 @@ export function AnnotationTools() {
 
 	return (
 		<div class="flex items-center gap-1">
-			<Tooltip content="Layers" kbd={["L"]}>
+			<Tooltip content={t("screenshotEditor.toolbar.layers")} kbd={["L"]}>
 				<button
 					type="button"
 					onClick={() => setLayersPanelOpen(!layersPanelOpen())}
@@ -36,34 +37,39 @@ export function AnnotationTools() {
 			<ToolButton
 				tool="select"
 				icon={IconLucideMousePointer2}
-				label="Select"
+				label={t("screenshotEditor.toolbar.select")}
 				shortcut="V"
 			/>
 			<ToolButton
 				tool="arrow"
 				icon={IconLucideArrowUpRight}
-				label="Arrow"
+				label={t("screenshotEditor.toolbar.arrow")}
 				shortcut="A"
 			/>
 			<ToolButton
 				tool="rectangle"
 				icon={IconLucideSquare}
-				label="Rectangle"
+				label={t("screenshotEditor.toolbar.rectangle")}
 				shortcut="R"
 			/>
 			<ToolButton
 				tool="mask"
 				icon={IconLucideEyeOff}
-				label="Mask"
+				label={t("screenshotEditor.toolbar.mask")}
 				shortcut="M"
 			/>
 			<ToolButton
 				tool="circle"
 				icon={IconLucideCircle}
-				label="Circle"
+				label={t("screenshotEditor.toolbar.circle")}
 				shortcut="C"
 			/>
-			<ToolButton tool="text" icon={IconLucideType} label="Text" shortcut="T" />
+			<ToolButton
+				tool="text"
+				icon={IconLucideType}
+				label={t("screenshotEditor.toolbar.text")}
+				shortcut="T"
+			/>
 		</div>
 	);
 }

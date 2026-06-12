@@ -2,6 +2,7 @@ import { LogicalPosition } from "@tauri-apps/api/dpi";
 import { CheckMenuItem, Menu, MenuItem } from "@tauri-apps/api/menu";
 import { cx } from "cva";
 import type { JSX } from "solid-js";
+import { t } from "~/i18n";
 import type { TimelineTrackType } from "../context";
 
 type TrackManagerOption = {
@@ -31,7 +32,7 @@ export function TrackManager(props: {
 				if (option.supportsMultiple) {
 					items.push(
 						await MenuItem.new({
-							text: `Add ${option.label} track`,
+							text: t("editor.timeline.addTrackMenu", { label: option.label }),
 							enabled: option.available,
 							action: () => props.onAdd(option.type),
 						}),
@@ -71,7 +72,7 @@ export function TrackManager(props: {
 			onMouseDown={(e) => e.stopPropagation()}
 		>
 			<IconLucidePlus class="size-3.5" />
-			<span>Add track</span>
+			<span>{t("editor.timeline.addTrack")}</span>
 		</button>
 	);
 }

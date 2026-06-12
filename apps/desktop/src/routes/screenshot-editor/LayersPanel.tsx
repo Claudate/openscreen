@@ -1,5 +1,6 @@
 import { cx } from "cva";
 import { createEffect, createSignal, For, on, onCleanup, Show } from "solid-js";
+import { t } from "~/i18n";
 import IconLucideArrowUpRight from "~icons/lucide/arrow-up-right";
 import IconLucideCircle from "~icons/lucide/circle";
 import IconLucideEyeOff from "~icons/lucide/eye-off";
@@ -18,13 +19,13 @@ const ANNOTATION_TYPE_ICONS = {
 	text: IconLucideType,
 };
 
-const ANNOTATION_TYPE_LABELS = {
-	arrow: "Arrow",
-	rectangle: "Rectangle",
-	circle: "Circle",
-	mask: "Mask",
-	text: "Text",
-};
+const annotationTypeLabelKey = {
+	arrow: "arrow",
+	rectangle: "rectangle",
+	circle: "circle",
+	mask: "mask",
+	text: "text",
+} as const;
 
 export function LayersPanel() {
 	const {
@@ -53,7 +54,7 @@ export function LayersPanel() {
 				ann.text.length > 12 ? `${ann.text.slice(0, 12)}...` : ann.text;
 			return truncated;
 		}
-		return ANNOTATION_TYPE_LABELS[ann.type];
+		return t(`screenshotEditor.layers.${annotationTypeLabelKey[ann.type]}`);
 	};
 
 	const reversedAnnotations = () => [...annotations].reverse();
@@ -201,7 +202,7 @@ export function LayersPanel() {
 			<div class="flex items-center justify-between px-3 h-10 border-b border-gray-3">
 				<div class="flex items-center gap-2 text-sm font-medium text-gray-12">
 					<IconLucideLayers class="size-4" />
-					<span>Layers</span>
+					<span>{t("screenshotEditor.layers.title")}</span>
 				</div>
 				<button
 					type="button"
@@ -218,7 +219,9 @@ export function LayersPanel() {
 					fallback={
 						<div class="flex flex-col items-center justify-center h-full px-4 text-center">
 							<IconLucideLayers class="size-8 text-gray-7 mb-2" />
-							<p class="text-xs text-gray-10">No layers yet</p>
+							<p class="text-xs text-gray-10">
+								{t("screenshotEditor.layers.noLayers")}
+							</p>
 							<p class="text-[10px] text-gray-8 mt-1">
 								Use the tools above to add annotations
 							</p>

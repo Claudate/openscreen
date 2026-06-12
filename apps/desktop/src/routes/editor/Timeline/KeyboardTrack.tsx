@@ -1,6 +1,7 @@
 import { createEventListenerMap } from "@solid-primitives/event-listener";
 import { cx } from "cva";
 import { createMemo, createRoot, For } from "solid-js";
+import { t } from "~/i18n";
 
 import { useEditorContext } from "../context";
 import { useTimelineContext } from "./context";
@@ -139,9 +140,9 @@ export function KeyboardTrack(props: {
 				each={keyboardSegments()}
 				fallback={
 					<div class="text-center text-sm text-(--text-tertiary) flex flex-col justify-center items-center inset-0 w-full bg-gray-3/20 dark:bg-gray-3/10 rounded-xl pointer-events-none">
-						<div>No keyboard events</div>
+						<div>{t("editor.timeline.keyboard.noEvents")}</div>
 						<div class="text-[10px] text-(--text-tertiary)/40 mt-0.5">
-							Record keyboard presses or generate from recording
+							{t("editor.timeline.keyboard.hint")}
 						</div>
 					</div>
 				}

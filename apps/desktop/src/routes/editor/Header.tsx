@@ -23,6 +23,7 @@ import { produce } from "solid-js/store";
 import toast from "solid-toast";
 import Tooltip from "~/components/Tooltip";
 import CaptionControlsWindows11 from "~/components/titlebar/controls/CaptionControlsWindows11";
+import { t } from "~/i18n";
 import { trackEvent } from "~/utils/analytics";
 import { commands, type RecordingMetaWithMetadata } from "~/utils/tauri";
 import { initializeTitlebar } from "~/utils/titlebar-state";
@@ -67,7 +68,9 @@ const normalizeImportPath = (path: string) =>
 	path.replace(/\\/g, "/").replace(/\/+$/, "");
 
 const recordingModeLabel = (mode: RecordingMetaWithMetadata["mode"]) =>
-	mode === "studio" ? "Studio Mode" : "Instant Mode";
+	mode === "studio"
+		? t("editor.header.studioMode")
+		: t("editor.header.instantMode");
 
 export function Header() {
 	const {
@@ -122,7 +125,7 @@ export function Header() {
 
 		clearTimelineSelection();
 		setImportingRecording(true);
-		const toastId = toast.loading("Importing recording...");
+		const toastId = toast.loading(t("editor.header.importingRecording"));
 
 		try {
 			if (editorState.playing) {
@@ -293,7 +296,7 @@ export function Header() {
 				<EditorButton
 					onClick={openImportMenu}
 					disabled={importingRecording()}
-					tooltipText="Import recording"
+					tooltipText={t("editor.header.importRecording")}
 					leftIcon={<IconLucideImport class="w-5" />}
 				/>
 				<ImportRecordingDialog
@@ -454,7 +457,9 @@ export function Header() {
 						>
 							<IconLucideArrowLeft class="size-4" />
 						</Show>
-						{isTranscriptOpen() ? "Back" : "Transcript"}
+						{isTranscriptOpen()
+							? t("common.back")
+							: t("editor.header.transcript")}
 					</Button>
 				</Show>
 				<Button
@@ -470,7 +475,7 @@ export function Header() {
 					}}
 				>
 					<UploadIcon class="size-4" />
-					Export
+					{t("editor.header.export")}
 				</Button>
 				{ostype() === "windows" && <CaptionControlsWindows11 />}
 			</div>
@@ -499,10 +504,10 @@ function ImportRecordingDialog(props: {
 			<Dialog.Header>
 				<div class="flex flex-col gap-0.5 min-w-0">
 					<KDialog.Title class="text-sm font-medium text-gray-12">
-						Import recording
+						{t("editor.header.importDialogTitle")}
 					</KDialog.Title>
 					<KDialog.Description class="text-xs text-gray-10">
-						Newest to oldest
+						{t("editor.header.importDialogSubdesc")}
 					</KDialog.Description>
 				</div>
 			</Dialog.Header>
@@ -517,19 +522,19 @@ function ImportRecordingDialog(props: {
 							props.onSearch("");
 						}
 					}}
-					placeholder="Search recordings"
+					placeholder={t("editor.header.searchRecordings")}
 					autoCapitalize="off"
 					autocorrect="off"
 					autocomplete="off"
 					spellcheck={false}
-					aria-label="Search recordings"
+					aria-label={t("editor.header.searchRecordings")}
 				/>
 				<div class="min-h-[12rem] max-h-[20rem] overflow-y-auto custom-scroll rounded-lg border border-gray-3 bg-gray-2">
 					<Show
 						when={!props.isLoading}
 						fallback={
 							<div class="flex h-48 items-center justify-center text-xs text-gray-10">
-								Loading recordings...
+								{t("editor.header.loadingRecordings")}
 							</div>
 						}
 					>

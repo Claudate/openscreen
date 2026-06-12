@@ -2,6 +2,7 @@ import { createEventListenerMap } from "@solid-primitives/event-listener";
 import { cx } from "cva";
 import { createMemo, createRoot, createSignal, For, Show } from "solid-js";
 import { produce } from "solid-js/store";
+import { t } from "~/i18n";
 
 import { useEditorContext } from "../context";
 import { defaultMaskSegment } from "../masks";
@@ -308,9 +309,9 @@ export function MaskTrack(props: {
 						fallback={<div class="w-full rounded-xl bg-transparent" />}
 					>
 						<div class="text-center text-sm text-(--text-tertiary) flex flex-col justify-center items-center inset-0 w-full bg-gray-3/20 dark:bg-gray-3/10 hover:bg-gray-3/30 dark:hover:bg-gray-3/20 transition-colors rounded-xl pointer-events-none">
-							<div>Click to add a mask</div>
+							<div>{t("editor.timeline.mask.clickToAdd")}</div>
 							<div class="text-[10px] text-(--text-tertiary)/40 mt-0.5">
-								(Combine sensitive blur or highlight masks)
+								{t("editor.timeline.mask.hint")}
 							</div>
 						</div>
 					</Show>
@@ -324,7 +325,9 @@ export function MaskTrack(props: {
 					});
 
 					const contentLabel = () =>
-						segment.maskType === "sensitive" ? "Sensitive" : "Highlight";
+						segment.maskType === "sensitive"
+							? t("editor.timeline.mask.sensitive")
+							: t("editor.timeline.mask.highlight");
 
 					const segmentWidth = () => segment.end - segment.start;
 

@@ -23,6 +23,7 @@ import toast from "solid-toast";
 import "./styles.css";
 
 import Tooltip from "~/components/Tooltip";
+import { t } from "~/i18n";
 import { defaultCaptionSettings } from "~/store/captions";
 import { defaultKeyboardSettings } from "~/store/keyboard";
 import { commands } from "~/utils/tauri";
@@ -64,7 +65,14 @@ const trackIcons: Record<TimelineTrackType, () => JSX.Element> = {
 
 type TrackDefinition = {
 	type: TimelineTrackType;
-	label: string;
+	labelKey:
+		| "clip"
+		| "captions"
+		| "keyboard"
+		| "text"
+		| "mask"
+		| "zoom"
+		| "scene";
 	icon: () => JSX.Element;
 	locked: boolean;
 };
@@ -72,43 +80,43 @@ type TrackDefinition = {
 const trackDefinitions: TrackDefinition[] = [
 	{
 		type: "clip",
-		label: "Clip",
+		labelKey: "clip",
 		icon: trackIcons.clip,
 		locked: true,
 	},
 	{
 		type: "caption",
-		label: "Captions",
+		labelKey: "captions",
 		icon: trackIcons.caption,
 		locked: false,
 	},
 	{
 		type: "keyboard",
-		label: "Keyboard",
+		labelKey: "keyboard",
 		icon: trackIcons.keyboard,
 		locked: false,
 	},
 	{
 		type: "text",
-		label: "Text",
+		labelKey: "text",
 		icon: trackIcons.text,
 		locked: false,
 	},
 	{
 		type: "mask",
-		label: "Mask",
+		labelKey: "mask",
 		icon: trackIcons.mask,
 		locked: false,
 	},
 	{
 		type: "zoom",
-		label: "Zoom",
+		labelKey: "zoom",
 		icon: trackIcons.zoom,
 		locked: true,
 	},
 	{
 		type: "scene",
-		label: "Scene",
+		labelKey: "scene",
 		icon: trackIcons.scene,
 		locked: false,
 	},
@@ -164,7 +172,10 @@ export function Timeline(props: {
 	const keyboardTrackVisible = () => trackState().keyboard;
 	const trackOptions = createMemo(() =>
 		trackDefinitions.map((definition) => ({
-			...definition,
+			type: definition.type,
+			label: t(`editor.timeline.tracks.${definition.labelKey}`),
+			icon: definition.icon,
+			locked: definition.locked,
 			active:
 				definition.type === "caption"
 					? trackState().caption
@@ -712,7 +723,7 @@ export function Timeline(props: {
 
 			setEditorState("timeline", "tracks", "caption", true);
 			setEditorState("captions", "isStale", false);
-			toast.success("Captions generated successfully!");
+			toast.success(t("editor.timeline.captions.generateSuccess"));
 		} catch (error) {
 			console.error("Error generating captions:", error);
 			const errorMessage = getCaptionGenerationErrorMessage(error);
@@ -841,7 +852,7 @@ export function Timeline(props: {
 						<TimelineMarkings />
 					</div>
 					<div class="absolute bottom-0 z-30">
-						<Tooltip content="Add track">
+						<Tooltip content={t("editor.timeline.addTrack")}>
 							<TrackManager
 								options={trackOptions()}
 								onToggle={handleToggleTrack}
@@ -1034,7 +1045,7 @@ function TrackRow(props: {
 							props.onDelete?.();
 						}}
 						onMouseDown={(e) => e.stopPropagation()}
-						title="Delete track"
+						title={t("editor.timeline.deleteTrack")}
 					>
 						<IconCapTrash class="size-4" />
 					</button>

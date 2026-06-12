@@ -9,8 +9,13 @@ export default defineConfig({
 	server: { preset: "static" },
 	// https://vitejs.dev/config
 	vite: () => ({
-		// Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
-		// 1. tauri expects a fixed port, fail if that port is not available
+		esbuild: {
+			pure: ["console.log", "console.debug", "console.info"],
+		},
+		build: {
+			target: "es2021",
+			cssMinify: true,
+		},
 		server: {
 			port: 3001,
 			strictPort: true,

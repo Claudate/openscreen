@@ -12,12 +12,17 @@ $clientEntry = $manifest.'virtual:$vinxi/handler/client'
 if (-not $clientEntry) {
 	throw "Client entry not found in manifest"
 }
-$clientJs = "assets/$($clientEntry.file)"
+$clientJs = $clientEntry.file
+$cssFiles = @()
+if ($clientEntry.css) {
+	foreach ($c in $clientEntry.css) { $cssFiles += $c }
+}
 
 if (Test-Path $pub) { Remove-Item $pub -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $pub | Out-Null
 Copy-Item $clientBuild (Join-Path $pub "_build") -Recurse -Force
 
+$cssLinks = ($cssFiles | ForEach-Object { "`t<link rel=`"stylesheet`" crossorigin href=`"/_build/$_`"/>" }) -join "`n"
 $html = @"
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -25,6 +30,7 @@ $html = @"
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
 	<title>Screen</title>
+$cssLinks
 	<script type="module" crossorigin src="/_build/$clientJs"></script>
 </head>
 <body>

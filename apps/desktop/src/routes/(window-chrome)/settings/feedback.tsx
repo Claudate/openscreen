@@ -5,6 +5,7 @@ import { type OsType, type as ostype } from "@tauri-apps/plugin-os";
 import * as shell from "@tauri-apps/plugin-shell";
 import { createResource, createSignal, For, Show } from "solid-js";
 import toast from "solid-toast";
+import { t } from "~/i18n";
 
 import { commands, type SystemDiagnostics } from "~/utils/tauri";
 import { apiClient, protectedHeaders } from "~/utils/web-api";
@@ -47,9 +48,9 @@ export default function FeedbackTab() {
 		setUploadingLogs(true);
 		try {
 			await commands.uploadLogs();
-			toast.success("Logs uploaded successfully");
+			toast.success(t("settings.feedback.logsUploaded"));
 		} catch (error) {
-			toast.error("Failed to upload logs");
+			toast.error(t("settings.feedback.logsUploadFailed"));
 			console.error("Failed to upload logs:", error);
 		} finally {
 			setUploadingLogs(false);
@@ -60,8 +61,8 @@ export default function FeedbackTab() {
 		<div class="cap-settings-page flex flex-col w-full h-full custom-scroll">
 			<SettingsPageContent>
 				<Section
-					title="Feedback"
-					description="Help us improve Cap by submitting feedback or reporting bugs. We'll get right on it."
+					title={t("settings.feedback.title")}
+					description={t("settings.feedback.description")}
 				>
 					<form
 						class="space-y-4"
@@ -75,7 +76,7 @@ export default function FeedbackTab() {
 								<textarea
 									value={feedback()}
 									onInput={(e) => setFeedback(e.currentTarget.value)}
-									placeholder="Tell us what you think about Cap..."
+									placeholder={t("settings.feedback.placeholder")}
 									required
 									minLength={10}
 									class="p-2 w-full h-32 text-[13px] rounded-md border transition-colors duration-200 resize-none bg-gray-2 placeholder:text-gray-10 border-gray-3 text-primary focus:outline-hidden focus:ring-1 focus:ring-gray-8 hover:border-gray-6"
@@ -89,7 +90,9 @@ export default function FeedbackTab() {
 							)}
 
 							{submission.result?.success && (
-								<p class="text-sm text-primary">Thank you for your feedback!</p>
+								<p class="text-sm text-primary">
+									{t("settings.feedback.thankYou")}
+								</p>
 							)}
 
 							<Button
@@ -99,28 +102,30 @@ export default function FeedbackTab() {
 								disabled={feedback().trim().length < 4}
 								class="mt-2"
 							>
-								{submission.pending ? "Submitting..." : "Submit Feedback"}
+								{submission.pending
+									? t("settings.feedback.submitting")
+									: t("settings.feedback.submit")}
 							</Button>
 						</fieldset>
 					</form>
 				</Section>
 
 				<Section
-					title="Join the Community"
-					description="Have questions, want to share ideas, or just hang out? Join the Cap Discord community."
+					title={t("settings.feedback.communityTitle")}
+					description={t("settings.feedback.communityDesc")}
 				>
 					<Button
 						onClick={() => shell.open("https://cap.link/discord")}
 						size="md"
 						variant="gray"
 					>
-						Join Discord
+						{t("settings.feedback.joinDiscord")}
 					</Button>
 				</Section>
 
 				<Section
-					title="Debug Information"
-					description="Upload your logs to help us diagnose issues with Cap. No personal information is included."
+					title={t("settings.feedback.debugTitle")}
+					description={t("settings.feedback.debugDesc")}
 				>
 					<Button
 						onClick={handleUploadLogs}
@@ -128,16 +133,18 @@ export default function FeedbackTab() {
 						variant="gray"
 						disabled={uploadingLogs()}
 					>
-						{uploadingLogs() ? "Uploading..." : "Upload Logs"}
+						{uploadingLogs()
+							? t("settings.feedback.uploading")
+							: t("settings.feedback.uploadLogs")}
 					</Button>
 				</Section>
 
-				<Section title="System Information">
+				<Section title={t("settings.feedback.systemInfoTitle")}>
 					<Show
 						when={!diagnostics.loading && diagnostics()}
 						fallback={
 							<p class="text-xs leading-relaxed text-gray-10">
-								Loading system information...
+								{t("settings.feedback.loadingSystemInfo")}
 							</p>
 						}
 					>
@@ -160,7 +167,9 @@ export default function FeedbackTab() {
 									<Show when={osVersion}>
 										{(ver) => (
 											<div class="space-y-1">
-												<p class="text-gray-11 font-medium">Operating System</p>
+												<p class="text-gray-11 font-medium">
+													{t("settings.feedback.operatingSystem")}
+												</p>
 												<p class="text-gray-10 bg-gray-2 px-2 py-1.5 rounded-sm font-mono text-xs">
 													{ver().displayName}
 												</p>
@@ -169,7 +178,9 @@ export default function FeedbackTab() {
 									</Show>
 
 									<div class="space-y-1">
-										<p class="text-gray-11 font-medium">Capture Support</p>
+										<p class="text-gray-11 font-medium">
+											{t("settings.feedback.captureSupport")}
+										</p>
 										<div class="flex gap-2 flex-wrap">
 											<span
 												class={`px-2 py-1 rounded text-xs ${
@@ -178,15 +189,19 @@ export default function FeedbackTab() {
 														: "bg-red-500/20 text-red-400"
 												}`}
 											>
-												Screen Capture:{" "}
-												{captureSupported ? "Supported" : "Not Supported"}
+												{t("settings.feedback.screenCapture")}:{" "}
+												{captureSupported
+													? t("settings.feedback.supported")
+													: t("settings.feedback.notSupported")}
 											</span>
 										</div>
 									</div>
 
 									<Show when={(d.availableEncoders as string[])?.length > 0}>
 										<div class="space-y-1">
-											<p class="text-gray-11 font-medium">Available Encoders</p>
+											<p class="text-gray-11 font-medium">
+												{t("settings.feedback.availableEncoders")}
+											</p>
 											<div class="flex gap-1.5 flex-wrap">
 												<For each={d.availableEncoders as string[]}>
 													{(encoder) => (

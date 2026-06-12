@@ -157,21 +157,27 @@ const cameraSettingsKeys = (camera: CameraWithDetails) => [
 
 const formatCameraSetting = (format: CameraDeviceSettings) => {
 	const size =
-		format.width && format.height ? `${format.width}×${format.height}` : "Auto";
-	const rate = format.frameRate ? `${Math.round(format.frameRate)}fps` : "Auto";
+		format.width && format.height
+			? `${format.width}×${format.height}`
+			: t("common.auto");
+	const rate = format.frameRate
+		? `${Math.round(format.frameRate)}fps`
+		: t("common.auto");
 	return `${size} @ ${rate}`;
 };
 
 const formatMicrophoneSetting = (setting: MicrophoneDeviceSettings) => {
-	const rate = setting.sampleRate ? `${setting.sampleRate / 1000}kHz` : "Auto";
+	const rate = setting.sampleRate
+		? `${setting.sampleRate / 1000}kHz`
+		: t("common.auto");
 	const channels =
 		setting.channels === 1
-			? "Mono"
+			? t("common.mono")
 			: setting.channels === 2
-				? "Stereo"
+				? t("common.stereo")
 				: setting.channels
 					? `${setting.channels}ch`
-					: "Auto";
+					: t("common.auto");
 	return `${rate} ${channels}`;
 };
 
@@ -412,9 +418,9 @@ function MicrophoneListItem(props: {
 		if (!props.mic.sampleRate) return null;
 		const channels =
 			props.mic.channels === 1
-				? "Mono"
+				? t("common.mono")
 				: props.mic.channels === 2
-					? "Stereo"
+					? t("common.stereo")
 					: `${props.mic.channels}ch`;
 		return `${props.mic.sampleRate / 1000}kHz ${channels}`;
 	};
@@ -1883,7 +1889,7 @@ function Page() {
 		try {
 			await commands.uploadExportedVideo(
 				path,
-				"Reupload",
+				t("main.reupload"),
 				new Channel<UploadProgress>(() => {}),
 				null,
 			);
@@ -2682,8 +2688,8 @@ function Page() {
 									fallback={
 										<span class="text-[0.6rem] ml-2 rounded-lg border border-gray-5 px-1 py-0.5 bg-(--blue-400) text-gray-1 dark:text-gray-12">
 											{license.data?.type === "commercial"
-												? "Commercial"
-												: "Pro"}
+												? t("main.commercial")
+												: t("main.pro")}
 										</span>
 									}
 								>

@@ -12,6 +12,7 @@ import {
 	Switch,
 } from "solid-js";
 import { createStore } from "solid-js/store";
+import { t } from "~/i18n";
 import { hotkeysStore } from "~/store";
 
 import {
@@ -22,21 +23,8 @@ import {
 } from "~/utils/tauri";
 import { Section, SectionCard, SettingsPageContent } from "./Setting";
 
-const ACTION_TEXT = {
-	startStudioRecording: "Start studio recording",
-	startInstantRecording: "Start instant recording",
-	restartRecording: "Restart recording",
-	stopRecording: "Stop recording",
-	togglePauseRecording: "Pause/resume recording",
-	cycleRecordingMode: "Cycle recording mode",
-	openRecordingPicker: "Open recording picker",
-	openRecordingPickerDisplay: "Record display",
-	openRecordingPickerWindow: "Record window",
-	openRecordingPickerArea: "Record area",
-	screenshotDisplay: "Screenshot current display",
-	screenshotWindow: "Screenshot current window",
-	screenshotArea: "Screenshot area picker",
-} satisfies { [K in HotkeyAction]?: string };
+const hotkeyActionKey = (action: HotkeyAction) =>
+	`settings.hotkeys.actions.${action}` as const;
 
 export default function () {
 	const [store] = createResource(() => hotkeysStore.get());
@@ -95,14 +83,14 @@ function Inner(props: { initialStore: HotkeysStore | null }) {
 			"openRecordingPickerDisplay",
 			"openRecordingPickerWindow",
 			"openRecordingPickerArea",
-		] satisfies Array<keyof typeof ACTION_TEXT>;
+		] satisfies HotkeyAction[];
 
 	return (
 		<div class="cap-settings-page flex flex-col h-full custom-scroll">
 			<SettingsPageContent>
 				<Section
-					title="Shortcuts"
-					description="Configure system-wide keyboard shortcuts to control Cap."
+					title={t("settings.hotkeys.title")}
+					description={t("settings.hotkeys.description")}
 				>
 					<SectionCard class="flex flex-col gap-3 p-4">
 						<Index each={actions()}>
@@ -120,7 +108,7 @@ function Inner(props: { initialStore: HotkeysStore | null }) {
 									<>
 										<div class="flex flex-row justify-between items-center w-full h-8">
 											<p class="text-[13px] text-gray-12">
-												{ACTION_TEXT[item()]}
+												{t(hotkeyActionKey(item()))}
 											</p>
 											<Switch>
 												<Match when={listening()?.action === item()}>
@@ -129,7 +117,7 @@ function Inner(props: { initialStore: HotkeysStore | null }) {
 															when={hotkeys[item()]}
 															fallback={
 																<p class="text-[13px] text-gray-11">
-																	Set hotkeys...
+																	{t("settings.hotkeys.setHotkeys")}
 																</p>
 															}
 														>
@@ -176,7 +164,6 @@ function Inner(props: { initialStore: HotkeysStore | null }) {
 														type="button"
 														class="text-sm bg-transparent rounded-lg"
 														onClick={() => {
-															// ensures that previously selected hotkey is cleared by letting the event propagate before listening to the new hotkey
 															setTimeout(() => {
 																setListening({
 																	action: item(),
@@ -192,7 +179,7 @@ function Inner(props: { initialStore: HotkeysStore | null }) {
 																	class="flex items-center text-[11px] uppercase transition-colors hover:bg-gray-6 hover:border-gray-7
                         cursor-pointer py-3 px-2.5 h-5 bg-gray-4 border border-gray-5 rounded-lg text-gray-11 hover:text-gray-12"
 																>
-																	None
+																	{t("settings.hotkeys.none")}
 																</p>
 															}
 														>

@@ -22,6 +22,7 @@ import {
 } from "solid-js";
 import { createStore, produce } from "solid-js/store";
 import CapTooltip from "~/components/Tooltip";
+import { t } from "~/i18n";
 import { Input } from "~/routes/editor/ui";
 import { trackEvent } from "~/utils/analytics";
 import { createTauriEventListener } from "~/utils/createEventListener";
@@ -44,22 +45,23 @@ type Recording = {
 	thumbnailPath: string;
 };
 
-const Tabs = [
-	{
-		id: "all",
-		label: "Show all",
-	},
-	{
-		id: "instant",
-		icon: <IconCapInstant class="invert size-3 dark:invert-0" />,
-		label: "Instant",
-	},
-	{
-		id: "studio",
-		icon: <IconCapFilmCut class="invert size-3 dark:invert-0" />,
-		label: "Studio",
-	},
-] satisfies { id: string; label: string; icon?: JSX.Element }[];
+const tabs = () =>
+	[
+		{
+			id: "all",
+			label: t("settings.recordings.showAll"),
+		},
+		{
+			id: "instant",
+			icon: <IconCapInstant class="invert size-3 dark:invert-0" />,
+			label: t("settings.recordings.instant"),
+		},
+		{
+			id: "studio",
+			icon: <IconCapFilmCut class="invert size-3 dark:invert-0" />,
+			label: t("settings.recordings.studio"),
+		},
+	] satisfies { id: string; label: string; icon?: JSX.Element }[];
 
 const PAGE_SIZE = 20;
 
@@ -101,9 +103,9 @@ const recordingsQuery = queryOptions<Recording[]>({
 });
 
 export default function Recordings() {
-	const [activeTab, setActiveTab] = createSignal<(typeof Tabs)[number]["id"]>(
-		Tabs[0].id,
-	);
+	const [activeTab, setActiveTab] = createSignal<
+		ReturnType<typeof tabs>[number]["id"]
+	>(tabs()[0].id);
 	const [search, setSearch] = createSignal("");
 	const trimmedSearch = createMemo(() => search().trim());
 	const normalizedSearch = createMemo(() => trimmedSearch().toLowerCase());
@@ -159,10 +161,11 @@ export default function Recordings() {
 	);
 
 	const emptyMessage = createMemo(() => {
-		const tabLabel =
-			activeTab() === "all" ? "recordings" : `${activeTab()} recordings`;
-		const prefix = trimmedSearch() ? "No matching" : "No";
-		return `${prefix} ${tabLabel}`;
+		if (trimmedSearch()) return t("settings.recordings.noMatchingRecordings");
+		const tab = activeTab();
+		if (tab === "instant") return t("settings.recordings.noInstantRecordings");
+		if (tab === "studio") return t("settings.recordings.noStudioRecordings");
+		return t("settings.recordings.noRecordings");
 	});
 
 	const handleRecordingClick = (recording: Recording) => {
@@ -202,8 +205,8 @@ export default function Recordings() {
 		<div class="cap-settings-page flex relative flex-col w-full h-full custom-scroll">
 			<SettingsPageContent class="max-w-none space-y-4">
 				<Section
-					title="Recordings"
-					description="Manage your recordings and perform actions."
+					title={t("settings.nav.recordings")}
+					description={t("settings.recordings.manageDescription")}
 					right={
 						<Button
 							variant="gray"
@@ -212,7 +215,7 @@ export default function Recordings() {
 							onClick={handleVideoImport}
 						>
 							<IconLucideImport class="size-3.5" />
-							<span>Import</span>
+							<span>{t("settings.recordings.import")}</span>
 						</Button>
 					}
 				>
@@ -220,13 +223,13 @@ export default function Recordings() {
 						when={recordings.data && recordings.data.length > 0}
 						fallback={
 							<p class="text-center text-(--text-tertiary) absolute flex items-center justify-center w-full h-full">
-								No recordings found
+								{t("settings.recordings.noRecordings")}
 							</p>
 						}
 					>
 						<div class="flex flex-col gap-3 pb-4 w-full border-b border-gray-2">
 							<div class="flex flex-wrap gap-3 items-center">
-								<For each={Tabs}>
+								<For each={tabs()}>
 									{(tab) => (
 										<div
 											class={cx(
@@ -256,12 +259,12 @@ export default function Recordings() {
 											setSearch("");
 										}
 									}}
-									placeholder="Search"
+									placeholder={t("settings.recordings.searchPlaceholder")}
 									autoCapitalize="off"
 									autocorrect="off"
 									autocomplete="off"
 									spellcheck={false}
-									aria-label="Search recordings"
+									aria-label={t("settings.recordings.searchPlaceholder")}
 								/>
 							</div>
 						</div>
@@ -308,7 +311,7 @@ export default function Recordings() {
 											)
 										}
 									>
-										Load more
+										{t("settings.recordings.loadMore")}
 									</Button>
 								</div>
 							</Show>
@@ -330,8 +333,10 @@ function RecordingItem(props: {
 }) {
 	const [imageExists, setImageExists] = createSignal(true);
 	const mode = () => props.recording.meta.mode;
-	const firstLetterUpperCase = () =>
-		mode().charAt(0).toUpperCase() + mode().slice(1);
+	const modeLabel = () =>
+		mode() === "instant"
+			? t("settings.recordings.instant")
+			: t("settings.recordings.studio");
 
 	const queryClient = useQueryClient();
 	const studioCompleteCheck = () =>
@@ -358,7 +363,7 @@ function RecordingItem(props: {
 				>
 					<img
 						class="object-cover rounded-sm size-12"
-						alt="Recording thumbnail"
+						alt={t("settings.recordings.recordingThumbnail")}
 						src={`${convertFileSrc(
 							props.recording.thumbnailPath,
 						)}?t=${Date.now()}`}
@@ -379,7 +384,7 @@ function RecordingItem(props: {
 							) : (
 								<IconCapFilmCut class="invert size-2.5 dark:invert-0" />
 							)}
-							<p>{firstLetterUpperCase()}</p>
+							<p>{modeLabel()}</p>
 						</div>
 
 						<Show when={props.recording.meta.status.status === "InProgress"}>
@@ -389,7 +394,7 @@ function RecordingItem(props: {
 								)}
 							>
 								<IconPhRecordFill class="invert size-2.5 dark:invert-0" />
-								<p>Recording in progress</p>
+								<p>{t("settings.recordings.recordingInProgress")}</p>
 							</div>
 						</Show>
 
@@ -409,7 +414,7 @@ function RecordingItem(props: {
 									)}
 								>
 									<IconPhWarningBold class="invert size-2.5 dark:invert-0" />
-									<p>Recording failed</p>
+									<p>{t("settings.recordings.recordingFailed")}</p>
 								</div>
 							</CapTooltip>
 						</Show>
@@ -430,7 +435,7 @@ function RecordingItem(props: {
 					<Show when={props.recording.meta.sharing}>
 						{(sharing) => (
 							<TooltipIconButton
-								tooltipText="Open link"
+								tooltipText={t("settings.recordings.openLink")}
 								onClick={() => shell.open(sharing().link)}
 							>
 								<IconCapLink class="size-4" />
@@ -438,17 +443,14 @@ function RecordingItem(props: {
 						)}
 					</Show>
 					<TooltipIconButton
-						tooltipText="Edit"
+						tooltipText={t("settings.recordings.edit")}
 						onClick={async () => {
 							if (
 								props.recording.meta.status.status === "Failed" &&
-								!(await confirm(
-									"The recording failed so this file may have issues in the editor! If your having issues recovering the file please reach out to support!",
-									{
-										title: "Recording is potentially corrupted",
-										kind: "warning",
-									},
-								))
+								!(await confirm(t("settings.recordings.corruptedMessage"), {
+									title: t("settings.recordings.corruptedTitle"),
+									kind: "warning",
+								}))
 							)
 								return;
 							props.onOpenEditor();
@@ -476,7 +478,7 @@ function RecordingItem(props: {
 									when={props.uploadProgress || reupload.isPending}
 									fallback={
 										<TooltipIconButton
-											tooltipText="Reupload"
+											tooltipText={t("settings.recordings.reupload")}
 											onClick={() => reupload.mutate()}
 										>
 											<IconLucideRotateCcw class="size-4" />
@@ -493,7 +495,7 @@ function RecordingItem(props: {
 								<Show when={props.recording.meta.sharing}>
 									{(sharing) => (
 										<TooltipIconButton
-											tooltipText="Open link"
+											tooltipText={t("settings.recordings.openLink")}
 											onClick={() => shell.open(sharing().link)}
 										>
 											<IconCapLink class="size-4" />
@@ -505,7 +507,7 @@ function RecordingItem(props: {
 					}}
 				</Show>
 				<TooltipIconButton
-					tooltipText="Open recording bundle"
+					tooltipText={t("settings.recordings.openRecordingBundle")}
 					onClick={() => {
 						props.onOpenFolder();
 					}}
@@ -513,10 +515,9 @@ function RecordingItem(props: {
 					<IconLucideFolder class="size-4" />
 				</TooltipIconButton>
 				<TooltipIconButton
-					tooltipText="Delete"
+					tooltipText={t("settings.recordings.delete")}
 					onClick={async () => {
-						if (!(await ask("Are you sure you want to delete this recording?")))
-							return;
+						if (!(await ask(t("settings.recordings.deleteConfirm")))) return;
 						await remove(props.recording.path, { recursive: true });
 
 						queryClient.refetchQueries(recordingsQuery);

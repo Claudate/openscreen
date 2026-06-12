@@ -1,6 +1,7 @@
 import { cx } from "cva";
 import { For } from "solid-js";
 import { Transition } from "solid-transition-group";
+import { t } from "~/i18n";
 import { commands, type RecordingMode } from "~/utils/tauri";
 import IconLucideArrowLeft from "~icons/lucide/arrow-left";
 import { useRecordingOptions } from "../OptionsContext";
@@ -12,23 +13,20 @@ interface ModeInfoPanelProps {
 const modeOptions = [
 	{
 		mode: "instant" as RecordingMode,
-		title: "Instant",
-		description:
-			"Share instantly with a link. Your recording uploads as you record, so you can share it immediately when you're done.",
+		titleKey: "mode.instantMode" as const,
+		descKey: "mode.instantModeDesc" as const,
 		icon: IconCapInstant,
 	},
 	{
 		mode: "studio" as RecordingMode,
-		title: "Studio",
-		description:
-			"Record locally in the highest quality for editing later. Perfect for creating polished content with effects and transitions.",
+		titleKey: "mode.studioMode" as const,
+		descKey: "mode.studioModeDesc" as const,
 		icon: IconCapFilmCut,
 	},
 	{
 		mode: "screenshot" as RecordingMode,
-		title: "Screenshot",
-		description:
-			"Capture and annotate screenshots instantly. Great for quick captures, bug reports, and visual communication.",
+		titleKey: "mode.screenshotMode" as const,
+		descKey: "mode.screenshotModeDesc" as const,
 		icon: IconCapScreenshot,
 	},
 ];
@@ -53,9 +51,11 @@ export default function ModeInfoPanel(props: ModeInfoPanelProps) {
 					focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-9 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-1"
 				>
 					<IconLucideArrowLeft class="size-3 text-gray-11" />
-					<span class="font-medium text-gray-12">Back</span>
+					<span class="font-medium text-gray-12">{t("common.back")}</span>
 				</button>
-				<span class="text-xs font-medium text-gray-11">Recording Modes</span>
+				<span class="text-xs font-medium text-gray-11">
+					{t("mode.recordingModes")}
+				</span>
 			</div>
 			<div class="flex flex-col flex-1 min-h-0 pt-4">
 				<div class="px-1 custom-scroll flex-1 overflow-y-auto">
@@ -79,40 +79,21 @@ export default function ModeInfoPanel(props: ModeInfoPanelProps) {
 												type="button"
 												onClick={() => handleModeSelect(option.mode)}
 												class={cx(
-													"relative flex items-center gap-3 p-3 w-full text-left rounded-xl border-2 transition-all duration-200",
+													"flex flex-col gap-1.5 w-full p-3 text-left rounded-xl border transition-colors duration-200",
 													isSelected()
-														? "border-blue-9 bg-blue-3 dark:bg-blue-3/30"
-														: "border-gray-4 dark:border-gray-5 bg-gray-2 dark:bg-gray-3 hover:border-gray-6 dark:hover:border-gray-6 hover:bg-gray-3 dark:hover:bg-gray-4",
+														? "border-blue-7 bg-blue-3/40"
+														: "border-gray-4 bg-gray-2 hover:border-gray-6 hover:bg-gray-3",
 												)}
 											>
-												{isSelected() && (
-													<div class="absolute top-2 right-2 flex items-center justify-center size-4 rounded-full bg-blue-9">
-														<IconLucideCheck class="size-2.5 text-white" />
-													</div>
-												)}
-
-												<div class="shrink-0">
-													<option.icon
-														class={cx(
-															"size-5 invert dark:invert-0",
-															isSelected() && "text-blue-11",
-														)}
-													/>
+												<div class="flex gap-2 items-center">
+													<option.icon class="size-4 text-gray-12" />
+													<span class="text-sm font-medium text-gray-12">
+														{t(option.titleKey)}
+													</span>
 												</div>
-
-												<div class="flex flex-col flex-1 min-w-0">
-													<h3
-														class={cx(
-															"text-sm font-semibold",
-															isSelected() ? "text-blue-11" : "text-gray-12",
-														)}
-													>
-														{option.title}
-													</h3>
-													<p class="text-xs leading-relaxed text-gray-11">
-														{option.description}
-													</p>
-												</div>
+												<p class="text-xs leading-relaxed text-gray-11">
+													{t(option.descKey)}
+												</p>
 											</button>
 										</div>
 									</Transition>

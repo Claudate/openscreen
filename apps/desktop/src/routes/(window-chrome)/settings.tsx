@@ -19,6 +19,7 @@ import {
 } from "solid-js";
 import { CapErrorBoundary } from "~/components/CapErrorBoundary";
 import { SignInButton } from "~/components/SignInButton";
+import { t } from "~/i18n";
 
 import { authStore, userProfileStore } from "~/store";
 import { trackEvent } from "~/utils/analytics";
@@ -190,66 +191,66 @@ export default function Settings(props: RouteSectionProps) {
 			return response.body;
 		},
 	}));
-	const settingsItems = [
+	const settingsItems = createMemo(() => [
 		{
 			href: "general",
-			name: "General",
+			name: t("settings.nav.general"),
 			icon: IconCapSettings,
 		},
 		{
 			href: "hotkeys",
-			name: "Shortcuts",
+			name: t("settings.nav.shortcuts"),
 			icon: IconCapHotkeys,
 		},
 		{
 			href: "cli",
-			name: "CLI",
+			name: t("settings.nav.cli"),
 			icon: IconLucideTerminal,
 		},
 		{
 			href: "recordings",
-			name: "Recordings",
+			name: t("settings.nav.recordings"),
 			icon: IconLucideSquarePlay,
 		},
 		{
 			href: "screenshots",
-			name: "Screenshots",
+			name: t("settings.nav.screenshots"),
 			icon: IconLucideImage,
 		},
 		{
 			href: "transcription",
-			name: "Transcription",
+			name: t("settings.nav.transcription"),
 			icon: IconCapCaptions,
 		},
 		{
 			href: "integrations",
-			name: "Integrations",
+			name: t("settings.nav.integrations"),
 			icon: IconLucideUnplug,
 		},
 		{
 			href: "license",
-			name: "License",
+			name: t("settings.nav.license"),
 			icon: IconLucideGift,
 		},
 		{
 			href: "experimental",
-			name: "Experimental",
+			name: t("settings.nav.experimental"),
 			icon: IconCapSettings,
 		},
 		{
 			href: "feedback",
-			name: "Feedback",
+			name: t("settings.nav.feedback"),
 			icon: IconLucideMessageSquarePlus,
 		},
 		{
 			href: "changelog",
-			name: "Changelog",
+			name: t("settings.nav.changelog"),
 			icon: IconLucideBell,
 		},
-	];
+	]);
 	const accountName = createMemo(() => {
-		if (!auth()) return "Click to sign in";
-		if (!userProfile.isSuccess) return "Signed in";
+		if (!auth()) return t("settings.clickToSignIn");
+		if (!userProfile.isSuccess) return t("settings.signedIn");
 
 		const name = userProfile.data?.name?.trim();
 		if (name) return name;
@@ -257,7 +258,7 @@ export default function Settings(props: RouteSectionProps) {
 		const email = userProfile.data?.email?.trim();
 		if (email) return email;
 
-		return "Signed in";
+		return t("settings.signedIn");
 	});
 	const accountRemoteImageUrl = createMemo(() => {
 		if (!userProfile.isSuccess) return null;
@@ -407,19 +408,20 @@ export default function Settings(props: RouteSectionProps) {
 			const update = await check();
 
 			if (!update) {
-				await dialog.message(
-					"You're already using the latest version of Screen.",
-					{
-						title: "No Update Available",
-						kind: "info",
-					},
-				);
+				await dialog.message(t("update.noUpdateAvailable"), {
+					title: t("update.noUpdateTitle"),
+					kind: "info",
+				});
 				return;
 			}
 
 			const shouldUpdate = await dialog.confirm(
-				`Version ${update.version} of Screen is available, would you like to install it?`,
-				{ title: "Update Screen", okLabel: "Update", cancelLabel: "Ignore" },
+				t("update.available", { version: update.version }),
+				{
+					title: t("update.availableTitle"),
+					okLabel: t("update.update"),
+					cancelLabel: t("update.ignore"),
+				},
 			);
 
 			if (shouldUpdate) navigate("/update");
@@ -470,7 +472,7 @@ export default function Settings(props: RouteSectionProps) {
 							{accountName()}
 						</p>
 						<p class="h-[13px] truncate text-[11px] leading-[13px] text-gray-10">
-							Account
+							{t("settings.account")}
 						</p>
 					</div>
 				</button>
@@ -503,7 +505,7 @@ export default function Settings(props: RouteSectionProps) {
 											shell.open("https://cap.so/download/versions")
 										}
 									>
-										View previous versions
+										{t("update.viewPreviousVersions")}
 									</button>
 									<button
 										type="button"
@@ -512,8 +514,8 @@ export default function Settings(props: RouteSectionProps) {
 										onClick={checkForUpdates}
 									>
 										{isCheckingForUpdates()
-											? "Checking..."
-											: "Check for updates"}
+											? t("common.checking")
+											: t("update.checkForUpdates")}
 									</button>
 								</div>
 							</div>
@@ -527,10 +529,10 @@ export default function Settings(props: RouteSectionProps) {
 					>
 						{auth() ? (
 							<Button onClick={handleAuth} variant="gray" class="w-full">
-								Sign Out
+								{t("settings.signOut")}
 							</Button>
 						) : (
-							<SignInButton>Sign In</SignInButton>
+							<SignInButton>{t("settings.signIn")}</SignInButton>
 						)}
 					</Show>
 				</div>

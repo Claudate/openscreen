@@ -7,6 +7,7 @@ import {
 	onCleanup,
 	Show,
 } from "solid-js";
+import { t } from "~/i18n";
 import { Input } from "~/routes/editor/ui";
 import { generalSettingsStore } from "~/store";
 import {
@@ -98,16 +99,17 @@ function Inner(props: { initialStore: GeneralSettingsStore | null }) {
 		<div class="cap-settings-page flex flex-col h-full custom-scroll">
 			<SettingsPageContent>
 				<Section
-					title="Transcription"
-					description="Add names, spellings, domains, and capitalization preferences that caption generation should keep in mind."
+					title={t("settings.transcription.title")}
+					description={t("settings.transcription.description")}
 				>
 					<SectionCard padded class="space-y-3">
 						<div class="flex items-center justify-between gap-3">
 							<div class="flex flex-col gap-0.5 min-w-0">
-								<p class="text-[13px] text-gray-12">Remembered terms</p>
+								<p class="text-[13px] text-gray-12">
+									{t("settings.transcription.rememberedTerms")}
+								</p>
 								<p class="text-xs leading-snug text-gray-10">
-									Add one term at a time to reduce typos and formatting
-									mistakes.
+									{t("settings.transcription.rememberedTermsDesc")}
 								</p>
 							</div>
 							<div class="flex items-center gap-2">
@@ -120,14 +122,14 @@ function Inner(props: { initialStore: GeneralSettingsStore | null }) {
 											persist([]);
 										}}
 									>
-										Clear
+										{t("settings.transcription.clear")}
 									</Button>
 								</Show>
 								<span class="text-xs text-gray-11 min-w-15 text-right">
 									{saveState() === "saving"
-										? "Saving..."
+										? t("settings.transcription.saving")
 										: saveState() === "saved"
-											? "Saved"
+											? t("settings.transcription.saved")
 											: ""}
 								</span>
 							</div>
@@ -143,7 +145,7 @@ function Inner(props: { initialStore: GeneralSettingsStore | null }) {
 									event.preventDefault();
 									addHint();
 								}}
-								placeholder="Add a term"
+								placeholder={t("settings.transcription.addTermPlaceholder")}
 								spellcheck={false}
 								autocapitalize="off"
 								autocomplete="off"
@@ -156,22 +158,25 @@ function Inner(props: { initialStore: GeneralSettingsStore | null }) {
 								class="shrink-0"
 							>
 								<IconLucidePlus class="size-4" />
-								Add
+								{t("settings.transcription.add")}
 							</Button>
 						</div>
 
 						<p class="text-xs leading-relaxed text-gray-10">
-							These hints are applied when you generate captions in the editor.
+							{t("settings.transcription.hintsApplied")}
 						</p>
 					</SectionCard>
 				</Section>
 
 				<Show when={hints().length > 0}>
 					<Section
-						title="Active hints"
+						title={t("settings.transcription.activeHints")}
 						right={
 							<span class="text-xs text-gray-10">
-								{hints().length} {hints().length === 1 ? "item" : "items"}
+								{hints().length}{" "}
+								{hints().length === 1
+									? t("settings.transcription.item")
+									: t("settings.transcription.items")}
 							</span>
 						}
 					>

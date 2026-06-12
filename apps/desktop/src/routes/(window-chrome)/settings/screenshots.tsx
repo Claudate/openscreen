@@ -16,6 +16,7 @@ import {
 	type ParentProps,
 	Show,
 } from "solid-js";
+import { t } from "~/i18n";
 import { Input } from "~/routes/editor/ui";
 import { trackEvent } from "~/utils/analytics";
 import { createTauriEventListener } from "~/utils/createEventListener";
@@ -82,8 +83,8 @@ export default function Screenshots() {
 	);
 
 	const emptyMessage = createMemo(() => {
-		const prefix = trimmedSearch() ? "No matching" : "No";
-		return `${prefix} screenshots`;
+		if (trimmedSearch()) return t("settings.screenshots.noMatchingScreenshots");
+		return t("settings.screenshots.noScreenshots");
 	});
 
 	const handleScreenshotClick = (screenshot: Screenshot) => {
@@ -128,8 +129,8 @@ export default function Screenshots() {
 		<div class="cap-settings-page flex relative flex-col w-full h-full custom-scroll">
 			<SettingsPageContent class="max-w-none space-y-4">
 				<Section
-					title="Screenshots"
-					description="Manage your screenshots and perform actions."
+					title={t("settings.screenshots.title")}
+					description={t("settings.screenshots.description")}
 					right={
 						<Button
 							variant="gray"
@@ -138,7 +139,7 @@ export default function Screenshots() {
 							onClick={handleImportImage}
 						>
 							<IconLucideImport class="size-3.5" />
-							<span>Import image</span>
+							<span>{t("settings.screenshots.importImage")}</span>
 						</Button>
 					}
 				>
@@ -147,7 +148,7 @@ export default function Screenshots() {
 						fallback={
 							<div class="flex flex-1 items-center justify-center">
 								<p class="text-center text-(--text-tertiary)">
-									No screenshots found
+									{t("settings.screenshots.noScreenshotsFound")}
 								</p>
 							</div>
 						}
@@ -166,12 +167,12 @@ export default function Screenshots() {
 											setSearch("");
 										}
 									}}
-									placeholder="Search"
+									placeholder={t("settings.screenshots.searchPlaceholder")}
 									autoCapitalize="off"
 									autocorrect="off"
 									autocomplete="off"
 									spellcheck={false}
-									aria-label="Search screenshots"
+									aria-label={t("settings.screenshots.searchAriaLabel")}
 								/>
 							</div>
 						</div>
@@ -211,7 +212,7 @@ export default function Screenshots() {
 											)
 										}
 									>
-										Load more
+										{t("settings.screenshots.loadMore")}
 									</Button>
 								</div>
 							</Show>
@@ -245,7 +246,7 @@ function ScreenshotItem(props: {
 				>
 					<img
 						class="object-cover rounded-sm size-12"
-						alt="Screenshot thumbnail"
+						alt={t("settings.screenshots.screenshotThumbnail")}
 						src={convertFileSrc(props.screenshot.path)}
 						onError={() => setImageExists(false)}
 					/>
@@ -256,33 +257,30 @@ function ScreenshotItem(props: {
 			</div>
 			<div class="flex gap-2 items-center">
 				<TooltipIconButton
-					tooltipText="Open folder"
+					tooltipText={t("settings.screenshots.openFolder")}
 					onClick={props.onOpenFolder}
 				>
 					<IconLucideFolder class="size-4" />
 				</TooltipIconButton>
 
 				<TooltipIconButton
-					tooltipText="Open in editor"
+					tooltipText={t("settings.screenshots.openInEditor")}
 					onClick={props.onOpenEditor}
 				>
 					<IconLucideEdit class="size-4" />
 				</TooltipIconButton>
 
 				<TooltipIconButton
-					tooltipText="Copy image"
+					tooltipText={t("settings.screenshots.copyImage")}
 					onClick={props.onCopyImageToClipboard}
 				>
 					<IconLucideCopy class="size-4" />
 				</TooltipIconButton>
 
 				<TooltipIconButton
-					tooltipText="Delete"
+					tooltipText={t("settings.screenshots.delete")}
 					onClick={async () => {
-						if (
-							!(await ask("Are you sure you want to delete this screenshot?"))
-						)
-							return;
+						if (!(await ask(t("settings.screenshots.deleteConfirm")))) return;
 						const parent = props.screenshot.path.replace(/[/\\][^/\\]+$/, "");
 						await remove(parent, { recursive: true });
 

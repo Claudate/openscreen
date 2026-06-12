@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { type } from "@tauri-apps/plugin-os";
 import { createResource, Show } from "solid-js";
 import { createStore } from "solid-js/store";
-
+import { t } from "~/i18n";
 import { generalSettingsStore } from "~/store";
 import {
 	deriveGeneralSettings,
@@ -62,15 +62,15 @@ function Inner(props: {
 					when={props.osType !== "windows"}
 					fallback={
 						<p class="text-xs leading-relaxed text-gray-10 px-1">
-							No experimental features are currently available on this platform.
+							{t("settings.experimental.noFeaturesWindows")}
 						</p>
 					}
 				>
-					<Section title="Preview">
+					<Section title={t("settings.experimental.preview")}>
 						<SectionRows>
 							<ToggleSettingItem
-								label="Native camera preview"
-								description="Render the camera preview using a native GPU surface instead of through the webview. Not stable on certain Windows systems."
+								label={t("settings.experimental.nativeCameraPreview")}
+								description={t("settings.experimental.nativeCameraPreviewDesc")}
 								value={!!settings.enableNativeCameraPreview}
 								onChange={(value) =>
 									handleChange("enableNativeCameraPreview", value)
@@ -80,11 +80,11 @@ function Inner(props: {
 					</Section>
 				</Show>
 
-				<Section title="Reliability">
+				<Section title={t("settings.experimental.reliability")}>
 					<SectionRows>
 						<ToggleSettingItem
-							label="Out-of-process muxer"
-							description="Run the fragmented-MP4 muxer in an isolated subprocess so muxer crashes can't take down your recording. Requires the bundled cap-muxer binary."
+							label={t("settings.experimental.outOfProcessMuxer")}
+							description={t("settings.experimental.outOfProcessMuxerDesc")}
 							value={!!settings.outOfProcessMuxer}
 							onChange={(value) => handleChange("outOfProcessMuxer", value)}
 						/>

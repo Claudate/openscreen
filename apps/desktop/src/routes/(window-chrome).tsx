@@ -41,6 +41,20 @@ export default function (props: RouteSectionProps) {
 		if (closeShortcut) {
 			e.preventDefault();
 			getCurrentWindow().close();
+			return;
+		}
+
+		if (e.key === "Escape" && location.pathname !== "/") {
+			const el = document.activeElement;
+			const inputActive =
+				el instanceof HTMLInputElement ||
+				el instanceof HTMLTextAreaElement ||
+				el instanceof HTMLSelectElement ||
+				(el instanceof HTMLElement && el.isContentEditable);
+			if (!inputActive) {
+				e.preventDefault();
+				getCurrentWindow().close();
+			}
 		}
 	};
 

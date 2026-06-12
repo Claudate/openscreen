@@ -37,6 +37,7 @@ import {
 	getDefaultCameraWindowState,
 	normalizeBackgroundBlurMode,
 } from "~/components/CameraPreviewChrome";
+import { t } from "~/i18n";
 import { generalSettingsStore } from "~/store";
 import { createTauriEventListener } from "~/utils/createEventListener";
 import { createCameraMutation } from "~/utils/queries";
@@ -51,10 +52,10 @@ type CameraPreviewIssue = {
 
 const CAMERA_PREVIEW_ERROR_EVENT = "camera-preview-error";
 const CAMERA_PREVIEW_CLEAR_EVENT = "camera-preview-clear";
-const CAMERA_DISCONNECTED_ISSUE: CameraPreviewIssue = {
-	title: "Camera disconnected",
-	message: "The selected camera stopped sending video.",
-};
+const cameraDisconnectedIssue = (): CameraPreviewIssue => ({
+	title: t("cameraWindow.disconnectedTitle"),
+	message: t("cameraWindow.disconnectedMessage"),
+});
 
 const getCameraOnlyMode = () => {
 	return window.__CAP__?.cameraOnlyMode === true;
@@ -147,7 +148,7 @@ export default function () {
 
 	createTauriEventListener(events.recordingEvent, (payload) => {
 		if (payload.variant === "InputLost" && payload.input === "camera") {
-			setCameraIssue(CAMERA_DISCONNECTED_ISSUE);
+			setCameraIssue(cameraDisconnectedIssue());
 		} else if (
 			payload.variant === "InputRestored" &&
 			payload.input === "camera"
@@ -340,7 +341,7 @@ function NativeCameraPreviewPage(props: {
 
 			<Show when={cameraPreviewReady.loading}>
 				<div class="w-full flex-1 flex items-center justify-center">
-					<div class="text-gray-11">Loading camera...</div>
+					<div class="text-gray-11">{t("cameraWindow.loading")}</div>
 				</div>
 			</Show>
 		</div>
@@ -959,7 +960,7 @@ function Canvas(props: {
 function CameraLoadingState() {
 	return (
 		<div class="w-full flex-1 flex items-center justify-center">
-			<div class="text-gray-11">Loading camera...</div>
+			<div class="text-gray-11">{t("cameraWindow.loading")}</div>
 		</div>
 	);
 }

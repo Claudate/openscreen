@@ -8,6 +8,7 @@ import {
 	Show,
 } from "solid-js";
 import toast from "solid-toast";
+import { t } from "~/i18n";
 import { useEditorContext } from "./context";
 
 type PerformanceOverlayProps = {
@@ -224,7 +225,7 @@ export function PerformanceOverlay(_props: PerformanceOverlayProps) {
 						border: "1px solid rgba(255, 255, 255, 0.15)",
 					}}
 					onClick={copyStatsToClipboard}
-					title="Click to copy stats"
+					title={t("editor.misc.copyStats")}
 				>
 					<div class="flex flex-col gap-0.5">
 						<div class="flex items-center gap-2">

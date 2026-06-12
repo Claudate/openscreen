@@ -8,6 +8,7 @@ import { cx } from "cva";
 import { createEffect, createSignal, onMount, Show } from "solid-js";
 
 import Tooltip from "~/components/Tooltip";
+import { t } from "~/i18n";
 import { captionsStore } from "~/store/captions";
 import { commands } from "~/utils/tauri";
 import AspectRatioSelect from "./AspectRatioSelect";
@@ -58,9 +59,18 @@ export function PlayerContent() {
 	} = useEditorContext();
 
 	const previewOptions = [
-		{ label: "Full", value: "full" as EditorPreviewQuality },
-		{ label: "Half", value: "half" as EditorPreviewQuality },
-		{ label: "Quarter", value: "quarter" as EditorPreviewQuality },
+		{
+			label: t("editor.player.qualityFull"),
+			value: "full" as EditorPreviewQuality,
+		},
+		{
+			label: t("editor.player.qualityHalf"),
+			value: "half" as EditorPreviewQuality,
+		},
+		{
+			label: t("editor.player.qualityQuarter"),
+			value: "quarter" as EditorPreviewQuality,
+		},
 	];
 
 	const zoomHint = () =>
@@ -321,15 +331,17 @@ export function PlayerContent() {
 				<div class="flex items-center gap-3">
 					<AspectRatioSelect />
 					<EditorButton
-						tooltipText="Crop Video"
+						tooltipText={t("editor.player.cropVideo")}
 						onClick={cropDialogHandler}
 						leftIcon={<IconCapCrop class="w-5 text-gray-12" />}
 					>
-						Crop
+						{t("editor.player.crop")}
 					</EditorButton>
 				</div>
 				<div class="flex items-center gap-2">
-					<span class="text-xs font-medium text-gray-11">Preview quality</span>
+					<span class="text-xs font-medium text-gray-11">
+						{t("editor.player.previewQuality")}
+					</span>
 					<KSelect<{ label: string; value: EditorPreviewQuality }>
 						options={previewOptions}
 						optionValue="value"
@@ -435,7 +447,7 @@ export function PlayerContent() {
 				<div class="flex flex-row flex-1 gap-4 justify-end items-center">
 					<div class="flex-1" />
 					<EditorButton<typeof KToggleButton>
-						tooltipText="Toggle Split"
+						tooltipText={t("editor.player.toggleSplit")}
 						kbd={["S"]}
 						pressed={editorState.timeline.interactMode === "split"}
 						onChange={(v: boolean) =>
@@ -454,7 +466,7 @@ export function PlayerContent() {
 						}
 					/>
 					<div class="w-px h-8 rounded-full bg-gray-4" />
-					<Tooltip kbd={["meta", "-"]} content="Zoom out">
+					<Tooltip kbd={["meta", "-"]} content={t("editor.player.zoomOut")}>
 						<IconCapZoomOut
 							onClick={() => {
 								editorState.timeline.transform.updateZoom(
@@ -465,7 +477,7 @@ export function PlayerContent() {
 							class="text-gray-12 size-5 will-change-[opacity] transition-opacity hover:opacity-70"
 						/>
 					</Tooltip>
-					<Tooltip kbd={["meta", "+"]} content="Zoom in">
+					<Tooltip kbd={["meta", "+"]} content={t("editor.player.zoomIn")}>
 						<IconCapZoomIn
 							onClick={() => {
 								editorState.timeline.transform.updateZoom(

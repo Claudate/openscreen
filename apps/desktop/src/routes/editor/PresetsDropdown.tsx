@@ -3,6 +3,7 @@ import { cx } from "cva";
 import { For, Show, Suspense } from "solid-js";
 import { reconcile } from "solid-js/store";
 import toast from "solid-toast";
+import { t } from "~/i18n";
 import { normalizeProject, useEditorContext } from "./context";
 import {
 	DropdownItem,
@@ -24,7 +25,7 @@ export function PresetsDropdown() {
 				leftIcon={<IconCapPresets />}
 				rightIcon={<IconCapChevronDown />}
 			>
-				Presets
+				{t("editor.presets.presets")}
 			</EditorButton>
 			<KDropdownMenu.Portal>
 				<Suspense>
@@ -40,7 +41,7 @@ export function PresetsDropdown() {
 								each={presets.query.data?.presets ?? []}
 								fallback={
 									<div class="py-1 w-full text-sm text-center text-gray-11">
-										No Presets
+										{t("editor.presets.noPresets")}
 									</div>
 								}
 							>
@@ -66,7 +67,7 @@ export function PresetsDropdown() {
 												<span class="mr-auto">{preset.name}</span>
 												<Show when={presets.query.data?.default === i()}>
 													<span class="px-2 py-1 text-[11px] rounded-full bg-gray-2 text-gray-11">
-														Default
+														{t("editor.presets.default")}
 													</span>
 												</Show>
 												<IconCapSettings class="text-gray-11 group-hover:text-[currentColor] shrink-0" />
@@ -84,22 +85,24 @@ export function PresetsDropdown() {
 															applyPreset();
 														}}
 													>
-														Apply
+														{t("editor.presets.apply")}
 													</DropdownItem>
 													<DropdownItem
 														onSelect={async () => {
 															await presets.saveToPreset(i(), project);
 															toast.success(
-																`Saved settings to "${preset.name}"`,
+																t("editor.presets.savedToPreset", {
+																	name: preset.name,
+																}),
 															);
 														}}
 													>
-														Save settings to preset
+														{t("editor.presets.saveToPreset")}
 													</DropdownItem>
 													<DropdownItem
 														onSelect={() => presets.setDefault(i())}
 													>
-														Set as default
+														{t("editor.presets.setAsDefault")}
 													</DropdownItem>
 													<DropdownItem
 														onSelect={() =>
@@ -110,7 +113,7 @@ export function PresetsDropdown() {
 															})
 														}
 													>
-														Rename
+														{t("editor.presets.rename")}
 													</DropdownItem>
 													<DropdownItem
 														onClick={() =>
@@ -121,7 +124,7 @@ export function PresetsDropdown() {
 															})
 														}
 													>
-														Delete
+														{t("editor.common.delete")}
 													</DropdownItem>
 												</MenuItemList>
 											</KDropdownMenu.Portal>
@@ -137,7 +140,7 @@ export function PresetsDropdown() {
 							<DropdownItem
 								onSelect={() => setDialog({ type: "createPreset", open: true })}
 							>
-								<span>Create new preset</span>
+								<span>{t("editor.presets.createNew")}</span>
 								<IconCapCirclePlus class="ml-auto" />
 							</DropdownItem>
 						</MenuItemList>

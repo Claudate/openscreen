@@ -545,7 +545,9 @@ export function SceneTrack(props: {
 									return (
 										<Show when={ctx.width() > 80}>
 											<div class="flex flex-col gap-1 justify-center items-center text-xs whitespace-nowrap text-gray-1 dark:text-gray-12 animate-in fade-in">
-												<span class="opacity-70">Scene</span>
+												<span class="opacity-70">
+													{t("editor.timeline.tracks.scene")}
+												</span>
 												<div class="flex gap-1 items-center text-md">
 													{getSceneIcon(segment.mode)}
 													{ctx.width() > 120 && (

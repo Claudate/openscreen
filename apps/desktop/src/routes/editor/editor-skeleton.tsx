@@ -1,10 +1,15 @@
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { type as ostype } from "@tauri-apps/plugin-os";
 import { cx } from "cva";
+import { createSignal, onCleanup, Show } from "solid-js";
 import CaptionControlsWindows11 from "~/components/titlebar/controls/CaptionControlsWindows11";
+import { t } from "~/i18n";
 
 const DEFAULT_TIMELINE_HEIGHT = 260;
 const MIN_PLAYER_HEIGHT = 336;
 const RESIZE_HANDLE_HEIGHT = 16;
+const SLOW_HINT_AFTER_S = 10;
+const STUCK_HINT_AFTER_S = 30;
 
 function SkeletonPulse(props: { class?: string }) {
 	return (
@@ -85,13 +90,38 @@ function PlayerToolbarSkeleton() {
 }
 
 function VideoPreviewSkeleton() {
+	const [elapsed, setElapsed] = createSignal(0);
+	const timer = setInterval(() => setElapsed((s) => s + 1), 1000);
+	onCleanup(() => clearInterval(timer));
+
 	return (
 		<div class="relative flex-1 flex justify-center items-center">
 			<div class="relative w-full h-full flex justify-center items-center p-4">
-				<div class="relative bg-gray-3 dark:bg-gray-4 rounded-lg w-full max-w-[85%] aspect-video flex items-center justify-center">
+				<div class="relative bg-gray-3 dark:bg-gray-4 rounded-lg w-full max-w-[85%] aspect-video flex flex-col items-center justify-center gap-5">
 					<div class="animate-spin grayscale opacity-60">
 						<IconCapLogo class="size-16 text-gray-6" />
 					</div>
+					<div class="flex flex-col items-center gap-1.5 px-8 text-center max-w-md">
+						<p class="text-sm font-medium text-gray-11">
+							{t("editor.loadingScreen.title")}
+						</p>
+						<Show when={elapsed() >= SLOW_HINT_AFTER_S}>
+							<p class="text-xs leading-relaxed text-gray-10 animate-in fade-in duration-300">
+								{elapsed() >= STUCK_HINT_AFTER_S
+									? t("editor.loadingScreen.stuckHint")
+									: t("editor.loadingScreen.slowHint")}
+							</p>
+						</Show>
+					</div>
+					<Show when={elapsed() >= STUCK_HINT_AFTER_S}>
+						<button
+							type="button"
+							class="animate-in fade-in duration-300 px-4 py-1.5 text-xs font-medium rounded-full border border-gray-5 text-gray-11 transition-colors hover:bg-gray-5 hover:text-gray-12 dark:border-gray-6 dark:hover:bg-gray-6"
+							onClick={() => void getCurrentWindow().close()}
+						>
+							{t("editor.loadingScreen.closeWindow")}
+						</button>
+					</Show>
 				</div>
 			</div>
 		</div>

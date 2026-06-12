@@ -7,6 +7,7 @@ import {
 	onCleanup,
 	Show,
 } from "solid-js";
+import { t } from "~/i18n";
 import IconCapZoomIn from "~icons/cap/zoom-in";
 import IconCapZoomOut from "~icons/cap/zoom-out";
 import { EditorButton, Slider } from "../editor/ui";
@@ -436,7 +437,7 @@ export function Preview(props: { zoom: number; setZoom: (z: number) => void }) {
 			>
 				<div class="absolute left-4 bottom-4 z-10 flex items-center gap-2 bg-gray-1 dark:bg-gray-3 rounded-lg shadow-xs p-1 border border-gray-4">
 					<EditorButton
-						tooltipText="Zoom Out"
+						tooltipText={t("screenshotEditor.toolbar.zoomOut")}
 						kbd={["meta", "-"]}
 						onClick={zoomOut}
 					>
@@ -452,7 +453,7 @@ export function Preview(props: { zoom: number; setZoom: (z: number) => void }) {
 						formatTooltip={(v) => `${Math.round(v * 100)}%`}
 					/>
 					<EditorButton
-						tooltipText="Zoom In"
+						tooltipText={t("screenshotEditor.toolbar.zoomIn")}
 						kbd={["meta", "+"]}
 						onClick={zoomIn}
 					>
@@ -461,7 +462,11 @@ export function Preview(props: { zoom: number; setZoom: (z: number) => void }) {
 				</div>
 				<Show
 					when={!!latestFrame()}
-					fallback={<div class="text-gray-11">Loading preview...</div>}
+					fallback={
+						<div class="text-gray-11">
+							{t("screenshotEditor.misc.loadingPreview")}
+						</div>
+					}
 				>
 					{(_) => {
 						createEffect(

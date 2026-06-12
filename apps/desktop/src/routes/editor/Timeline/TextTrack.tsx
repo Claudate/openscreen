@@ -401,7 +401,9 @@ export function TextTrack(props: {
 								)}
 							>
 								<div class="flex flex-col gap-0.5 justify-center items-center text-xs text-gray-1 dark:text-gray-12 w-full min-w-0 overflow-hidden">
-									<span class="opacity-70">Text</span>
+									<span class="opacity-70">
+										{t("editor.timeline.tracks.text")}
+									</span>
 									<div class="flex gap-1 items-center text-md w-full min-w-0 justify-center">
 										<span class="truncate max-w-full">
 											{segment.content ||

@@ -35,6 +35,7 @@ import {
 	type Ratio,
 } from "~/components/Cropper";
 import { Toggle } from "~/components/Toggle";
+import { t } from "~/i18n";
 import { composeEventHandlers } from "~/utils/composeEventHandlers";
 import { createTauriEventListener } from "~/utils/createEventListener";
 import { commands, events } from "~/utils/tauri";
@@ -308,15 +309,12 @@ function Inner() {
 
 			closePromptOpen = true;
 			try {
-				const resumeExport = await ask(
-					"An export is currently running. Keep this editor open to continue it, or quit the editor and cancel the export.",
-					{
-						title: "Export in Progress",
-						kind: "warning",
-						okLabel: "Resume Export",
-						cancelLabel: "Quit Editor",
-					},
-				);
+				const resumeExport = await ask(t("editor.exportGuard.message"), {
+					title: t("editor.exportGuard.title"),
+					kind: "warning",
+					okLabel: t("editor.exportGuard.resume"),
+					cancelLabel: t("editor.exportGuard.quit"),
+				});
 
 				if (!resumeExport) {
 					allowExportClose = true;
@@ -625,7 +623,7 @@ function Inner() {
 											"bg-gray-3/55 dark:bg-gray-4/50": isResizingTimeline(),
 										}}
 										onMouseDown={handleTimelineResizeStart}
-										aria-label="Resize timeline height"
+										aria-label={t("editor.misc.resizeTimeline")}
 									>
 										<For each={TIMELINE_RESIZE_GRIP_MARKS}>
 											{() => (
@@ -650,7 +648,7 @@ function Inner() {
 									class="flex-none flex items-center justify-center cursor-col-resize select-none group z-10"
 									style={{ width: "12px" }}
 									onMouseDown={handleSplitResizeStart}
-									aria-label="Resize transcript panel"
+									aria-label={t("editor.misc.resizeTranscript")}
 									role="separator"
 									aria-orientation="vertical"
 								>
@@ -740,24 +738,27 @@ function Dialogs() {
 
 								return (
 									<DialogContent
-										title="Create Preset"
+										title={t("editor.presets.createTitle")}
 										confirm={
 											<Dialog.ConfirmButton
 												disabled={createPreset.isPending}
 												onClick={() => createPreset.mutate()}
 											>
-												Create
+												{t("editor.presets.create")}
 											</Dialog.ConfirmButton>
 										}
 									>
-										<Subfield name="Name" required />
+										<Subfield name={t("editor.presets.name")} required />
 										<Input
 											class="mt-2"
 											value={form.name}
-											placeholder="Enter preset name..."
+											placeholder={t("editor.presets.namePlaceholder")}
 											onInput={(e) => setForm("name", e.currentTarget.value)}
 										/>
-										<Subfield name="Set as default" class="mt-4">
+										<Subfield
+											name={t("editor.presets.setAsDefault")}
+											class="mt-4"
+										>
 											<Toggle
 												checked={form.default}
 												onChange={(checked) => setForm("default", checked)}
@@ -788,17 +789,17 @@ function Dialogs() {
 
 								return (
 									<DialogContent
-										title="Rename Preset"
+										title={t("editor.presets.renameTitle")}
 										confirm={
 											<Dialog.ConfirmButton
 												disabled={renamePreset.isPending}
 												onClick={() => renamePreset.mutate()}
 											>
-												Rename
+												{t("editor.presets.rename")}
 											</Dialog.ConfirmButton>
 										}
 									>
-										<Subfield name="Name" required />
+										<Subfield name={t("editor.presets.name")} required />
 										<Input
 											class="mt-2"
 											value={name()}
@@ -827,19 +828,19 @@ function Dialogs() {
 
 								return (
 									<DialogContent
-										title="Delete Preset"
+										title={t("editor.presets.deleteTitle")}
 										confirm={
 											<Dialog.ConfirmButton
 												variant="destructive"
 												onClick={() => deletePreset.mutate()}
 												disabled={deletePreset.isPending}
 											>
-												Delete
+												{t("editor.common.delete")}
 											</Dialog.ConfirmButton>
 										}
 									>
 										<p class="text-gray-11">
-											Are you sure you want to delete this preset?
+											{t("editor.presets.deleteConfirm")}
 										</p>
 									</DialogContent>
 								);
@@ -1121,7 +1122,7 @@ function Dialogs() {
 										<Dialog.Header>
 											<div class="flex flex-row space-x-8">
 												<div class="flex flex-row items-center space-x-3 text-gray-11">
-													<span>Size</span>
+													<span>{t("editor.common.size")}</span>
 													<div class="w-13">
 														<BoundInput field="width" max={display.width} />
 													</div>
@@ -1131,7 +1132,7 @@ function Dialogs() {
 													</div>
 												</div>
 												<div class="flex flex-row items-center space-x-3 text-gray-11">
-													<span>Position</span>
+													<span>{t("editor.common.position")}</span>
 													<div class="w-13">
 														<BoundInput field="x" />
 													</div>
@@ -1216,7 +1217,7 @@ function Dialogs() {
 													>
 														<img
 															class="shadow-sm pointer-events-none max-h-[70vh]"
-															alt="Current frame"
+															alt={t("editor.crop.currentFrame")}
 															onError={() => {
 																const failedSource = frameSource();
 																logCropProfile("preview-image-failed", {

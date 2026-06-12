@@ -57,6 +57,7 @@ import {
 } from "~/components/Cropper";
 import ModeSelect from "~/components/ModeSelect";
 import SelectionHint from "~/components/selection-hint";
+import { t } from "~/i18n";
 import { authStore, generalSettingsStore } from "~/store";
 import { getCameraWindow } from "~/utils/camera-window";
 import { createDevicesQuery } from "~/utils/devices";
@@ -85,9 +86,19 @@ import {
 const MIN_SIZE = { width: 150, height: 150 };
 const MIN_SCREENSHOT_SIZE = { width: 1, height: 1 };
 
-const capitalize = (str: string) => {
-	return str.charAt(0).toUpperCase() + str.slice(1);
-};
+const modeFullLabel = (mode: string) =>
+	mode === "studio"
+		? t("targetSelect.studioMode")
+		: mode === "instant"
+			? t("targetSelect.instantMode")
+			: t("targetSelect.screenshotMode");
+
+const modeShortLabel = (mode: string) =>
+	mode === "studio"
+		? t("targetSelect.modeStudio")
+		: mode === "instant"
+			? t("targetSelect.modeInstant")
+			: t("targetSelect.modeScreenshot");
 
 const findCamera = (cameras: CameraInfo[], id?: DeviceOrModelID | null) => {
 	if (!id) return undefined;
@@ -325,9 +336,11 @@ function Inner() {
 				<div class="relative w-screen h-screen flex flex-col items-center justify-center bg-black/70">
 					<div class="absolute inset-0 bg-black/60 -z-10" />
 					<div class="flex flex-col items-center text-white mb-4">
-						<span class="mb-2 text-3xl font-semibold">Camera Only</span>
+						<span class="mb-2 text-3xl font-semibold">
+							{t("targetSelect.cameraOnly")}
+						</span>
 						<span class="text-xs text-gray-11">
-							Record using only your camera and microphone
+							{t("targetSelect.cameraOnlyDesc")}
 						</span>
 					</div>
 					<div class="flex justify-center w-full px-6 mb-4">
@@ -672,7 +685,7 @@ function Inner() {
 												});
 											}}
 										>
-											Adjust recording area
+											{t("targetSelect.adjustArea")}
 										</Button>
 										<ShowCapFreeWarning
 											isInstantMode={options.mode === "instant"}
@@ -913,7 +926,7 @@ function Inner() {
 						e.stopPropagation();
 						const items = [
 							{
-								text: "Reset selection",
+								text: t("targetSelect.resetSelection"),
 								action: () => {
 									cropperRef?.reset();
 									setAspect(null);
@@ -1075,7 +1088,7 @@ function Inner() {
 									await commands.closeTargetSelectOverlays();
 								} catch (e) {
 									const message = e instanceof Error ? e.message : String(e);
-									toast.error(`Failed to take screenshot: ${message}`);
+									toast.error(t("targetSelect.screenshotFailed", { message }));
 									console.error("Failed to take screenshot", e);
 								}
 							}
@@ -1579,7 +1592,9 @@ function CameraPreviewInline() {
 						fallback={
 							<div class="flex flex-col items-center gap-2 text-center px-4">
 								<IconCapCamera class="size-8 text-gray-9 mb-2" />
-								<div class="text-sm text-gray-11">Please select a camera</div>
+								<div class="text-sm text-gray-11">
+									{t("targetSelect.selectCamera")}
+								</div>
 							</div>
 						}
 					>
@@ -1588,14 +1603,14 @@ function CameraPreviewInline() {
 							fallback={
 								<div class="flex flex-col items-center gap-2 text-center px-4">
 									<div class="text-sm text-red-400">
-										Camera connection failed
+										{t("targetSelect.connectionFailed")}
 									</div>
 									<button
 										type="button"
 										onClick={handleRetryConnection}
 										class="text-xs text-blue-400 hover:text-blue-300 underline"
 									>
-										Try again
+										{t("targetSelect.tryAgain")}
 									</button>
 								</div>
 							}
@@ -1603,7 +1618,9 @@ function CameraPreviewInline() {
 							<Show
 								when={frame()}
 								fallback={
-									<div class="text-sm text-gray-11">Loading camera...</div>
+									<div class="text-sm text-gray-11">
+										{t("targetSelect.loadingCamera")}
+									</div>
 								}
 							>
 								<canvas ref={canvasRef} style={canvasStyle()} />
@@ -1691,7 +1708,7 @@ function RecordingControls(props: {
 		await Menu.new({
 			items: [
 				await CheckMenuItem.new({
-					text: "Studio Mode",
+					text: t("targetSelect.studioMode"),
 					action: () => {
 						setOptions("mode", "studio");
 						commands.setRecordingMode("studio");
@@ -1699,7 +1716,7 @@ function RecordingControls(props: {
 					checked: rawOptions.mode === "studio",
 				}),
 				await CheckMenuItem.new({
-					text: "Instant Mode",
+					text: t("targetSelect.instantMode"),
 					action: () => {
 						setOptions("mode", "instant");
 						commands.setRecordingMode("instant");
@@ -1707,7 +1724,7 @@ function RecordingControls(props: {
 					checked: rawOptions.mode === "instant",
 				}),
 				await CheckMenuItem.new({
-					text: "Screenshot Mode",
+					text: t("targetSelect.screenshotMode"),
 					action: () => {
 						setOptions("mode", "screenshot");
 						commands.setRecordingMode("screenshot");
@@ -1719,24 +1736,24 @@ function RecordingControls(props: {
 
 	const countdownItems = async () => [
 		await CheckMenuItem.new({
-			text: "Off",
+			text: t("targetSelect.countdownOff"),
 			action: () => generalSettingsStore.set({ recordingCountdown: 0 }),
 			checked:
 				!generalSetings.data?.recordingCountdown ||
 				generalSetings.data?.recordingCountdown === 0,
 		}),
 		await CheckMenuItem.new({
-			text: "3 seconds",
+			text: t("targetSelect.countdownSeconds", { n: 3 }),
 			action: () => generalSettingsStore.set({ recordingCountdown: 3 }),
 			checked: generalSetings.data?.recordingCountdown === 3,
 		}),
 		await CheckMenuItem.new({
-			text: "5 seconds",
+			text: t("targetSelect.countdownSeconds", { n: 5 }),
 			action: () => generalSettingsStore.set({ recordingCountdown: 5 }),
 			checked: generalSetings.data?.recordingCountdown === 5,
 		}),
 		await CheckMenuItem.new({
-			text: "10 seconds",
+			text: t("targetSelect.countdownSeconds", { n: 10 }),
 			action: () => generalSettingsStore.set({ recordingCountdown: 10 }),
 			checked: generalSetings.data?.recordingCountdown === 10,
 		}),
@@ -1746,7 +1763,7 @@ function RecordingControls(props: {
 		return await Menu.new({
 			items: [
 				await MenuItem.new({
-					text: "Recording Countdown",
+					text: t("targetSelect.recordingCountdown"),
 					enabled: false,
 				}),
 				...(await countdownItems()),
@@ -1830,7 +1847,9 @@ function RecordingControls(props: {
 										await commands.closeTargetSelectOverlays();
 									} catch (e) {
 										const message = e instanceof Error ? e.message : String(e);
-										toast.error(`Failed to take screenshot: ${message}`);
+										toast.error(
+											t("targetSelect.screenshotFailed", { message }),
+										);
 										console.error("Failed to take screenshot", e);
 									}
 									return;
@@ -1865,14 +1884,14 @@ function RecordingControls(props: {
 									<span class="text-[0.95rem] font-medium text-white text-nowrap">
 										{(() => {
 											if (rawOptions.mode === "instant" && !auth.data)
-												return "Sign In To Use";
+												return t("targetSelect.signInToUse");
 											if (rawOptions.mode === "screenshot")
-												return "Take Screenshot";
-											return "Start Recording";
+												return t("targetSelect.takeScreenshot");
+											return t("main.startRecording");
 										})()}
 									</span>
 									<span class="text-[11px] flex items-center text-nowrap gap-1 transition-opacity duration-200 text-white/90 font-light -mt-0.5">
-										{`${capitalize(rawOptions.mode)} Mode`}
+										{modeFullLabel(rawOptions.mode)}
 									</span>
 								</div>
 							</div>
@@ -1947,8 +1966,12 @@ function RecordingControls(props: {
 				>
 					<IconCapInfo class="opacity-70 will-change-transform size-3" />
 					<p class="text-sm text-white drop-shadow-md">
-						<span class="opacity-70">What is </span>
-						<span class="font-medium">{capitalize(rawOptions.mode)} Mode</span>?
+						<span class="opacity-70">{t("targetSelect.whatIsPrefix")}</span>
+						<span class="font-medium">
+							{modeShortLabel(rawOptions.mode)}
+							{t("targetSelect.whatIsSuffix")}
+						</span>
+						?
 					</p>
 				</div>
 			</div>
@@ -1963,12 +1986,12 @@ function ShowCapFreeWarning(props: { isInstantMode: boolean }) {
 		<Suspense>
 			<Show when={props.isInstantMode && auth.data?.plan?.upgraded === false}>
 				<p class="text-sm text-center max-w-64 text-gray-3 mt-3">
-					Instant Mode recordings are limited to 5 mins,{" "}
+					{t("targetSelect.freeWarning")}{" "}
 					<button
 						class="underline font-bold text-gray-3"
 						onClick={() => commands.showWindow("Upgrade")}
 					>
-						Upgrade to Pro
+						{t("targetSelect.upgradeToPro")}
 					</button>
 				</p>
 			</Show>

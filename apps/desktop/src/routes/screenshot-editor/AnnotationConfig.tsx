@@ -2,6 +2,7 @@ import { Popover } from "@kobalte/core/popover";
 import { cx } from "cva";
 import { createMemo, For, type JSX, Show } from "solid-js";
 import Tooltip from "~/components/Tooltip";
+import { t } from "~/i18n";
 import { BACKGROUND_COLORS, hexToRgb, RgbInput, rgbToHex } from "./ColorPicker";
 import { type Annotation, useScreenshotEditorContext } from "./context";
 import { Slider } from "./ui";
@@ -44,7 +45,13 @@ export function AnnotationConfigBar() {
 					>
 						<div class="flex items-center justify-center gap-6 px-4 h-11">
 							<Show when={!isMask()}>
-								<ConfigItem label={type() === "text" ? "Color" : "Stroke"}>
+								<ConfigItem
+									label={
+										type() === "text"
+											? t("screenshotEditor.popover.color")
+											: t("screenshotEditor.annotation.stroke")
+									}
+								>
 									<ColorPickerButton
 										value={ann().strokeColor}
 										onChange={(c) => update("strokeColor", c)}
@@ -54,7 +61,7 @@ export function AnnotationConfigBar() {
 
 							<Show when={type() !== "text" && !isMask()}>
 								<ConfigItem
-									label="Width"
+									label={t("screenshotEditor.annotation.width")}
 									value={`${Math.round(ann().strokeWidth)}px`}
 								>
 									<Slider
@@ -69,7 +76,7 @@ export function AnnotationConfigBar() {
 							</Show>
 
 							<Show when={type() === "rectangle" || type() === "circle"}>
-								<ConfigItem label="Fill">
+								<ConfigItem label={t("screenshotEditor.annotation.fill")}>
 									<ColorPickerButton
 										value={ann().fillColor}
 										onChange={(c) => update("fillColor", c)}
@@ -272,7 +279,4 @@ function ColorPickerButton(props: {
 						</div>
 					</div>
 				</Popover.Content>
-			</Popover.Portal>
-		</Popover>
-	);
-}
+			</Po

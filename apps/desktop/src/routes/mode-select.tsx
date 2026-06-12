@@ -4,6 +4,7 @@ import { type as ostype } from "@tauri-apps/plugin-os";
 import { onCleanup, onMount } from "solid-js";
 import ModeSelect from "~/components/ModeSelect";
 import CaptionControlsWindows11 from "~/components/titlebar/controls/CaptionControlsWindows11";
+import { t } from "~/i18n";
 import { initializeTitlebar } from "~/utils/titlebar-state";
 
 const ModeSelectWindow = () => {
@@ -50,11 +51,9 @@ const ModeSelectWindow = () => {
 			<div class="flex flex-col items-center w-full px-6 py-5">
 				<div class="mb-5 text-center">
 					<h2 class="text-xl font-semibold text-gray-12 mb-1">
-						Choose Recording Mode
+						{t("mode.chooseTitle")}
 					</h2>
-					<p class="text-sm text-gray-11">
-						Select how you want to capture your screen
-					</p>
+					<p class="text-sm text-gray-11">{t("mode.chooseSubtitle")}</p>
 				</div>
 
 				<div data-tauri-drag-region="false" class="w-full max-w-lg">

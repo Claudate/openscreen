@@ -1,4 +1,5 @@
 import { createMemo, createUniqueId, For, Show } from "solid-js";
+import { t } from "~/i18n";
 import type { OrganizationBrandColorSwatch } from "~/utils/organization-branding";
 import { BrandColorsDropdown } from "./BrandColorsDropdown";
 import { hexToRgb, RgbInput } from "./color-utils";
@@ -232,7 +233,7 @@ export function GradientEditor(props: {
 									to: randomColor(),
 								});
 							}}
-							title="Randomize"
+							title={t("editor.gradient.randomize")}
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"

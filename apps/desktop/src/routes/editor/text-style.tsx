@@ -1,4 +1,5 @@
 import { createWritableMemo } from "@solid-primitives/memo";
+import { t } from "~/i18n";
 import {
 	getHexColorDigitCount,
 	normalizeOpaqueHexColor,
@@ -8,41 +9,38 @@ import { BrandColorsDropdown } from "./BrandColorsDropdown";
 import { getColorPreviewBorderColor } from "./color-utils";
 import { TextInput } from "./TextInput";
 
-export const FONT_OPTIONS = [
-	{ value: "System Sans-Serif", label: "System Sans-Serif" },
-	{ value: "System Serif", label: "System Serif" },
-	{ value: "System Monospace", label: "System Monospace" },
+export const FONT_OPTIONS = () => [
+	{ value: "System Sans-Serif", label: t("editor.textStyle.fontSansSerif") },
+	{ value: "System Serif", label: t("editor.textStyle.fontSerif") },
+	{ value: "System Monospace", label: t("editor.textStyle.fontMonospace") },
 ];
 
-export const CAPTION_POSITION_OPTIONS = [
-	{ value: "top-left", label: "Top Left" },
-	{ value: "top-center", label: "Top Center" },
-	{ value: "top-right", label: "Top Right" },
-	{ value: "bottom-left", label: "Bottom Left" },
-	{ value: "bottom-center", label: "Bottom Center" },
-	{ value: "bottom-right", label: "Bottom Right" },
+const POSITION_OPTIONS = () => [
+	{ value: "top-left", label: t("editor.textStyle.topLeft") },
+	{ value: "top-center", label: t("editor.textStyle.topCenter") },
+	{ value: "top-right", label: t("editor.textStyle.topRight") },
+	{ value: "bottom-left", label: t("editor.textStyle.bottomLeft") },
+	{ value: "bottom-center", label: t("editor.textStyle.bottomCenter") },
+	{ value: "bottom-right", label: t("editor.textStyle.bottomRight") },
 ];
 
-export const KEYBOARD_POSITION_OPTIONS = [
-	{ value: "top-left", label: "Top Left" },
-	{ value: "top-center", label: "Top Center" },
-	{ value: "top-right", label: "Top Right" },
-	{ value: "bottom-left", label: "Bottom Left" },
-	{ value: "bottom-center", label: "Bottom Center" },
-	{ value: "bottom-right", label: "Bottom Right" },
-];
+export const CAPTION_POSITION_OPTIONS = POSITION_OPTIONS;
 
-export const TEXT_WEIGHT_OPTIONS = [
-	{ label: "Normal", value: 400 },
-	{ label: "Medium", value: 500 },
-	{ label: "Bold", value: 700 },
+export const KEYBOARD_POSITION_OPTIONS = POSITION_OPTIONS;
+
+export const TEXT_WEIGHT_OPTIONS = () => [
+	{ label: t("editor.textStyle.weightNormal"), value: 400 },
+	{ label: t("editor.textStyle.weightMedium"), value: 500 },
+	{ label: t("editor.textStyle.weightBold"), value: 700 },
 ];
 
 export function getTextWeightLabel(weight: number | null | undefined) {
-	const option = TEXT_WEIGHT_OPTIONS.find((option) => option.value === weight);
+	const option = TEXT_WEIGHT_OPTIONS().find(
+		(option) => option.value === weight,
+	);
 	if (option) return option.label;
-	if (weight != null) return `Custom (${weight})`;
-	return "Normal";
+	if (weight != null) return t("editor.textStyle.weightCustom", { weight });
+	return t("editor.textStyle.weightNormal");
 }
 
 export function HexColorInput(props: {

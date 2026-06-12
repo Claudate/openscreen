@@ -19,6 +19,7 @@ import {
 	type ValidComponent,
 } from "solid-js";
 import Tooltip from "~/components/Tooltip";
+import { t } from "~/i18n";
 import { useEditorContext } from "./context";
 import { TextInput } from "./TextInput";
 
@@ -449,7 +450,7 @@ export function ComingSoonTooltip(
 			</KTooltip.Trigger>
 			<KTooltip.Portal>
 				<KTooltip.Content class="p-2 font-medium bg-gray-12 text-gray-1 data-expanded:animate-in data-expanded:slide-in-from-bottom-1 data-expanded:fade-in data-closed:animate-out data-closed:slide-out-to-bottom-1 data-closed:fade-out rounded-lg text-xs z-1000">
-					Coming Soon
+					{t("editor.common.comingSoon")}
 				</KTooltip.Content>
 			</KTooltip.Portal>
 		</KTooltip>

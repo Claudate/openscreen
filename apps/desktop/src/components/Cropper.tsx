@@ -21,6 +21,7 @@ import {
 } from "solid-js";
 import { createStore } from "solid-js/store";
 import { Transition } from "solid-transition-group";
+import { t } from "~/i18n";
 import { createKeyDownSignal } from "~/utils/events";
 
 import { commands } from "~/utils/tauri";
@@ -1557,7 +1558,7 @@ export function createCropOptionsMenuItems(options: {
 }) {
 	return [
 		{
-			text: "Free",
+			text: t("cropper.free"),
 			checked: !options.aspect,
 			action: () => options.onAspectSet(null),
 		} satisfies CheckMenuItemOptions,
@@ -1571,7 +1572,7 @@ export function createCropOptionsMenuItems(options: {
 		),
 		{ item: "Separator" } satisfies PredefinedMenuItemOptions,
 		{
-			text: "Snap to ratios",
+			text: t("cropper.snapToRatios"),
 			checked: options.snapToRatioEnabled,
 			action: () => options.onSnapToRatioSet(!options.snapToRatioEnabled),
 		} satisfies CheckMenuItemOptions,

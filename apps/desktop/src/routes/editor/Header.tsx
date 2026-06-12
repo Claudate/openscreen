@@ -252,10 +252,10 @@ export function Header() {
 			);
 
 			setEditorState("captions", "isStale", false);
-			toast.success("Captions regenerated!");
+			toast.success(t("editor.header.captionsRegenerated"));
 		} catch (error) {
 			console.error("Error regenerating captions:", error);
-			toast.error("Failed to regenerate captions");
+			toast.error(t("editor.header.captionsRegenerateFailed"));
 		} finally {
 			setEditorState("captions", "isGenerating", false);
 		}
@@ -275,12 +275,11 @@ export function Header() {
 					onClick={async () => {
 						clearTimelineSelection();
 
-						if (!(await ask("Are you sure you want to delete this recording?")))
-							return;
+						if (!(await ask(t("editor.header.deleteConfirm")))) return;
 
 						await commands.editorDeleteProject();
 					}}
-					tooltipText="Delete recording"
+					tooltipText={t("editor.header.deleteRecording")}
 					leftIcon={<IconCapTrash class="w-5" />}
 				/>
 				<EditorButton
@@ -290,7 +289,7 @@ export function Header() {
 						console.log({ path: `${editorInstance.path}/` });
 						revealItemInDir(`${editorInstance.path}/`);
 					}}
-					tooltipText="Open recording bundle"
+					tooltipText={t("editor.header.openBundle")}
 					leftIcon={<IconLucideFolder class="w-5" />}
 				/>
 				<EditorButton
@@ -320,7 +319,7 @@ export function Header() {
 					onClick={() => {
 						if (clearTimelineSelection()) return;
 					}}
-					tooltipText="Captions"
+					tooltipText={t("editor.header.captions")}
 					leftIcon={<IconCapCaptions class="w-5" />}
 					comingSoon={true}
 				/>
@@ -328,7 +327,7 @@ export function Header() {
 					onClick={() => {
 						if (clearTimelineSelection()) return;
 					}}
-					tooltipText="Performance"
+					tooltipText={t("editor.header.performance")}
 					leftIcon={<IconCapGauge class="w-[18px]" />}
 					comingSoon={true}
 				/>
@@ -358,7 +357,7 @@ export function Header() {
 					disabled={
 						!projectHistory.canUndo() && !editorState.timeline.selection
 					}
-					tooltipText="Undo"
+					tooltipText={t("editor.header.undo")}
 					leftIcon={<IconCapUndo class="w-5" />}
 				/>
 				<EditorButton
@@ -370,7 +369,7 @@ export function Header() {
 					disabled={
 						!projectHistory.canRedo() && !editorState.timeline.selection
 					}
-					tooltipText="Redo"
+					tooltipText={t("editor.header.redo")}
 					leftIcon={<IconCapRedo class="w-5" />}
 				/>
 				<div data-tauri-drag-region class="flex-1 h-full" />
@@ -542,7 +541,7 @@ function ImportRecordingDialog(props: {
 							when={props.recordings.length > 0}
 							fallback={
 								<div class="flex h-48 items-center justify-center text-xs text-gray-10">
-									No importable recordings found
+									{t("editor.header.noImportable")}
 								</div>
 							}
 						>

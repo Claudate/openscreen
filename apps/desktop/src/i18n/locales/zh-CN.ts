@@ -52,7 +52,8 @@ export const dict: typeof en = {
 		instantMode: "即时模式",
 		instantModeDesc: "无需渲染——边录边传，停止录制后即可立即分享链接。",
 		studioMode: "工作室模式",
-		studioModeDesc: "以最高质量录制，供稍后本地渲染；完成后将打开 Cap 编辑器。",
+		studioModeDesc:
+			"以最高质量录制，供稍后本地渲染；完成后将打开 Screen 编辑器。",
 		screenshotMode: "截图模式",
 		screenshotModeDesc: "捕获并标注静态截图。",
 		recordingModeInfo: "录制模式信息",
@@ -62,8 +63,8 @@ export const dict: typeof en = {
 		checkFailed:
 			"无法检查更新。请从 cap.so/download 手动下载最新版本，您的数据不会丢失。\n\n如果问题持续存在，请联系支持。",
 		checkFailedTitle: "更新错误",
-		available: "Cap {{version}} 版本已发布，是否立即安装？",
-		availableTitle: "更新 Cap",
+		available: "Screen {{version}} 版本已发布，是否立即安装？",
+		availableTitle: "更新 Screen",
 		update: "更新",
 		ignore: "忽略",
 	},

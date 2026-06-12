@@ -1,8 +1,8 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
-	"productName": "Cap - Development",
+	"productName": "Screen",
 	"identifier": "so.cap.desktop.dev",
-	"mainBinaryName": "Cap - Development",
+	"mainBinaryName": "Screen",
 	"build": {
 		"beforeDevCommand": "pnpm localdev",
 		"devUrl": "http://localhost:3002",

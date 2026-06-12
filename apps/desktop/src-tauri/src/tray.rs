@@ -416,14 +416,14 @@ fn build_tray_menu(app: &AppHandle, cache: &PreviousItemsCache) -> tauri::Result
                 &MenuItem::with_id(
                     app,
                     "version",
-                    format!("Cap v{}", env!("CARGO_PKG_VERSION")),
+                    format!("Screen v{}", env!("CARGO_PKG_VERSION")),
                     false,
                     None::<&str>,
                 )?,
                 &MenuItem::with_id(
                     app,
                     TrayItem::Quit,
-                    tr("Quit Cap", "退出 Cap"),
+                    tr("Quit Screen", "退出 Screen"),
                     true,
                     None::<&str>,
                 )?,
@@ -492,8 +492,8 @@ fn build_tray_menu(app: &AppHandle, cache: &PreviousItemsCache) -> tauri::Result
         )?)?;
         menu.append(&MenuItem::with_id(
             app,
-        TrayItem::TakeScreenshot,
-        tr("Take a Screenshot", "屏幕截图"),
+            TrayItem::TakeScreenshot,
+            tr("Take a Screenshot", "屏幕截图"),
             true,
             None::<&str>,
         )?)?;
@@ -545,14 +545,14 @@ fn build_tray_menu(app: &AppHandle, cache: &PreviousItemsCache) -> tauri::Result
     menu.append(&MenuItem::with_id(
         app,
         "version",
-        format!("Cap v{}", env!("CARGO_PKG_VERSION")),
+        format!("Screen v{}", env!("CARGO_PKG_VERSION")),
         false,
         None::<&str>,
     )?)?;
     menu.append(&MenuItem::with_id(
         app,
         TrayItem::Quit,
-        tr("Quit Cap", "退出 Cap"),
+        tr("Quit Screen", "退出 Screen"),
         true,
         None::<&str>,
     )?)?;

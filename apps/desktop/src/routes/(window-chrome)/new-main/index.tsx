@@ -34,13 +34,13 @@ import { Transition } from "solid-transition-group";
 import Mode from "~/components/Mode";
 import { RecoveryToast } from "~/components/RecoveryToast";
 import Tooltip from "~/components/Tooltip";
+import { t } from "~/i18n";
 import { Input } from "~/routes/editor/ui";
 import {
 	authStore,
 	generalSettingsStore,
 	recordingSettingsStore,
 } from "~/store";
-import { t } from "~/i18n";
 import { createSignInMutation } from "~/utils/auth";
 import { createTauriEventListener } from "~/utils/createEventListener";
 import {
@@ -1373,7 +1373,9 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 							onSettingsRequested={(mic) => handleSettingsTargetChange(mic)}
 							disabled={micProps.disabled}
 							emptyMessage={
-								trimmedSearch() ? noResultsMessage() : t("main.noMicrophonesFound")
+								trimmedSearch()
+									? noResultsMessage()
+									: t("main.noMicrophonesFound")
 							}
 							permissions={micProps.permissions}
 							deviceSettings={micProps.deviceSettings}
@@ -1406,7 +1408,9 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 					class="flex h-[36px] gap-1 items-center shrink-0 rounded-md px-2 text-xs
 					text-gray-11 transition-colors hover:text-gray-12 hover:bg-gray-4
 					focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-9 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-1"
-					aria-label={inSettingsMode() ? t("common.backToList") : t("common.back")}
+					aria-label={
+						inSettingsMode() ? t("common.backToList") : t("common.back")
+					}
 				>
 					<IconLucideArrowLeft class="size-3 text-gray-11" />
 					<span class="font-medium text-gray-12">{t("common.back")}</span>
@@ -1576,10 +1580,6 @@ function createUpdateCheck() {
 			if (result) update = result;
 		} catch (e) {
 			console.error("Failed to check for updates:", e);
-			await dialog.message(t("update.checkFailed"), {
-				title: t("update.checkFailedTitle"),
-				kind: "error",
-			});
 			return;
 		}
 
@@ -2767,7 +2767,9 @@ function Page() {
 									targets={recordingsData()}
 									isLoading={recordings.isPending}
 									errorMessage={
-										recordings.error ? t("main.failedToLoadRecordings") : undefined
+										recordings.error
+											? t("main.failedToLoadRecordings")
+											: undefined
 									}
 									onSelect={async (recording) => {
 										if (recording.mode === "studio") {
@@ -2817,7 +2819,9 @@ function Page() {
 									targets={screenshotsData()}
 									isLoading={screenshots.isPending}
 									errorMessage={
-										screenshots.error ? t("main.failedToLoadScreenshots") : undefined
+										screenshots.error
+											? t("main.failedToLoadScreenshots")
+											: undefined
 									}
 									onSelect={async (screenshot) => {
 										await commands.showWindow({

@@ -806,18 +806,18 @@ impl CapWindowId {
 
     pub fn title(&self) -> String {
         match self {
-            Self::Settings => "Cap Settings".to_string(),
-            Self::WindowCaptureOccluder { .. } => "Cap Window Capture Occluder".to_string(),
-            Self::CaptureArea => "Cap Capture Area".to_string(),
-            Self::RecordingControls => "Cap Recording Controls".to_string(),
-            Self::Editor { .. } => "Cap Editor".to_string(),
-            Self::ScreenshotEditor { .. } => "Cap Screenshot Editor".to_string(),
-            Self::ModeSelect => "Cap Mode Selection".to_string(),
-            Self::Onboarding => "Welcome to Cap".to_string(),
-            Self::Camera => "Cap Camera".to_string(),
-            Self::RecordingsOverlay => "Cap Recordings Overlay".to_string(),
-            Self::TargetSelectOverlay { .. } => "Cap Target Select".to_string(),
-            _ => "Cap".to_string(),
+            Self::Settings => "Screen Settings".to_string(),
+            Self::WindowCaptureOccluder { .. } => "Screen Window Capture Occluder".to_string(),
+            Self::CaptureArea => "Screen Capture Area".to_string(),
+            Self::RecordingControls => "Screen Recording Controls".to_string(),
+            Self::Editor { .. } => "Screen Editor".to_string(),
+            Self::ScreenshotEditor { .. } => "Screen Screenshot Editor".to_string(),
+            Self::ModeSelect => "Screen Mode Selection".to_string(),
+            Self::Onboarding => "Welcome to Screen".to_string(),
+            Self::Camera => "Screen Camera".to_string(),
+            Self::RecordingsOverlay => "Screen Recordings Overlay".to_string(),
+            Self::TargetSelectOverlay { .. } => "Screen Target Select".to_string(),
+            _ => "Screen".to_string(),
         }
     }
 

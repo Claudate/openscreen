@@ -408,7 +408,7 @@ export default function Settings(props: RouteSectionProps) {
 
 			if (!update) {
 				await dialog.message(
-					"You're already using the latest version of Cap.",
+					"You're already using the latest version of Screen.",
 					{
 						title: "No Update Available",
 						kind: "info",
@@ -418,17 +418,13 @@ export default function Settings(props: RouteSectionProps) {
 			}
 
 			const shouldUpdate = await dialog.confirm(
-				`Version ${update.version} of Cap is available, would you like to install it?`,
-				{ title: "Update Cap", okLabel: "Update", cancelLabel: "Ignore" },
+				`Version ${update.version} of Screen is available, would you like to install it?`,
+				{ title: "Update Screen", okLabel: "Update", cancelLabel: "Ignore" },
 			);
 
 			if (shouldUpdate) navigate("/update");
 		} catch (e) {
 			console.error("Failed to check for updates:", e);
-			await dialog.message(
-				"Unable to check for updates. Please download the latest version manually from cap.so/download. Your data will not be lost.\n\nIf this issue persists, please contact support.",
-				{ title: "Update Error", kind: "error" },
-			);
 		} finally {
 			setIsCheckingForUpdates(false);
 		}

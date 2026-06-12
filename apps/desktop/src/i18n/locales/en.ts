@@ -53,7 +53,7 @@ export const dict = {
 			"No rendering required — uploads on the fly so you can share the link the moment you stop.",
 		studioMode: "Studio mode",
 		studioModeDesc:
-			"Records at the highest quality for local rendering later. Opens the Cap editor when you're done.",
+			"Records at the highest quality for local rendering later. Opens the Screen editor when you're done.",
 		screenshotMode: "Screenshot mode",
 		screenshotModeDesc: "Capture and annotate stills.",
 		recordingModeInfo: "Recording mode info",
@@ -64,8 +64,8 @@ export const dict = {
 			"Unable to check for updates. Please download the latest version manually from cap.so/download. Your data will not be lost.\n\nIf this issue persists, please contact support.",
 		checkFailedTitle: "Update Error",
 		available:
-			"Version {{version}} of Cap is available, would you like to install it?",
-		availableTitle: "Update Cap",
+			"Version {{version}} of Screen is available, would you like to install it?",
+		availableTitle: "Update Screen",
 		update: "Update",
 		ignore: "Ignore",
 	},

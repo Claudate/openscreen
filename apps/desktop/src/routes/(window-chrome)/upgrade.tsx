@@ -500,7 +500,7 @@ export default function Page() {
 											</p>
 										</div>
 										<ul class="flex flex-col gap-2 justify-center list-none">
-											{proFeatures.map((feature) => (
+											{proFeatures().map((feature) => (
 												<li class="flex justify-start items-center text-gray-1">
 													<div class="flex justify-center items-center p-0 m-0 size-4">
 														<IconLucideCheck class="size-4" />

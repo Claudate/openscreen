@@ -1,22 +1,23 @@
 import { Button } from "@cap/ui-solid";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { createSignal, Match, onCleanup, onMount, Switch } from "solid-js";
+import { t } from "~/i18n";
 import {
 	events,
 	type VideoImportProgress as VideoImportProgressEvent,
 } from "~/utils/tauri";
 import IconLucideAlertCircle from "~icons/lucide/alert-circle";
 
-const funMessages = [
-	"Adjusting the Cap just right...",
-	"Putting on our thinking Cap...",
-	"Cap-sizing the pixels...",
-	"Wearing our processing Cap...",
-	"Cap-tivating import in progress...",
-	"Flipping our Cap backwards...",
-	"Cap-puccino break? Almost done...",
-	"Cap-able of great things...",
-];
+const funMessageKeys = [
+	"editor.importing.fun1",
+	"editor.importing.fun2",
+	"editor.importing.fun3",
+	"editor.importing.fun4",
+	"editor.importing.fun5",
+	"editor.importing.fun6",
+	"editor.importing.fun7",
+	"editor.importing.fun8",
+] as const;
 
 export type ImportProgressProps = {
 	projectPath: string;
@@ -30,7 +31,7 @@ export function ImportProgress(props: ImportProgressProps) {
 	);
 	const [failed, setFailed] = createSignal<string | null>(null);
 	const [messageIndex, setMessageIndex] = createSignal(
-		Math.floor(Math.random() * funMessages.length),
+		Math.floor(Math.random() * funMessageKeys.length),
 	);
 
 	let messageInterval: ReturnType<typeof setInterval> | undefined;
@@ -43,7 +44,7 @@ export function ImportProgress(props: ImportProgressProps) {
 
 	onMount(async () => {
 		messageInterval = setInterval(() => {
-			setMessageIndex((prev) => (prev + 1) % funMessages.length);
+			setMessageIndex((prev) => (prev + 1) % funMessageKeys.length);
 		}, 4000);
 
 		unlisten = await events.videoImportProgress.listen((event) => {
@@ -78,12 +79,12 @@ export function ImportProgress(props: ImportProgressProps) {
 							</div>
 
 							<h2 class="text-lg font-medium text-gray-12 mb-2">
-								Import Failed
+								{t("editor.importing.failed")}
 							</h2>
 							<p class="text-sm text-gray-11 mb-6">{errorMessage()}</p>
 
 							<Button variant="gray" onClick={handleClose}>
-								Close
+								{t("editor.importing.close")}
 							</Button>
 						</div>
 					)}
@@ -126,10 +127,10 @@ export function ImportProgress(props: ImportProgressProps) {
 						</div>
 
 						<h2 class="text-lg font-medium text-gray-12 mb-2">
-							Importing Video
+							{t("editor.importing.importingVideo")}
 						</h2>
 						<p class="text-sm text-gray-11 animate-pulse h-5 animate-pulse-slow">
-							{funMessages[messageIndex()]}
+							{t(funMessageKeys[messageIndex()])}
 						</p>
 					</div>
 				</Match>

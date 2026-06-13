@@ -2163,7 +2163,7 @@ function BackgroundConfig(props: {
 													src={photo.url}
 													loading="eager"
 													class="object-cover w-full h-full"
-													alt="Wallpaper option"
+													alt={t("editor.backgroundTab.wallpaperOption")}
 												/>
 											</KRadioGroup.ItemControl>
 										</KRadioGroup.Item>
@@ -2182,7 +2182,7 @@ function BackgroundConfig(props: {
 														<KRadioGroup.ItemControl class="overflow-hidden w-full h-full rounded-lg border cursor-pointer border-gray-5 data-checked:border-blue-9 data-checked:ring-2 data-checked:ring-blue-9 peer-focus-visible:border-2 peer-focus-visible:border-blue-9">
 															<img
 																src={photo.url}
-																alt="Wallpaper option"
+																alt={t("editor.backgroundTab.wallpaperOption")}
 																class="object-cover w-full h-full"
 																loading="lazy"
 															/>
@@ -2220,7 +2220,7 @@ function BackgroundConfig(props: {
 									<img
 										src={convertFileSrc(source())}
 										class="object-cover w-full h-full"
-										alt="Selected background"
+										alt={t("editor.backgroundTab.selectedBackground")}
 									/>
 									<div class="absolute top-2 right-2">
 										<button

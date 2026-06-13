@@ -2607,7 +2607,10 @@ impl ShowCapWindow {
             ShowCapWindow::Settings { .. } => CapWindowId::Settings,
             ShowCapWindow::Editor { project_path } => {
                 let state = app.state::<EditorWindowIds>();
-                let s = state.ids.lock().unwrap();
+                let s = state
+                    .ids
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 let id = s.iter().find(|(path, _)| path == project_path).unwrap().1;
                 CapWindowId::Editor { id }
             }
@@ -2630,7 +2633,10 @@ impl ShowCapWindow {
             ShowCapWindow::Onboarding => CapWindowId::Onboarding,
             ShowCapWindow::ScreenshotEditor { path } => {
                 let state = app.state::<ScreenshotEditorWindowIds>();
-                let s = state.ids.lock().unwrap();
+                let s = state
+                    .ids
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 let id = s.iter().find(|(p, _)| p == path).unwrap().1;
                 CapWindowId::ScreenshotEditor { id }
             }

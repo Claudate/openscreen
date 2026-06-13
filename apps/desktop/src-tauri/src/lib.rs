@@ -535,6 +535,10 @@ pub enum RecordingState {
         target: ScreenCaptureTarget,
     },
     Active(InProgressRecording),
+    // The recording has been taken out for finalization while the app lock is
+    // released (so the slow finalize doesn't freeze the UI). Treated as "busy"
+    // so a concurrent start is rejected until handle_recording_end resets to None.
+    Stopping,
 }
 
 pub struct App {
@@ -698,6 +702,27 @@ impl App {
                 None
             }
         }
+    }
+
+    // Take an active recording out for finalization while marking the state
+    // Stopping, so the caller can drop the app lock during the slow finalize
+    // without a concurrent start sneaking in (which handle_recording_end would
+    // otherwise clobber via its own clear). A pending recording is cancelled to
+    // None; None/Stopping are left as-is.
+    pub fn begin_stop_recording(&mut self) -> Option<InProgressRecording> {
+        let result = match std::mem::replace(&mut self.recording_state, RecordingState::Stopping) {
+            RecordingState::Active(recording) => Some(recording),
+            RecordingState::Pending { .. } => {
+                self.recording_state = RecordingState::None;
+                None
+            }
+            other => {
+                self.recording_state = other;
+                None
+            }
+        };
+        self.close_occluder_windows();
+        result
     }
 
     fn close_occluder_windows(&self) {
@@ -2255,7 +2280,7 @@ async fn get_current_recording(
     let state = state.read().await;
 
     let (mode, capture_target, status) = match &state.recording_state {
-        RecordingState::None => {
+        RecordingState::None | RecordingState::Stopping => {
             return Ok(JsonValue::new(&None));
         }
         RecordingState::Pending { mode, target } => (*mode, target, RecordingStatus::Pending),

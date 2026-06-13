@@ -1391,11 +1391,17 @@ pub async fn start_recording(
         _ => {}
     }
 
-    // Set pending state BEFORE closing main window and starting countdown
-    state_mtx
-        .write()
-        .await
-        .set_pending_recording(inputs.mode, inputs.capture_target.clone());
+    // Set pending state BEFORE closing main window and starting countdown.
+    // The read-lock pre-check at the top of this fn is not atomic, so two
+    // concurrent start_recording calls could both pass it. Re-check while holding
+    // the write lock here so only one wins and we never start a second recording.
+    {
+        let mut state = state_mtx.write().await;
+        if state.is_recording_active_or_pending() {
+            return Err("Recording already in progress".to_string());
+        }
+        state.set_pending_recording(inputs.mode, inputs.capture_target.clone());
+    }
 
     let countdown = general_settings.and_then(|v| v.recording_countdown);
     for (id, win) in app
@@ -2247,10 +2253,18 @@ async fn discard_recording(app: &AppHandle, recording: InProgressRecording) -> R
 #[specta::specta]
 #[instrument(skip(app, state))]
 pub async fn stop_recording(app: AppHandle, state: MutableState<'_, App>) -> Result<(), String> {
-    let mut state = state.write().await;
-    let Some(current_recording) = state.clear_current_recording() else {
-        warn!("Stop recording requested without active recording");
-        return Ok(());
+    // Take the recording out under the write lock and mark the state Stopping,
+    // then release the lock so the slow finalize below no longer blocks every
+    // other state read/write (which previously froze the UI). The Stopping guard
+    // makes a concurrent start_recording fail until handle_recording_end resets
+    // the state to None.
+    let current_recording = {
+        let mut state = state.write().await;
+        let Some(current_recording) = state.begin_stop_recording() else {
+            warn!("Stop recording requested without active recording");
+            return Ok(());
+        };
+        current_recording
     };
 
     let recording_dir = current_recording.recording_dir().clone();
@@ -2276,6 +2290,7 @@ pub async fn stop_recording(app: AppHandle, state: MutableState<'_, App>) -> Res
         }
     };
 
+    let mut state = state.write().await;
     handle_recording_end(app, recording_outcome, &mut state, recording_dir).await?;
 
     Ok(())

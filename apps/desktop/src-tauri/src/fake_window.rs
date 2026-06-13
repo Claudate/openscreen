@@ -336,7 +336,7 @@ pub fn spawn_fake_window_listener(app: AppHandle, window: WebviewWindow) {
                     match &s.recording_state {
                         RecordingState::Pending { target, .. } => Some(target.clone()),
                         RecordingState::Active(inner) => Some(inner.capture_target().clone()),
-                        RecordingState::None => None,
+                        RecordingState::None | RecordingState::Stopping => None,
                     }
                 });
 

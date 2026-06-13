@@ -1,7 +1,10 @@
 use std::{
     collections::HashMap,
     str::FromStr,
-    sync::{Mutex, PoisonError},
+    sync::{
+        Mutex, PoisonError,
+        atomic::{AtomicU64, Ordering},
+    },
     time::{Duration, Instant},
 };
 
@@ -128,19 +131,28 @@ pub async fn open_target_select_overlays(
             .await
             {
                 finish_created_target_select_overlay(&window, should_focus);
+                state.spawn(display_id, window.clone());
             }
         } else {
             let app_clone = app.clone();
             let display_id_clone = display_id.clone();
+            let spawn_generation = state.current_generation();
             tokio::spawn(async move {
                 if let Ok(window) = (ShowCapWindow::TargetSelectOverlay {
-                    display_id: display_id_clone,
+                    display_id: display_id_clone.clone(),
                     target_mode,
                 })
                 .show(&app_clone)
                 .await
                 {
+                    let focus_manager = app_clone.state::<WindowFocusManager>();
+                    if focus_manager.current_generation() != spawn_generation {
+                        hide_overlay(&window);
+                        let _ = window.close();
+                        return;
+                    }
                     finish_created_target_select_overlay(&window, should_focus);
+                    focus_manager.spawn(&display_id_clone, window.clone());
                 }
             });
         }
@@ -313,6 +325,8 @@ pub async fn close_target_select_overlays(
     app: AppHandle,
     state: tauri::State<'_, WindowFocusManager>,
 ) -> Result<(), String> {
+    state.invalidate();
+
     let mut closed_display_ids = Vec::new();
 
     for (id, window) in app.webview_windows() {
@@ -425,6 +439,7 @@ pub async fn focus_window(window_id: WindowId) -> Result<(), String> {
 pub struct WindowFocusManager {
     task: Mutex<Option<JoinHandle<()>>>,
     tasks: Mutex<HashMap<String, JoinHandle<()>>>,
+    generation: AtomicU64,
 }
 
 impl WindowFocusManager {
@@ -433,6 +448,14 @@ impl WindowFocusManager {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .contains_key(&id.to_string())
+    }
+
+    pub fn current_generation(&self) -> u64 {
+        self.generation.load(Ordering::Acquire)
+    }
+
+    pub fn invalidate(&self) {
+        self.generation.fetch_add(1, Ordering::AcqRel);
     }
 
     fn abort_all_tasks(&self) {

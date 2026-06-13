@@ -5495,6 +5495,9 @@ fn restore_camera_window(app: &AppHandle) {
 
 fn close_target_select_overlays(app: &AppHandle) {
     let focus_manager = app.try_state::<target_select_overlay::WindowFocusManager>();
+    if let Some(focus_manager) = focus_manager.as_ref() {
+        focus_manager.invalidate();
+    }
     let mut saw_overlay = false;
 
     for (label, window) in app.webview_windows() {

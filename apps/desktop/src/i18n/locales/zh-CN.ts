@@ -1058,7 +1058,7 @@ export const dict: typeof en = {
 			fontFamily: "字体",
 			activeWordHighlight: "当前词高亮",
 			activeWordHighlightNote:
-				"这是 Cap 字幕功能的首个版本。当前词高亮在某些情况下可能不准确，我们正在修复，将在后续版本中发布。",
+				"这是 Screen 字幕功能的首个版本。当前词高亮在某些情况下可能不准确，我们正在修复，将在后续版本中发布。",
 			textColor: "文字颜色",
 			backgroundSettings: "背景设置",
 			backgroundColor: "背景颜色",
@@ -1172,7 +1172,7 @@ export const dict: typeof en = {
 			unableTitle: "无法打开录制",
 			autoRecovery: "自动恢复",
 			autoRecoveryDesc:
-				"Cap 可以尝试自动恢复你的录制，将从可用的片段数据中重建录制。",
+				"Screen 可以尝试自动恢复你的录制，将从可用的片段数据中重建录制。",
 			recover: "恢复录制",
 			recovering: "恢复中...",
 			recoveryFailed: "恢复失败：{{message}}",

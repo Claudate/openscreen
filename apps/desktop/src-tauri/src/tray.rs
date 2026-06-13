@@ -572,7 +572,9 @@ fn add_new_item_to_cache(cache: &Arc<Mutex<PreviousItemsCache>>, app: &AppHandle
         return;
     };
 
-    let mut cache_guard = cache.lock().unwrap();
+    let mut cache_guard = cache
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
 
     cache_guard.items.retain(|item| item.path != path);
 
@@ -590,7 +592,9 @@ fn refresh_tray_menu(app: &AppHandle, cache: &Arc<Mutex<PreviousItemsCache>>) {
             return;
         };
 
-        let cache_guard = cache_clone.lock().unwrap();
+        let cache_guard = cache_clone
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Ok(menu) = build_tray_menu(&app_clone, &cache_guard) {
             let _ = tray.set_menu(Some(menu));
         }
@@ -701,7 +705,9 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     });
 
     let menu = {
-        let cache_guard = cache.lock().unwrap();
+        let cache_guard = cache
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         build_tray_menu(app, &cache_guard)?
     };
     let app = app.clone();
@@ -897,7 +903,9 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
                 return;
             };
             let items_needing_thumbnails: Vec<PathBuf> = {
-                let cache_guard = cache_clone.lock().unwrap();
+                let cache_guard = cache_clone
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 cache_guard
                     .items
                     .iter()
@@ -912,7 +920,9 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
 
             for path in items_needing_thumbnails {
                 if let Some(updated_item) = load_single_item(&path, &screenshots_dir, true) {
-                    let mut cache_guard = cache_clone.lock().unwrap();
+                    let mut cache_guard = cache_clone
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
                     if let Some(existing) = cache_guard.items.iter_mut().find(|i| i.path == path) {
                         existing.thumbnail = updated_item.thumbnail;
                         existing.thumbnail_width = updated_item.thumbnail_width;
@@ -925,7 +935,9 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
             let cache_for_refresh = cache_clone.clone();
             let _ = app_clone.run_on_main_thread(move || {
                 if let Some(tray) = app_for_refresh.tray_by_id("tray") {
-                    let cache_guard = cache_for_refresh.lock().unwrap();
+                    let cache_guard = cache_for_refresh
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
                     if let Ok(menu) = build_tray_menu(&app_for_refresh, &cache_guard) {
                         let _ = tray.set_menu(Some(menu));
                     }

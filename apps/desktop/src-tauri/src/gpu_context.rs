@@ -24,17 +24,27 @@ impl Default for PendingScreenshots {
 
 impl PendingScreenshots {
     pub fn insert(&self, key: String, screenshot: PendingScreenshot) {
-        let mut guard = self.0.write().unwrap();
+        let mut guard = self
+            .0
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         guard.retain(|_, v| v.created_at.elapsed() < std::time::Duration::from_secs(10));
         guard.insert(key, screenshot);
     }
 
     pub fn remove(&self, key: &str) -> Option<PendingScreenshot> {
-        self.0.write().unwrap().remove(key)
+        self.0
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .remove(key)
     }
 
     pub fn get(&self, key: &str) -> Option<PendingScreenshot> {
-        self.0.read().unwrap().get(key).cloned()
+        self.0
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(key)
+            .cloned()
     }
 }
 

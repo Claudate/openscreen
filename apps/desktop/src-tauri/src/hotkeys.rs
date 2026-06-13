@@ -107,7 +107,9 @@ pub fn init(app: &AppHandle) {
                 }
 
                 let state = app.state::<HotkeysState>();
-                let store = state.lock().unwrap();
+                let store = state
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
 
                 for (action, hotkey) in &store.hotkeys {
                     if &Shortcut::from(*hotkey) == shortcut {
@@ -257,7 +259,9 @@ async fn handle_hotkey(app: AppHandle, action: HotkeyAction) -> Result<(), Strin
 pub fn set_hotkey(app: AppHandle, action: HotkeyAction, hotkey: Option<Hotkey>) -> Result<(), ()> {
     let global_shortcut = app.global_shortcut();
     let state = app.state::<HotkeysState>();
-    let mut store = state.lock().unwrap();
+    let mut store = state
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
 
     let prev = store.hotkeys.get(&action).cloned();
 

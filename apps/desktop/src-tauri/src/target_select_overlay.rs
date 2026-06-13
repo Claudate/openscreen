@@ -123,6 +123,7 @@ pub async fn open_target_select_overlays(
 
             state.spawn(display_id, window.clone());
         } else if start.elapsed() < Duration::from_secs(1) {
+            let spawn_generation = state.current_generation();
             if let Ok(window) = (ShowCapWindow::TargetSelectOverlay {
                 display_id: display_id.clone(),
                 target_mode,
@@ -130,8 +131,13 @@ pub async fn open_target_select_overlays(
             .show(&app)
             .await
             {
-                finish_created_target_select_overlay(&window, should_focus);
-                state.spawn(display_id, window.clone());
+                if state.current_generation() != spawn_generation {
+                    hide_overlay(&window);
+                    let _ = window.close();
+                } else {
+                    finish_created_target_select_overlay(&window, should_focus);
+                    state.spawn(display_id, window.clone());
+                }
             }
         } else {
             let app_clone = app.clone();

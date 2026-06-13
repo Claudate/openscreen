@@ -500,7 +500,7 @@ impl FinalizingRecordings {
         let mut recordings = self
             .recordings
             .lock()
-            .expect("FinalizingRecordings mutex poisoned");
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let (tx, rx) = watch::channel(false);
         recordings.insert(path, (tx, rx.clone()));
         rx
@@ -510,7 +510,7 @@ impl FinalizingRecordings {
         let mut recordings = self
             .recordings
             .lock()
-            .expect("FinalizingRecordings mutex poisoned");
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some((tx, _)) = recordings.remove(path)
             && tx.send(true).is_err()
         {
@@ -519,7 +519,10 @@ impl FinalizingRecordings {
     }
 
     pub fn is_finalizing(&self, path: &Path) -> Option<watch::Receiver<bool>> {
-        let recordings = self.recordings.lock().unwrap();
+        let recordings = self
+            .recordings
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         recordings.get(path).map(|(_, rx)| rx.clone())
     }
 }

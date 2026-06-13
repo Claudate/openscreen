@@ -1517,7 +1517,9 @@ async fn generate_export_preview_inner(
         return Err("Frame time is outside video duration".to_string());
     };
 
-    let render_segment = &render_segments[segment.recording_clip as usize];
+    let render_segment = render_segments
+        .get(segment.recording_clip as usize)
+        .ok_or_else(|| "Segment index out of range".to_string())?;
     let clip_config = project_config
         .clips
         .iter()
@@ -1778,7 +1780,10 @@ async fn generate_export_preview_fast_inner(
         return Err("Frame time is outside video duration".to_string());
     };
 
-    let segment_media = &editor.segment_medias[segment.recording_clip as usize];
+    let segment_media = editor
+        .segment_medias
+        .get(segment.recording_clip as usize)
+        .ok_or_else(|| "Segment index out of range".to_string())?;
     let clip_config = project_config
         .clips
         .iter()

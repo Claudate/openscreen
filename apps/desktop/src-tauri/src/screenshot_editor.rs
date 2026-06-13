@@ -689,7 +689,10 @@ pub async fn create_screenshot_editor_instance(
 
     let path = {
         let window_ids = ScreenshotEditorWindowIds::get(window.app_handle());
-        let window_ids = window_ids.ids.lock().unwrap();
+        let window_ids = window_ids
+            .ids
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let Some((path, _)) = window_ids.iter().find(|(_, _id)| *_id == id) else {
             return Err("Screenshot editor instance not found".to_string());
         };

@@ -21,7 +21,10 @@ static WAVEFORM_CACHE: LazyLock<Mutex<HashMap<usize, (Weak<AudioData>, Arc<Vec<f
 pub async fn cached_waveform(audio: &Arc<AudioData>) -> Arc<Vec<f32>> {
     let key = Arc::as_ptr(audio) as usize;
 
-    if let Some((weak, waveform)) = WAVEFORM_CACHE.lock().unwrap().get(&key)
+    if let Some((weak, waveform)) = WAVEFORM_CACHE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .get(&key)
         && let Some(live) = weak.upgrade()
         && Arc::ptr_eq(&live, audio)
     {
@@ -35,7 +38,9 @@ pub async fn cached_waveform(audio: &Arc<AudioData>) -> Arc<Vec<f32>> {
             .unwrap_or_default(),
     );
 
-    let mut cache = WAVEFORM_CACHE.lock().unwrap();
+    let mut cache = WAVEFORM_CACHE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     cache.retain(|_, (weak, _)| weak.upgrade().is_some());
     cache.insert(key, (Arc::downgrade(audio), waveform.clone()));
     waveform

@@ -936,7 +936,10 @@ impl ShowCapWindow {
         if let Self::Editor { project_path } = &self {
             let state = app.state::<EditorWindowIds>();
             let window_id = {
-                let mut s = state.ids.lock().unwrap();
+                let mut s = state
+                    .ids
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 if !s.iter().any(|(path, _)| path == project_path) {
                     let id = state
                         .counter
@@ -955,7 +958,10 @@ impl ShowCapWindow {
         if let Self::ScreenshotEditor { path } = &self {
             let state = app.state::<ScreenshotEditorWindowIds>();
             {
-                let mut s = state.ids.lock().unwrap();
+                let mut s = state
+                    .ids
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 if !s.iter().any(|(p, _)| p == path) {
                     let id = state
                         .counter

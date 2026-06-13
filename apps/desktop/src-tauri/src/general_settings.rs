@@ -91,16 +91,19 @@ impl MainWindowRecordingStartBehaviour {
     }
 }
 
+// Must stay in sync with CapWindowId::title() in windows.rs: window exclusion
+// matches by exact title, so a rename there silently disables self-window
+// filtering during recording (the app's own windows leak into the capture).
 const DEFAULT_EXCLUDED_WINDOW_TITLES: &[&str] = &[
-    "Cap",
-    "Cap Settings",
-    "Cap Recording Controls",
-    "Cap Camera",
-    "Cap Target Select",
-    "Cap Window Capture Occluder",
-    "Cap Capture Area",
-    "Cap Mode Selection",
-    "Cap Recordings Overlay",
+    "Screen",
+    "Screen Settings",
+    "Screen Recording Controls",
+    "Screen Camera",
+    "Screen Target Select",
+    "Screen Window Capture Occluder",
+    "Screen Capture Area",
+    "Screen Mode Selection",
+    "Screen Recordings Overlay",
 ];
 
 pub fn default_excluded_windows() -> Vec<WindowExclusion> {
@@ -254,7 +257,7 @@ fn default_crash_recovery_recording() -> bool {
 
 fn default_transcription_hints() -> Vec<String> {
     vec![
-        "Cap".to_string(),
+        "Screen".to_string(),
         "TypeScript".to_string(),
         "My Brand Name".to_string(),
         "mywebsite.com".to_string(),
@@ -478,7 +481,7 @@ mod tests {
     #[test]
     fn appends_missing_default_excluded_windows() {
         let mut excluded_windows = vec![
-            title_exclusion("Cap"),
+            title_exclusion("Some Other Window"),
             WindowExclusion {
                 bundle_identifier: None,
                 owner_name: Some("Preview".to_string()),

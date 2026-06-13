@@ -213,8 +213,8 @@ mod tests {
 
     #[test]
     fn matches_by_window_title() {
-        let exclusion = title_exclusion("Cap Camera");
-        assert!(exclusion.matches(None, None, Some("Cap Camera")));
+        let exclusion = title_exclusion("Screen Camera");
+        assert!(exclusion.matches(None, None, Some("Screen Camera")));
         assert!(!exclusion.matches(None, None, Some("Other Window")));
         assert!(!exclusion.matches(None, None, None));
     }
@@ -229,8 +229,8 @@ mod tests {
 
     #[test]
     fn matches_by_owner_name() {
-        let exclusion = owner_exclusion("Cap");
-        assert!(exclusion.matches(None, Some("Cap"), None));
+        let exclusion = owner_exclusion("Screen");
+        assert!(exclusion.matches(None, Some("Screen"), None));
         assert!(!exclusion.matches(None, Some("Other"), None));
         assert!(!exclusion.matches(None, None, None));
     }
@@ -239,13 +239,13 @@ mod tests {
     fn matches_owner_and_title_requires_both() {
         let exclusion = WindowExclusion {
             bundle_identifier: None,
-            owner_name: Some("Cap".to_string()),
-            window_title: Some("Cap Camera".to_string()),
+            owner_name: Some("Screen".to_string()),
+            window_title: Some("Screen Camera".to_string()),
         };
-        assert!(exclusion.matches(None, Some("Cap"), Some("Cap Camera")));
-        assert!(!exclusion.matches(None, Some("Cap"), Some("Wrong Title")));
-        assert!(!exclusion.matches(None, Some("Wrong Owner"), Some("Cap Camera")));
-        assert!(!exclusion.matches(None, None, Some("Cap Camera")));
+        assert!(exclusion.matches(None, Some("Screen"), Some("Screen Camera")));
+        assert!(!exclusion.matches(None, Some("Screen"), Some("Wrong Title")));
+        assert!(!exclusion.matches(None, Some("Wrong Owner"), Some("Screen Camera")));
+        assert!(!exclusion.matches(None, None, Some("Screen Camera")));
     }
 
     #[test]
@@ -264,7 +264,7 @@ mod tests {
         let exclusion = WindowExclusion {
             bundle_identifier: Some("com.cap.desktop".to_string()),
             owner_name: None,
-            window_title: Some("Cap Camera".to_string()),
+            window_title: Some("Screen Camera".to_string()),
         };
         assert!(exclusion.matches(Some("com.cap.desktop"), None, None));
         assert!(exclusion.matches(Some("com.cap.desktop"), None, Some("Wrong")));
@@ -273,77 +273,86 @@ mod tests {
     #[test]
     fn instant_mode_removes_camera_exclusion() {
         let exclusions = vec![
-            title_exclusion("Cap"),
-            title_exclusion("Cap Camera"),
-            title_exclusion("Cap Settings"),
-            title_exclusion("Cap Recording Controls"),
+            title_exclusion("Screen"),
+            title_exclusion("Screen Camera"),
+            title_exclusion("Screen Settings"),
+            title_exclusion("Screen Recording Controls"),
         ];
 
-        let filtered = filter_for_instant_mode(exclusions, "Cap Camera");
+        let filtered = filter_for_instant_mode(exclusions, "Screen Camera");
 
         assert_eq!(filtered.len(), 3);
         assert!(
             filtered
                 .iter()
-                .all(|e| e.window_title.as_deref() != Some("Cap Camera"))
+                .all(|e| e.window_title.as_deref() != Some("Screen Camera"))
         );
         assert!(
             filtered
                 .iter()
-                .any(|e| e.window_title.as_deref() == Some("Cap"))
+                .any(|e| e.window_title.as_deref() == Some("Screen"))
         );
         assert!(
             filtered
                 .iter()
-                .any(|e| e.window_title.as_deref() == Some("Cap Settings"))
+                .any(|e| e.window_title.as_deref() == Some("Screen Settings"))
         );
         assert!(
             filtered
                 .iter()
-                .any(|e| e.window_title.as_deref() == Some("Cap Recording Controls"))
+                .any(|e| e.window_title.as_deref() == Some("Screen Recording Controls"))
         );
     }
 
     #[test]
     fn instant_mode_noop_when_camera_absent() {
-        let exclusions = vec![title_exclusion("Cap"), title_exclusion("Cap Settings")];
+        let exclusions = vec![
+            title_exclusion("Screen"),
+            title_exclusion("Screen Settings"),
+        ];
 
-        let filtered = filter_for_instant_mode(exclusions, "Cap Camera");
+        let filtered = filter_for_instant_mode(exclusions, "Screen Camera");
         assert_eq!(filtered.len(), 2);
     }
 
     #[test]
     fn instant_mode_handles_empty_list() {
-        let filtered = filter_for_instant_mode(vec![], "Cap Camera");
+        let filtered = filter_for_instant_mode(vec![], "Screen Camera");
         assert!(filtered.is_empty());
     }
 
     #[test]
     fn matches_webview_title_using_exclusion_rules() {
-        let exclusions = vec![title_exclusion("Cap Camera")];
+        let exclusions = vec![title_exclusion("Screen Camera")];
 
-        assert!(matches_window_title(&exclusions, "Cap Camera"));
-        assert!(!matches_window_title(&exclusions, "Cap Recording Controls"));
+        assert!(matches_window_title(&exclusions, "Screen Camera"));
+        assert!(!matches_window_title(
+            &exclusions,
+            "Screen Recording Controls"
+        ));
     }
 
     #[test]
     fn default_exclusions_contain_camera() {
+        let camera_title = crate::windows::CapWindowId::Camera.title();
         let defaults = crate::general_settings::default_excluded_windows();
         assert!(
             defaults
                 .iter()
-                .any(|e| e.window_title.as_deref() == Some("Cap Camera")),
-            "Default exclusions must include 'Cap Camera' — instant mode filtering depends on this"
+                .any(|e| e.window_title.as_deref() == Some(camera_title.as_str())),
+            "Default exclusions must include the camera window title ({camera_title:?}) — \
+             instant mode filtering depends on it and it must stay in sync with CapWindowId::title()"
         );
     }
 
     #[test]
     fn default_exclusions_only_match_camera_by_title() {
+        let camera_title = crate::windows::CapWindowId::Camera.title();
         let defaults = crate::general_settings::default_excluded_windows();
         let camera = defaults
             .iter()
-            .find(|e| e.window_title.as_deref() == Some("Cap Camera"))
-            .expect("Cap Camera must be in default exclusions");
+            .find(|e| e.window_title.as_deref() == Some(camera_title.as_str()))
+            .expect("camera window must be in default exclusions");
 
         assert!(
             camera.bundle_identifier.is_none(),

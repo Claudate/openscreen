@@ -5051,8 +5051,14 @@ pub async fn run(recording_logging_handle: LoggingHandle, logs_dir: PathBuf) {
                                 for (label, window) in app.webview_windows() {
                                     if let Ok(id) = CapWindowId::from_str(&label) {
                                         match id {
-                                            CapWindowId::TargetSelectOverlay { .. } => {
-                                                show_overlay(&window);
+                                            CapWindowId::TargetSelectOverlay { display_id } => {
+                                                let overlay_active = app
+                                                    .try_state::<target_select_overlay::WindowFocusManager>()
+                                                    .map(|fm| fm.has_active_task(&display_id))
+                                                    .unwrap_or(false);
+                                                if overlay_active {
+                                                    show_overlay(&window);
+                                                }
                                             }
                                             CapWindowId::Main => {
                                                 let _ = window.show();
@@ -5077,8 +5083,14 @@ pub async fn run(recording_logging_handle: LoggingHandle, logs_dir: PathBuf) {
                                 for (label, window) in app.webview_windows() {
                                     if let Ok(id) = CapWindowId::from_str(&label) {
                                         match id {
-                                            CapWindowId::TargetSelectOverlay { .. } => {
-                                                show_overlay(&window);
+                                            CapWindowId::TargetSelectOverlay { display_id } => {
+                                                let overlay_active = app
+                                                    .try_state::<target_select_overlay::WindowFocusManager>()
+                                                    .map(|fm| fm.has_active_task(&display_id))
+                                                    .unwrap_or(false);
+                                                if overlay_active {
+                                                    show_overlay(&window);
+                                                }
                                             }
                                             CapWindowId::Main => {
                                                 let _ = window.show();

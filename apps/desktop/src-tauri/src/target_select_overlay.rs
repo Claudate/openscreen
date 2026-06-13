@@ -428,6 +428,13 @@ pub struct WindowFocusManager {
 }
 
 impl WindowFocusManager {
+    pub fn has_active_task(&self, id: &DisplayId) -> bool {
+        self.tasks
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .contains_key(&id.to_string())
+    }
+
     fn abort_all_tasks(&self) {
         let tasks = {
             let mut tasks = self.tasks.lock().unwrap_or_else(PoisonError::into_inner);

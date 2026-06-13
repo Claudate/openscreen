@@ -300,7 +300,6 @@ pub(crate) async fn restore_main_window_inputs(app: &AppHandle) {
         .ok()
         .flatten()
         .unwrap_or_default();
-    let stored_camera_id = settings.camera_id.clone();
 
     if let Err(err) = crate::set_mic_input(state.clone(), settings.mic_name).await {
         warn!("Failed to restore microphone input for main window: {err}");
@@ -316,9 +315,7 @@ pub(crate) async fn restore_main_window_inputs(app: &AppHandle) {
         .try_read()
         .map(|s| {
             if !s.camera_cleanup_done && !s.camera_in_use {
-                s.selected_camera_id
-                    .clone()
-                    .or_else(|| stored_camera_id.clone())
+                s.selected_camera_id.clone()
             } else {
                 None
             }

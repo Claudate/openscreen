@@ -2,6 +2,7 @@ import { Button } from "@cap/ui-solid";
 import { createMutation, useQueryClient } from "@tanstack/solid-query";
 import { getCurrentWindow, Window } from "@tauri-apps/api/window";
 import { type Accessor, createSignal, Show } from "solid-js";
+import { t } from "~/i18n";
 import { generalSettingsStore } from "~/store";
 import { getProPlanId } from "~/utils/plans";
 import { createLicenseQuery } from "~/utils/queries";
@@ -13,15 +14,15 @@ import { authStore } from "../../store";
 
 import { Dialog, DialogContent, Input } from "../editor/ui";
 
-const proFeatures = [
-	"Commercial License Included",
-	"Unlimited cloud storage & Shareable links",
-	"Connect custom S3 storage bucket",
-	"Advanced teams features",
-	"Unlimited views",
-	"Password protected videos",
-	"Advanced analytics",
-	"Priority support",
+const proFeatures = () => [
+	t("upgradePage.proFeature1"),
+	t("upgradePage.proFeature2"),
+	t("upgradePage.proFeature3"),
+	t("upgradePage.proFeature4"),
+	t("upgradePage.proFeature5"),
+	t("upgradePage.proFeature6"),
+	t("upgradePage.proFeature7"),
+	t("upgradePage.proFeature8"),
 ];
 
 import { RuntimeLoader } from "@rive-app/canvas";

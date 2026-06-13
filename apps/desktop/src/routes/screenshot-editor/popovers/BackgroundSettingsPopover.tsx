@@ -12,6 +12,7 @@ import {
 	For,
 	Show,
 } from "solid-js";
+import { t } from "~/i18n";
 import type { BackgroundSource } from "~/utils/tauri";
 import IconCapBgBlur from "~icons/cap/bg-blur";
 import IconCapCircleX from "~icons/cap/circle-x";
@@ -221,7 +222,7 @@ export function BackgroundSettingsPopover() {
 					)
 				}
 				leftIcon={<IconCapImage class="size-4" />}
-				tooltipText="Background"
+				tooltipText={t("screenshotEditor.popover.background")}
 				kbd={["B"]}
 			/>
 			<Popover.Portal>
@@ -232,7 +233,7 @@ export function BackgroundSettingsPopover() {
 					>
 						<Field
 							icon={<IconCapImage class="size-4" />}
-							name="Background Image"
+							name={t("screenshotEditor.popover.backgroundImage")}
 						>
 							<KTabs
 								value={project.background.source.type}
@@ -350,7 +351,7 @@ export function BackgroundSettingsPopover() {
 															src={photo.url}
 															loading="eager"
 															class="object-cover w-full h-full"
-															alt="Wallpaper option"
+															alt={t("editor.backgroundTab.wallpaperOption")}
 														/>
 													</KRadioGroup.ItemControl>
 												</KRadioGroup.Item>
@@ -373,7 +374,7 @@ export function BackgroundSettingsPopover() {
 											>
 												<IconCapImage class="text-gray-11 size-6" />
 												<span class="text-gray-12">
-													Click to select or drag and drop image
+													{t("editor.backgroundTab.clickToSelectImage")}
 												</span>
 											</button>
 										}
@@ -383,7 +384,7 @@ export function BackgroundSettingsPopover() {
 												<img
 													src={convertFileSrc(source())}
 													class="object-cover w-full h-full"
-													alt="Selected background"
+													alt={t("editor.backgroundTab.selectedBackground")}
 												/>
 												<div class="absolute top-2 right-2">
 													<button
@@ -538,7 +539,10 @@ export function BackgroundSettingsPopover() {
 							</KTabs>
 						</Field>
 
-						<Field name="Background Blur" icon={<IconCapBgBlur />}>
+						<Field
+							name={t("screenshotEditor.popover.backgroundBlur")}
+							icon={<IconCapBgBlur />}
+						>
 							<Slider
 								value={[project.background.blur]}
 								onChange={(v) => setProject("background", "blur", v[0])}

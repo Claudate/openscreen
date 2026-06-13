@@ -2131,12 +2131,6 @@ function Page() {
 				.catch((error) => console.error("Failed to set mic input:", error));
 		}
 
-		if (rawOptions.cameraID) {
-			setCamera
-				.mutateAsync({ model: rawOptions.cameraID })
-				.catch((error) => console.error("Failed to set camera input:", error));
-		}
-
 		const unlistenFocus = currentWindow.onFocusChanged(
 			({ payload: focused }) => {
 				if (focused) {

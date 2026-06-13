@@ -4913,6 +4913,25 @@ pub async fn run(recording_logging_handle: LoggingHandle, logs_dir: PathBuf) {
                                     });
                                 }
                             }
+                            CapWindowId::Settings => {
+                                let resurface_main = app
+                                    .try_state::<ArcLock<App>>()
+                                    .and_then(|state| {
+                                        state
+                                            .try_read()
+                                            .ok()
+                                            .map(|s| !s.is_recording_active_or_pending())
+                                    })
+                                    .unwrap_or(false);
+                                if resurface_main
+                                    && let Some(main_window) = CapWindowId::Main.get(app)
+                                    && !main_window.is_visible().unwrap_or(true)
+                                {
+                                    let _ = main_window.show();
+                                    let _ = main_window.unminimize();
+                                    let _ = main_window.set_focus();
+                                }
+                            }
                             _ => {}
                         }
                     }

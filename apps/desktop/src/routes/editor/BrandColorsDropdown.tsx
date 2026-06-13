@@ -24,7 +24,7 @@ export function BrandColorsDropdown(props: {
 					)}
 				>
 					<span class="min-w-0 flex-1 truncate text-left">
-						{t("editor.misc.brandColours")}
+						{t("editor.org.brandColours")}
 					</span>
 					<span class="flex shrink-0 -space-x-1">
 						<For each={props.swatches.slice(0, 4)}>

@@ -87,7 +87,7 @@ export function AnnotationConfigBar() {
 
 							<Show when={!isMask()}>
 								<ConfigItem
-									label="Opacity"
+									label={t("screenshotEditor.annotation.opacity")}
 									value={`${Math.round(ann().opacity * 100)}%`}
 								>
 									<Slider
@@ -102,7 +102,7 @@ export function AnnotationConfigBar() {
 							</Show>
 
 							<Show when={type() === "mask"}>
-								<ConfigItem label="Style">
+								<ConfigItem label={t("screenshotEditor.annotation.style")}>
 									<div class="flex gap-1">
 										<button
 											type="button"
@@ -114,7 +114,7 @@ export function AnnotationConfigBar() {
 											)}
 											onClick={() => update("maskType", "blur")}
 										>
-											Blur
+											{t("screenshotEditor.annotation.blur")}
 										</button>
 										<button
 											type="button"
@@ -126,7 +126,7 @@ export function AnnotationConfigBar() {
 											)}
 											onClick={() => update("maskType", "pixelate")}
 										>
-											Pixelate
+											{t("screenshotEditor.annotation.pixelate")}
 										</button>
 									</div>
 								</ConfigItem>
@@ -134,7 +134,7 @@ export function AnnotationConfigBar() {
 
 							<Show when={type() === "mask"}>
 								<ConfigItem
-									label="Intensity"
+									label={t("screenshotEditor.annotation.intensity")}
 									value={`${Math.round(maskLevel())}`}
 								>
 									<Slider
@@ -150,7 +150,7 @@ export function AnnotationConfigBar() {
 
 							<Show when={type() === "text"}>
 								<ConfigItem
-									label="Size"
+									label={t("screenshotEditor.annotation.size")}
 									value={`${Math.round(ann().height)}px`}
 								>
 									<Slider
@@ -171,7 +171,7 @@ export function AnnotationConfigBar() {
 								class="text-xs text-blue-11 font-medium hover:text-blue-9 transition-colors"
 								onClick={() => setSelectedAnnotationId(null)}
 							>
-								Done
+								{t("screenshotEditor.annotation.done")}
 							</button>
 						</div>
 					</div>
@@ -242,7 +242,7 @@ function ColorPickerButton(props: {
 
 						<div class="grid grid-cols-6 gap-1.5">
 							<Show when={props.allowTransparent}>
-								<Tooltip content="Transparent">
+								<Tooltip content={t("screenshotEditor.annotation.transparent")}>
 									<button
 										type="button"
 										onClick={() => props.onChange("transparent")}
@@ -279,4 +279,7 @@ function ColorPickerButton(props: {
 						</div>
 					</div>
 				</Popover.Content>
-			</Po
+			</Popover.Portal>
+		</Popover>
+	);
+}

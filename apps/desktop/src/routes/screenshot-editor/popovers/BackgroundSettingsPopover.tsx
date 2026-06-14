@@ -27,19 +27,21 @@ import { useScreenshotEditorContext } from "../context";
 import { EditorButton, Field, Slider } from "../ui";
 
 // Constants
-const BACKGROUND_SOURCES = {
-	wallpaper: "Wallpaper",
-	image: "Image",
-	color: "Color",
-	gradient: "Gradient",
-} satisfies Record<BackgroundSource["type"], string>;
-
 const BACKGROUND_SOURCES_LIST = [
 	"wallpaper",
 	"image",
 	"color",
 	"gradient",
 ] satisfies Array<BackgroundSource["type"]>;
+
+const BACKGROUND_THEME_KEYS = [
+	"macOS",
+	"dark",
+	"blue",
+	"cities",
+	"purple",
+	"orange",
+] as const;
 
 // Copied gradients
 const BACKGROUND_GRADIENTS = [
@@ -122,14 +124,7 @@ const WALLPAPER_NAMES = [
 
 type WallpaperName = (typeof WALLPAPER_NAMES)[number];
 
-const BACKGROUND_THEMES = {
-	macOS: "macOS",
-	dark: "Dark",
-	blue: "Blue",
-	cities: "Cities",
-	purple: "Purple",
-	orange: "Orange",
-};
+type BackgroundThemeKey = (typeof BACKGROUND_THEME_KEYS)[number];
 
 export function BackgroundSettingsPopover() {
 	const {
@@ -144,7 +139,7 @@ export function BackgroundSettingsPopover() {
 
 	// Background tabs
 	const [backgroundTab, setBackgroundTab] =
-		createSignal<keyof typeof BACKGROUND_THEMES>("macOS");
+		createSignal<BackgroundThemeKey>("macOS");
 
 	const [wallpapers] = createResource(async () => {
 		// Only load visible wallpapers initially
@@ -285,7 +280,7 @@ export function BackgroundSettingsPopover() {
 													class="z-10 flex-1 py-2.5 px-2 text-xs text-gray-11 data-selected:border-gray-3 data-selected:bg-gray-3 not-data-selected:hover:border-gray-7 rounded-[10px] transition-colors duration-200 outline-hidden border data-selected:text-gray-12 peer"
 													value={item}
 												>
-													{BACKGROUND_SOURCES[item]}
+													{t(`screenshotEditor.background.${item}`)}
 												</KTabs.Trigger>
 											);
 										}}
@@ -300,18 +295,14 @@ export function BackgroundSettingsPopover() {
 										value={backgroundTab()}
 									>
 										<KTabs.List class="flex overflow-x-auto overscroll-contain relative z-10 flex-row gap-2 items-center mb-3 text-xs hide-scroll">
-											<For each={Object.entries(BACKGROUND_THEMES)}>
-												{([key, value]) => (
+											<For each={BACKGROUND_THEME_KEYS}>
+												{(key) => (
 													<KTabs.Trigger
-														onClick={() =>
-															setBackgroundTab(
-																key as keyof typeof BACKGROUND_THEMES,
-															)
-														}
+														onClick={() => setBackgroundTab(key)}
 														value={key}
 														class="flex relative z-10 flex-1 justify-center items-center px-4 py-2 bg-transparent rounded-lg border transition-colors duration-200 text-gray-11 not-data-selected:hover:border-gray-7 data-selected:bg-gray-3 data-selected:border-gray-3 group data-selected:text-gray-12 disabled:opacity-50 focus:outline-hidden"
 													>
-														{value}
+														{t(`screenshotEditor.background.${key}`)}
 													</KTabs.Trigger>
 												)}
 											</For>

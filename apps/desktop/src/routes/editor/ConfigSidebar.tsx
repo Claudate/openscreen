@@ -4491,7 +4491,7 @@ function ZoomSegmentConfig(props: {
 											<Show when={!loaded()}>
 												<div class="flex absolute inset-0 justify-center items-center bg-gray-2">
 													<div class="text-sm text-gray-11">
-														Loading preview...
+														{t("editor.zoomConfig.loadingPreview")}
 													</div>
 												</div>
 											</Show>

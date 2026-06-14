@@ -7,6 +7,7 @@ import {
 	Show,
 } from "solid-js";
 import { unwrap } from "solid-js/store";
+import { t } from "~/i18n";
 import { getArrowHeadPoints } from "./arrow";
 import {
 	type Annotation,
@@ -212,7 +213,7 @@ export function AnnotationLayer(props: {
 			fillColor: "transparent",
 			opacity: 1,
 			rotation: 0,
-			text: tool === "text" ? "Text" : null,
+			text: tool === "text" ? t("screenshotEditor.toolbar.text") : null,
 			maskType: tool === "mask" ? "pixelate" : null,
 			maskLevel: tool === "mask" ? 7 : null,
 		};

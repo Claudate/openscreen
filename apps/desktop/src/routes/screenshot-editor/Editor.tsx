@@ -23,6 +23,7 @@ import {
 	createCropOptionsMenuItems,
 	type Ratio,
 } from "~/components/Cropper";
+import { t } from "~/i18n";
 import { composeEventHandlers } from "~/utils/composeEventHandlers";
 import IconCapCircleX from "~icons/cap/circle-x";
 import IconLucideMaximize from "~icons/lucide/maximize";
@@ -343,7 +344,7 @@ function Dialogs() {
 										<Dialog.Header>
 											<div class="flex flex-row space-x-8">
 												<div class="flex flex-row items-center space-x-3 text-gray-11">
-													<span>Size</span>
+													<span>{t("editor.common.size")}</span>
 													<div class="w-13">
 														<BoundInput field="width" max={originalSize.x} />
 													</div>
@@ -353,7 +354,7 @@ function Dialogs() {
 													</div>
 												</div>
 												<div class="flex flex-row items-center space-x-3 text-gray-11">
-													<span>Position</span>
+													<span>{t("editor.common.position")}</span>
 													<div class="w-13">
 														<BoundInput field="x" />
 													</div>
@@ -403,7 +404,7 @@ function Dialogs() {
 														crop().height === originalSize.y
 													}
 												>
-													Full
+													{t("editor.crop.full")}
 												</EditorButton>
 												<EditorButton
 													leftIcon={<IconCapCircleX />}
@@ -418,7 +419,7 @@ function Dialogs() {
 														crop().height === initialBounds.height
 													}
 												>
-													Reset
+													{t("editor.common.reset")}
 												</EditorButton>
 											</div>
 										</Dialog.Header>
@@ -473,7 +474,7 @@ function Dialogs() {
 													setDialog({ open: false });
 												}}
 											>
-												Save
+												{t("screenshotEditor.header.save")}
 											</Button>
 										</Dialog.Footer>
 									</>

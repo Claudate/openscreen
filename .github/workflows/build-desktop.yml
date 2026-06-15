@@ -14,6 +14,17 @@ on:
           - macos
           - windows
           - both
+  # 推 tag 自动出包并发布到 GitHub Release：
+  #   build-win-*  → Windows，build-mac-*  → macOS，build-all-* → 两个平台都打
+  push:
+    tags:
+      - "build-win-*"
+      - "build-mac-*"
+      - "build-all-*"
+
+# tag 触发时需要写入 Release
+permissions:
+  contents: write
 
 env:
   # 与 ci.yml 相同的公开 DSN（仅编译期注入用）
@@ -22,7 +33,7 @@ env:
 jobs:
   build-macos:
     name: Build macOS (aarch64, unsigned)
-    if: ${{ inputs.platform == 'macos' || inputs.platform == 'both' }}
+    if: ${{ inputs.platform == 'macos' || inputs.platform == 'both' || startsWith(github.ref, 'refs/tags/build-mac-') || startsWith(github.ref, 'refs/tags/build-all-') }}
     runs-on: macos-latest
     env:
       TARGET: aarch64-apple-darwin
@@ -103,9 +114,22 @@ jobs:
             target/${{ env.TARGET }}/release/bundle/macos/Cap-macos-aarch64-app.zip
           if-no-files-found: error
 
+      - name: Publish macOS bundle to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BUNDLE_DIR="target/${{ env.TARGET }}/release/bundle"
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "Automated unsigned build from $GITHUB_SHA" || true
+          gh release upload "$GITHUB_REF_NAME" \
+            "$BUNDLE_DIR/macos/Cap-macos-aarch64-app.zip" \
+            $BUNDLE_DIR/dmg/*.dmg \
+            --clobber
+
   build-windows:
     name: Build Windows (x86_64, unsigned)
-    if: ${{ inputs.platform == 'windows' || inputs.platform == 'both' }}
+    if: ${{ inputs.platform == 'windows' || inputs.platform == 'both' || startsWith(github.ref, 'refs/tags/build-win-') || startsWith(github.ref, 'refs/tags/build-all-') }}
     runs-on: windows-2022
     env:
       TARGET: x86_64-pc-windows-msvc
@@ -173,3 +197,16 @@ jobs:
             target/${{ env.TARGET }}/release/bundle/nsis/*.exe
             target/${{ env.TARGET }}/release/bundle/msi/*.msi
           if-no-files-found: error
+
+      - name: Publish Windows bundle to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BUNDLE_DIR="target/${{ env.TARGET }}/release/bundle"
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "Automated unsigned build from $GITHUB_SHA" || true
+          gh release upload "$GITHUB_REF_NAME" \
+            $BUNDLE_DIR/nsis/*.exe \
+            $BUNDLE_DIR/msi/*.msi \
+            --clobber

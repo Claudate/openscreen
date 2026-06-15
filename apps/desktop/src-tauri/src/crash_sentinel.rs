@@ -80,7 +80,9 @@ pub fn init(logs_dir: &Path, app_version: &str) {
         scope.set_tag("app.version", app_version);
     });
 
-    *SESSION.lock().unwrap() = Some(ActiveSession {
+    *SESSION
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(ActiveSession {
         path,
         #[cfg(target_os = "macos")]
         record,

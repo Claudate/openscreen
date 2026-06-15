@@ -36,7 +36,9 @@ jobs:
     if: ${{ inputs.platform == 'macos' || inputs.platform == 'both' || startsWith(github.ref, 'refs/tags/build-mac-') || startsWith(github.ref, 'refs/tags/build-all-') }}
     runs-on: macos-latest
     env:
-      TARGET: aarch64-apple-darwin
+      # 不要命名为 TARGET：nitropack 会把 process.env.TARGET 当作部署 preset，
+      # 导致前端构建报 "Cannot extend config from <triple>"（beforeBuildCommand 继承此环境变量）。
+      RUST_TARGET: aarch64-apple-darwin
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -44,11 +46,11 @@ jobs:
       - name: Rust setup
         uses: dtolnay/rust-toolchain@1.88.0
         with:
-          targets: ${{ env.TARGET }}
+          targets: ${{ env.RUST_TARGET }}
 
       - uses: ./.github/actions/setup-rust-cache
         with:
-          target: ${{ env.TARGET }}
+          target: ${{ env.RUST_TARGET }}
 
       - uses: ./.github/actions/setup-js
 
@@ -61,7 +63,7 @@ jobs:
             echo "NEXT_PUBLIC_WEB_URL=https://cap.so"
             echo "NEXTAUTH_URL=https://cap.so"
             echo "VITE_SERVER_URL=https://cap.so"
-            echo "RUST_TARGET_TRIPLE=${{ env.TARGET }}"
+            echo "RUST_TARGET_TRIPLE=${{ env.RUST_TARGET }}"
           } >> .env
           cp .env apps/desktop/.env
 
@@ -69,11 +71,11 @@ jobs:
         shell: bash
         run: pnpm -w cap-setup
         env:
-          RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+          RUST_TARGET_TRIPLE: ${{ env.RUST_TARGET }}
 
       - name: Build sidecar binaries
         shell: bash
-        run: ./scripts/build-desktop-binaries.sh ${{ env.TARGET }}
+        run: ./scripts/build-desktop-binaries.sh ${{ env.RUST_TARGET }}
 
       - name: Write unsigned bundle config override
         shell: bash
@@ -90,16 +92,16 @@ jobs:
 
       - name: Build app (unsigned bundle)
         working-directory: apps/desktop
-        run: pnpm build:tauri --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
+        run: pnpm build:tauri --target ${{ env.RUST_TARGET }} --config src-tauri/ci-unsigned.conf.json
         env:
           # https://github.com/tauri-apps/tauri-action/issues/740
           CI: false
-          RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+          RUST_TARGET_TRIPLE: ${{ env.RUST_TARGET }}
 
       - name: Zip .app bundle (preserve symlinks/permissions)
         shell: bash
         run: |
-          BUNDLE_DIR="target/${{ env.TARGET }}/release/bundle/macos"
+          BUNDLE_DIR="target/${{ env.RUST_TARGET }}/release/bundle/macos"
           cd "$BUNDLE_DIR"
           APP_NAME="$(ls -d *.app | head -n 1)"
           ditto -c -k --keepParent "$APP_NAME" Cap-macos-aarch64-app.zip
@@ -110,8 +112,8 @@ jobs:
         with:
           name: cap-macos-aarch64-unsigned
           path: |
-            target/${{ env.TARGET }}/release/bundle/dmg/*.dmg
-            target/${{ env.TARGET }}/release/bundle/macos/Cap-macos-aarch64-app.zip
+            target/${{ env.RUST_TARGET }}/release/bundle/dmg/*.dmg
+            target/${{ env.RUST_TARGET }}/release/bundle/macos/Cap-macos-aarch64-app.zip
           if-no-files-found: error
 
       - name: Publish macOS bundle to GitHub Release
@@ -120,7 +122,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BUNDLE_DIR="target/${{ env.TARGET }}/release/bundle"
+          BUNDLE_DIR="target/${{ env.RUST_TARGET }}/release/bundle"
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "Automated unsigned build from $GITHUB_SHA" || true
           gh release upload "$GITHUB_REF_NAME" \
             "$BUNDLE_DIR/macos/Cap-macos-aarch64-app.zip" \
@@ -132,7 +134,8 @@ jobs:
     if: ${{ inputs.platform == 'windows' || inputs.platform == 'both' || startsWith(github.ref, 'refs/tags/build-win-') || startsWith(github.ref, 'refs/tags/build-all-') }}
     runs-on: windows-2022
     env:
-      TARGET: x86_64-pc-windows-msvc
+      # 见 macOS job 说明：避免用 TARGET，否则 nitropack 误读为 preset。
+      RUST_TARGET: x86_64-pc-windows-msvc
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -140,11 +143,11 @@ jobs:
       - name: Rust setup
         uses: dtolnay/rust-toolchain@1.88.0
         with:
-          targets: ${{ env.TARGET }}
+          targets: ${{ env.RUST_TARGET }}
 
       - uses: ./.github/actions/setup-rust-cache
         with:
-          target: ${{ env.TARGET }}
+          target: ${{ env.RUST_TARGET }}
 
       - uses: ./.github/actions/setup-js
 
@@ -157,7 +160,7 @@ jobs:
             echo "NEXT_PUBLIC_WEB_URL=https://cap.so"
             echo "NEXTAUTH_URL=https://cap.so"
             echo "VITE_SERVER_URL=https://cap.so"
-            echo "RUST_TARGET_TRIPLE=${{ env.TARGET }}"
+            echo "RUST_TARGET_TRIPLE=${{ env.RUST_TARGET }}"
           } >> .env
           cp .env apps/desktop/.env
 
@@ -165,11 +168,11 @@ jobs:
         shell: bash
         run: pnpm -w cap-setup
         env:
-          RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+          RUST_TARGET_TRIPLE: ${{ env.RUST_TARGET }}
 
       - name: Build sidecar binaries
         shell: bash
-        run: ./scripts/build-desktop-binaries.sh ${{ env.TARGET }}
+        run: ./scripts/build-desktop-binaries.sh ${{ env.RUST_TARGET }}
 
       - name: Write unsigned bundle config override
         shell: bash
@@ -184,18 +187,18 @@ jobs:
 
       - name: Build app (unsigned bundle)
         working-directory: apps/desktop
-        run: pnpm build:tauri --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
+        run: pnpm build:tauri --target ${{ env.RUST_TARGET }} --config src-tauri/ci-unsigned.conf.json
         env:
           CI: false
-          RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+          RUST_TARGET_TRIPLE: ${{ env.RUST_TARGET }}
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: cap-windows-x64-unsigned
           path: |
-            target/${{ env.TARGET }}/release/bundle/nsis/*.exe
-            target/${{ env.TARGET }}/release/bundle/msi/*.msi
+            target/${{ env.RUST_TARGET }}/release/bundle/nsis/*.exe
+            target/${{ env.RUST_TARGET }}/release/bundle/msi/*.msi
           if-no-files-found: error
 
       - name: Publish Windows bundle to GitHub Release
@@ -204,7 +207,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BUNDLE_DIR="target/${{ env.TARGET }}/release/bundle"
+          BUNDLE_DIR="target/${{ env.RUST_TARGET }}/release/bundle"
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "Automated unsigned build from $GITHUB_SHA" || true
           gh release upload "$GITHUB_REF_NAME" \
             $BUNDLE_DIR/nsis/*.exe \

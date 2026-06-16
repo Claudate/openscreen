@@ -2608,7 +2608,17 @@ impl ShowCapWindow {
                     .ids
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
-                let id = s.iter().find(|(path, _)| path == project_path).unwrap().1;
+                let id = s
+                    .iter()
+                    .find(|(path, _)| path == project_path)
+                    .map(|(_, id)| *id)
+                    .unwrap_or_else(|| {
+                        tracing::error!(
+                            ?project_path,
+                            "editor window ID not found for project path"
+                        );
+                        u32::MAX
+                    });
                 CapWindowId::Editor { id }
             }
             ShowCapWindow::RecordingsOverlay => CapWindowId::RecordingsOverlay,
@@ -2634,7 +2644,14 @@ impl ShowCapWindow {
                     .ids
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
-                let id = s.iter().find(|(p, _)| p == path).unwrap().1;
+                let id = s
+                    .iter()
+                    .find(|(p, _)| p == path)
+                    .map(|(_, id)| *id)
+                    .unwrap_or_else(|| {
+                        tracing::error!(?path, "screenshot editor window ID not found");
+                        u32::MAX
+                    });
                 CapWindowId::ScreenshotEditor { id }
             }
         }

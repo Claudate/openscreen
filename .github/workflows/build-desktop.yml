@@ -91,6 +91,7 @@ jobs:
           pnpm turbo build --filter @cap/desktop
         env:
           CI: false
+          NITRO_PRESET: static
 
       - name: Build app (unsigned bundle, skip frontend)
         working-directory: apps/desktop
@@ -98,6 +99,7 @@ jobs:
         env:
           CI: false
           RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+          NITRO_PRESET: static
 
       - name: Zip .app bundle (preserve symlinks/permissions)
         shell: bash
@@ -177,6 +179,7 @@ jobs:
           pnpm turbo build --filter @cap/desktop
         env:
           CI: false
+          NITRO_PRESET: static
 
       - name: Build app (unsigned bundle, skip frontend)
         working-directory: apps/desktop
@@ -184,6 +187,7 @@ jobs:
         env:
           CI: false
           RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+          NITRO_PRESET: static
 
       - name: Zip .app bundle (preserve symlinks/permissions)
         shell: bash
@@ -263,6 +267,7 @@ jobs:
           pnpm turbo build --filter @cap/desktop
         env:
           CI: false
+          NITRO_PRESET: static
 
       - name: Build app (unsigned bundle, skip frontend)
         working-directory: apps/desktop
@@ -270,6 +275,7 @@ jobs:
         env:
           CI: false
           RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+          NITRO_PRESET: static
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4

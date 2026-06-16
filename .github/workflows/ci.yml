@@ -247,6 +247,7 @@ jobs:
         run: pnpm tauri build --debug --target ${{ matrix.settings.target }} --no-bundle
         env:
           RUST_TARGET_TRIPLE: ${{ matrix.settings.target }}
+          NITRO_PRESET: static
 
   tauri-plugins:
     name: Verify Tauri plugin versions

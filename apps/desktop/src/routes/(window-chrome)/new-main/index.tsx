@@ -109,10 +109,10 @@ import TargetTypeButton from "./TargetTypeButton";
 import useRequestPermission from "./useRequestPermission";
 
 const WINDOW_SIZE = { width: 330, height: 395 } as const;
-const CAPTURE_LIST_STALE_TIME = 5_000;
-const CAPTURE_LIST_GC_TIME = 60_000;
-const CAPTURE_THUMBNAIL_STALE_TIME = 10_000;
-const CAPTURE_THUMBNAIL_GC_TIME = 60_000;
+const CAPTURE_LIST_STALE_TIME = 15_000;
+const CAPTURE_LIST_GC_TIME = 120_000;
+const CAPTURE_THUMBNAIL_STALE_TIME = 30_000;
+const CAPTURE_THUMBNAIL_GC_TIME = 120_000;
 
 const findCamera = (cameras: CameraWithDetails[], id: DeviceOrModelID) => {
 	return cameras.find((c) => {
@@ -2927,7 +2927,7 @@ function Page() {
 							type="button"
 							disabled={stopRecording.isPending}
 							onClick={() => stopRecording.mutate()}
-							class="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-9 px-4 text-sm font-medium text-white transition hover:bg-red-10 disabled:cursor-not-allowed disabled:opacity-60"
+							class="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-9 px-4 text-sm font-medium text-white transition hover:bg-red-10 disabled:cursor-not-allowed disabled:opacity-60 recording-pulse"
 						>
 							<Show
 								when={!stopRecording.isPending}

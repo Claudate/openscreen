@@ -274,7 +274,9 @@ export default function TargetMenuGrid(props: TargetMenuGridProps) {
 												exitToClass="scale-95"
 											>
 												<div
-													style={{ "transition-delay": `${index() * 100}ms` }}
+													style={{
+														"transition-delay": `${Math.min(index() * 30, 300)}ms`,
+													}}
 												>
 													<TargetCard
 														variant="display"
@@ -309,7 +311,9 @@ export default function TargetMenuGrid(props: TargetMenuGridProps) {
 												exitToClass="scale-95"
 											>
 												<div
-													style={{ "transition-delay": `${index() * 100}ms` }}
+													style={{
+														"transition-delay": `${Math.min(index() * 30, 300)}ms`,
+													}}
 												>
 													<TargetCard
 														variant="window"
@@ -381,7 +385,7 @@ export default function TargetMenuGrid(props: TargetMenuGridProps) {
 															style={
 																showAppearAnimation
 																	? {
-																			"transition-delay": `${index() * 100}ms`,
+																			"transition-delay": `${Math.min(index() * 30, 300)}ms`,
 																		}
 																	: undefined
 															}
@@ -447,7 +451,7 @@ export default function TargetMenuGrid(props: TargetMenuGridProps) {
 															style={
 																showAppearAnimation
 																	? {
-																			"transition-delay": `${index() * 100}ms`,
+																			"transition-delay": `${Math.min(index() * 30, 300)}ms`,
 																		}
 																	: undefined
 															}

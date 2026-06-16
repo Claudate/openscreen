@@ -1223,6 +1223,15 @@
 	cursor: default;
 }
 
+@keyframes recording-pulse {
+	0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.4); }
+	50% { opacity: 0.85; box-shadow: 0 0 12px 4px rgba(229, 62, 62, 0.15); }
+}
+
+.recording-pulse {
+	animation: recording-pulse 2s ease-in-out infinite;
+}
+
 /* Preserve the same default border color from Tailwind 3 */
 @layer base {
 	*,

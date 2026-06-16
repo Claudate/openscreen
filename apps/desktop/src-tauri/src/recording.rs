@@ -3114,13 +3114,17 @@ const CLICK_END_CLAMP_PADDING_MS: f64 = 800.0;
 const TRAILING_CLICK_IGNORE_MS: f64 = 1000.0;
 
 /// 聚类时间阈值：相邻有效点击间隔 ≤ 此值才可能归入同簇。
+#[allow(dead_code)]
 const CLUSTER_TIME_EPS_MS: f64 = 1200.0;
 /// 聚类空间阈值：相邻点击的归一化 UV 距离 ≤ 此值才归入同簇（配合时间阈值）。
+#[allow(dead_code)]
 const CLUSTER_SPACE_EPS: f64 = 0.18;
 
 /// 动态缩放强度基准与上下限。
 const AMOUNT_BASE: f64 = 1.8;
+#[allow(dead_code)]
 const AMOUNT_MIN: f64 = 1.5;
+#[allow(dead_code)]
 const AMOUNT_MAX: f64 = 2.8;
 /// 点击密度对放大强度的增益（密集操作 → 放大更多）。
 const DENSITY_GAIN: f64 = 0.7;
@@ -3372,7 +3376,7 @@ fn detect_dwell_clusters(
     let mut window_start = 0usize;
 
     // 结算 [start, end_exclusive) 这段低速窗口为一个候选停留簇。
-    let mut flush_window = |start: usize, end_exclusive: usize, dwells: &mut Vec<ClickCluster>| {
+    let flush_window = |start: usize, end_exclusive: usize, dwells: &mut Vec<ClickCluster>| {
         if end_exclusive <= start + 1 {
             return;
         }

@@ -33,8 +33,17 @@ pub async fn refresh_shareable_content() -> Result<(), arc::R<ns::Error>> {
 
 async fn prewarm_shareable_content_inner(force_refresh: bool) -> Result<(), arc::R<ns::Error>> {
     if force_refresh {
-        state().cache.write().unwrap().take();
-    } else if state().cache.read().unwrap().is_some() {
+        state()
+            .cache
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take();
+    } else if state()
+        .cache
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .is_some()
+    {
         trace!("ScreenCaptureKit shareable content already warmed");
         return Ok(());
     }
@@ -67,7 +76,7 @@ pub async fn get_shareable_content()
     if let Some(content) = state()
         .cache
         .read()
-        .unwrap()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .as_ref()
         .map(|v| v.content.retained())
     {
@@ -76,7 +85,10 @@ pub async fn get_shareable_content()
 
     prewarm_shareable_content().await?;
 
-    let content = state().cache.read().unwrap();
+    let content = state()
+        .cache
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     Ok(content.as_ref().map(|v| v.content.retained()))
 }
 
@@ -85,7 +97,10 @@ async fn run_warmup(task: WarmupTask) {
         let content = sc::ShareableContent::current().await?;
         let cache = ShareableContentCache::new(content);
 
-        let mut guard = state().cache.write().unwrap();
+        let mut guard = state()
+            .cache
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         *guard = Some(cache);
 
         Ok::<(), arc::R<ns::Error>>(())

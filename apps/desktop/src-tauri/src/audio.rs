@@ -9,7 +9,8 @@ use std::sync::{Arc, LazyLock, Mutex, Weak};
 /// 为什么放这里而不是 `SegmentMedia`：`AudioData` 挂在上游 crate（cap-editor）
 /// 的 `SegmentMedia` 上，加缓存字段会改上游结构（fork 同步风险）；sidecar 缓存
 /// 零上游改动。内存量级：波形 1 点/100ms，1 小时录制 ≈ 144KB/轨，可忽略。
-static WAVEFORM_CACHE: LazyLock<Mutex<HashMap<usize, (Weak<AudioData>, Arc<Vec<f32>>)>>> =
+type WaveformCacheEntry = (Weak<AudioData>, Arc<Vec<f32>>);
+static WAVEFORM_CACHE: LazyLock<Mutex<HashMap<usize, WaveformCacheEntry>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// 取（或计算并缓存）一条音轨的波形。
@@ -133,6 +134,7 @@ pub struct SilenceSpan {
 }
 
 impl SilenceSpan {
+    #[allow(dead_code)]
     pub fn duration(&self) -> f64 {
         (self.end - self.start).max(0.0)
     }
@@ -239,6 +241,7 @@ pub fn max_dbfs_per_bucket(a: &[f32], b: &[f32]) -> Vec<f32> {
 
 /// 把「删除静音」转成「保留区间」(keep ranges)，给时间轴 split/delete 链路或导出用。
 /// 输入静音段（须已按 start 升序、不重叠），总时长 total_seconds；输出补集（要保留的片段）。
+#[allow(dead_code)]
 pub fn silence_to_keep_ranges(silences: &[SilenceSpan], total_seconds: f64) -> Vec<SilenceSpan> {
     let mut keeps: Vec<SilenceSpan> = Vec::new();
     let mut cursor = 0.0_f64;

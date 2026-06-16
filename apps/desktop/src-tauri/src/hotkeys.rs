@@ -2,7 +2,7 @@ use crate::{
     RequestOpenRecordingPicker, RequestStartRecording, recording,
     recording_settings::{RecordingSettingsStore, RecordingTargetMode},
     tray,
-    windows::ShowCapWindow,
+    windows::{ShowCapWindow, hide_overlay},
 };
 use cap_recording::screen_capture::ScreenCaptureTarget;
 use global_hotkey::HotKeyState;
@@ -97,6 +97,7 @@ pub fn init(app: &AppHandle) {
 
                 if shortcut.key == Code::Escape {
                     OnEscapePress.emit(app).ok();
+                    force_close_overlays(app);
                 }
 
                 if shortcut.key == Code::Comma && shortcut.mods == Modifiers::META {
@@ -282,4 +283,25 @@ pub fn set_hotkey(app: AppHandle, action: HotkeyAction, hotkey: Option<Hotkey>) 
     }
 
     Ok(())
+}
+
+fn force_close_overlays(app: &AppHandle) {
+    use crate::{target_select_overlay::WindowFocusManager, windows::CapWindowId};
+    use std::str::FromStr;
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+
+    let focus_manager = app.try_state::<WindowFocusManager>();
+    if let Some(fm) = focus_manager.as_ref() {
+        fm.invalidate();
+    }
+
+    for (label, window) in app.webview_windows() {
+        if let Ok(CapWindowId::TargetSelectOverlay { display_id }) = CapWindowId::from_str(&label) {
+            hide_overlay(&window);
+            let _ = window.close();
+            if let Some(fm) = focus_manager.as_ref() {
+                fm.destroy(&display_id, app.global_shortcut());
+            }
+        }
+    }
 }

@@ -5535,6 +5535,7 @@ fn close_target_select_overlays(app: &AppHandle) {
             if let Some(focus_manager) = focus_manager.as_ref() {
                 focus_manager.destroy(&display_id, app.global_shortcut());
             }
+            let _ = window.close();
         }
     }
 

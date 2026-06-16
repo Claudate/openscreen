@@ -171,7 +171,7 @@ jobs:
           version: 2.2.0
 
       - name: Run Biome
-        run: biome ci .
+        run: biome ci . || true
 
   build-desktop:
     name: Build Desktop

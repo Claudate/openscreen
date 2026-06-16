@@ -28,12 +28,55 @@ type FrameStats = {
 const STATS_WINDOW_MS = 1000;
 const MAX_TIMESTAMPS = 120;
 
+class RingBuffer {
+	private buf: Float64Array;
+	private head = 0;
+	private _count = 0;
+
+	constructor(private capacity: number) {
+		this.buf = new Float64Array(capacity);
+	}
+
+	push(value: number) {
+		const idx = (this.head + this._count) % this.capacity;
+		this.buf[idx] = value;
+		if (this._count < this.capacity) {
+			this._count++;
+		} else {
+			this.head = (this.head + 1) % this.capacity;
+		}
+	}
+
+	get(i: number): number {
+		return this.buf[(this.head + i) % this.capacity];
+	}
+
+	oldest(): number | undefined {
+		return this._count > 0 ? this.buf[this.head] : undefined;
+	}
+
+	get count(): number {
+		return this._count;
+	}
+
+	forEach(fn: (value: number) => void) {
+		for (let i = 0; i < this._count; i++) {
+			fn(this.buf[(this.head + i) % this.capacity]);
+		}
+	}
+
+	clear() {
+		this.head = 0;
+		this._count = 0;
+	}
+}
+
 export function PerformanceOverlay(_props: PerformanceOverlayProps) {
 	const { performanceMode, latestFrame, editorState } = useEditorContext();
 
-	let frameTimestamps: number[] = [];
+	const frameTimestamps = new RingBuffer(MAX_TIMESTAMPS);
 	let lastFrameTime = 0;
-	let frameIntervals: number[] = [];
+	const frameIntervals = new RingBuffer(MAX_TIMESTAMPS);
 	let droppedFrameCount = 0;
 	let totalFrameCount = 0;
 
@@ -50,18 +93,14 @@ export function PerformanceOverlay(_props: PerformanceOverlayProps) {
 	const calculateStats = (): FrameStats => {
 		const now = performance.now();
 
-		while (
-			frameTimestamps.length > 0 &&
-			now - frameTimestamps[0] > STATS_WINDOW_MS
-		) {
-			frameTimestamps.shift();
+		let windowStart = 0;
+		for (let i = 0; i < frameTimestamps.count; i++) {
+			if (now - frameTimestamps.get(i) <= STATS_WINDOW_MS) break;
+			windowStart = i + 1;
 		}
+		const windowCount = frameTimestamps.count - windowStart;
 
-		while (frameIntervals.length > MAX_TIMESTAMPS) {
-			frameIntervals.shift();
-		}
-
-		if (frameTimestamps.length < 2) {
+		if (windowCount < 2) {
 			return {
 				fps: 0,
 				avgFrameMs: 0,
@@ -73,31 +112,30 @@ export function PerformanceOverlay(_props: PerformanceOverlayProps) {
 			};
 		}
 
-		const windowMs = now - frameTimestamps[0];
-		const fps =
-			windowMs > 0 ? ((frameTimestamps.length - 1) / windowMs) * 1000 : 0;
+		const windowMs = now - frameTimestamps.get(windowStart);
+		const fps = windowMs > 0 ? ((windowCount - 1) / windowMs) * 1000 : 0;
 
-		let avgFrameMs = 0;
+		let sum = 0;
 		let minFrameMs = Number.MAX_VALUE;
 		let maxFrameMs = 0;
+		let intervalCount = 0;
 
-		if (frameIntervals.length > 0) {
-			let sum = 0;
-			for (const interval of frameIntervals) {
-				sum += interval;
-				minFrameMs = Math.min(minFrameMs, interval);
-				maxFrameMs = Math.max(maxFrameMs, interval);
-			}
-			avgFrameMs = sum / frameIntervals.length;
-		}
+		frameIntervals.forEach((interval) => {
+			sum += interval;
+			minFrameMs = Math.min(minFrameMs, interval);
+			maxFrameMs = Math.max(maxFrameMs, interval);
+			intervalCount++;
+		});
+
+		const avgFrameMs = intervalCount > 0 ? sum / intervalCount : 0;
 
 		let jitter = 0;
-		if (frameIntervals.length > 1) {
+		if (intervalCount > 1) {
 			let varianceSum = 0;
-			for (const interval of frameIntervals) {
+			frameIntervals.forEach((interval) => {
 				varianceSum += (interval - avgFrameMs) ** 2;
-			}
-			jitter = Math.sqrt(varianceSum / frameIntervals.length);
+			});
+			jitter = Math.sqrt(varianceSum / intervalCount);
 		}
 
 		return {
@@ -141,8 +179,8 @@ export function PerformanceOverlay(_props: PerformanceOverlayProps) {
 	);
 
 	const resetStats = () => {
-		frameTimestamps = [];
-		frameIntervals = [];
+		frameTimestamps.clear();
+		frameIntervals.clear();
 		lastFrameTime = 0;
 		droppedFrameCount = 0;
 		totalFrameCount = 0;

@@ -382,10 +382,9 @@ export function ExportPage() {
 			const oldUrl = previewUrl();
 			if (oldUrl) URL.revokeObjectURL(oldUrl);
 
-			const byteArray = Uint8Array.from(atob(result.jpeg_base64), (c) =>
-				c.charCodeAt(0),
-			);
-			const blob = new Blob([byteArray], { type: "image/jpeg" });
+			const blob = await fetch(
+				`data:image/jpeg;base64,${result.jpeg_base64}`,
+			).then((r) => r.blob());
 			setPreviewUrl(URL.createObjectURL(blob));
 
 			const newEstimate = {

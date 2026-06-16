@@ -1,12 +1,12 @@
 {
 	"$schema": "https://turbo.build/schema.json",
-	"globalDependencies": [".env", ".env"],
+	"globalDependencies": [".env"],
 	"globalEnv": ["*"],
 	"tasks": {
 		"build": {
 			"inputs": ["**/*.ts", "**/*.tsx", "!src-tauri/**", "!node_modules/**"],
 			"dependsOn": ["^build"],
-			"outputs": [".next/**", "!.next/cache/**", "dist/**"]
+			"outputs": [".next/**", "!.next/cache/**", "dist/**", ".output/**"]
 		},
 		"build:web:docker": {
 			"inputs": ["**/*.ts", "**/*.tsx", "!src-tauri/**", "!node_modules/**"],

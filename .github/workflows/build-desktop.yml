@@ -41,7 +41,7 @@ jobs:
 
       - uses: ./.github/actions/setup-js
 
-      - name: Create .env file
+      - name: Create .env file (no RUST_TARGET_TRIPLE — breaks Nitro)
         shell: bash
         run: |
           {
@@ -50,7 +50,6 @@ jobs:
             echo "NEXT_PUBLIC_WEB_URL=https://cap.so"
             echo "NEXTAUTH_URL=https://cap.so"
             echo "VITE_SERVER_URL=https://cap.so"
-            echo "RUST_TARGET_TRIPLE=${{ env.TARGET }}"
           } >> .env
           cp .env apps/desktop/.env
 
@@ -84,7 +83,7 @@ jobs:
             echo "OK: $f ($(stat -c%s "$f") bytes)"
           done
 
-      - name: Build frontend
+      - name: Build frontend (isolated from RUST_TARGET_TRIPLE)
         working-directory: apps/desktop
         run: pnpm turbo build --filter @cap/desktop
         env:
@@ -145,7 +144,6 @@ jobs:
             echo "NEXT_PUBLIC_WEB_URL=https://cap.so"
             echo "NEXTAUTH_URL=https://cap.so"
             echo "VITE_SERVER_URL=https://cap.so"
-            echo "RUST_TARGET_TRIPLE=${{ env.TARGET }}"
           } >> .env
           cp .env apps/desktop/.env
 
@@ -229,7 +227,6 @@ jobs:
             echo "NEXT_PUBLIC_WEB_URL=https://cap.so"
             echo "NEXTAUTH_URL=https://cap.so"
             echo "VITE_SERVER_URL=https://cap.so"
-            echo "RUST_TARGET_TRIPLE=${{ env.TARGET }}"
           } >> .env
           cp .env apps/desktop/.env
 

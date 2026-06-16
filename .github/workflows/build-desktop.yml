@@ -120,6 +120,95 @@ jobs:
             target/${{ env.TARGET }}/release/bundle/macos/Cap-macos-aarch64-app.zip
           if-no-files-found: error
 
+  build-macos-x64:
+    name: Build macOS (x86_64, unsigned)
+    if: ${{ inputs.platform == 'macos' || inputs.platform == 'both' }}
+    runs-on: macos-13
+    env:
+      TARGET: x86_64-apple-darwin
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@1.88.0
+        with:
+          targets: ${{ env.TARGET }}
+
+      - uses: ./.github/actions/setup-rust-cache
+        with:
+          target: ${{ env.TARGET }}
+
+      - uses: ./.github/actions/setup-js
+
+      - name: Create .env file
+        shell: bash
+        run: |
+          {
+            echo "VITE_ENVIRONMENT=production"
+            echo "CAP_DESKTOP_SENTRY_URL=${{ env.CAP_DESKTOP_SENTRY_URL }}"
+            echo "NEXT_PUBLIC_WEB_URL=https://cap.so"
+            echo "NEXTAUTH_URL=https://cap.so"
+            echo "VITE_SERVER_URL=https://cap.so"
+            echo "RUST_TARGET_TRIPLE=${{ env.TARGET }}"
+          } >> .env
+          cp .env apps/desktop/.env
+
+      - name: Run cap-setup (native deps, ad-hoc signing)
+        shell: bash
+        run: pnpm -w cap-setup
+        env:
+          RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+
+      - name: Build sidecar binaries
+        shell: bash
+        run: ./scripts/build-desktop-binaries.sh ${{ env.TARGET }}
+
+      - name: Verify sidecar binaries
+        shell: bash
+        run: |
+          for bin in cap-muxer cap-cli cap-exporter; do
+            f="apps/desktop/src-tauri/binaries/${bin}-${{ env.TARGET }}"
+            if [[ ! -f "$f" ]]; then echo "MISSING: $f" >&2; exit 1; fi
+            echo "OK: $f ($(stat -f%z "$f") bytes)"
+          done
+
+      - name: Write unsigned bundle config override
+        shell: bash
+        run: |
+          cat > apps/desktop/src-tauri/ci-unsigned.conf.json <<'EOF'
+          {
+            "bundle": {
+              "createUpdaterArtifacts": false
+            }
+          }
+          EOF
+
+      - name: Build app (unsigned bundle)
+        working-directory: apps/desktop
+        run: pnpm build:tauri --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
+        env:
+          CI: false
+          RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+
+      - name: Zip .app bundle (preserve symlinks/permissions)
+        shell: bash
+        run: |
+          BUNDLE_DIR="target/${{ env.TARGET }}/release/bundle/macos"
+          cd "$BUNDLE_DIR"
+          APP_NAME="$(ls -d *.app | head -n 1)"
+          ditto -c -k --keepParent "$APP_NAME" Cap-macos-x64-app.zip
+          ls -la
+
+      - name: Upload macOS x64 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cap-macos-x64-unsigned
+          path: |
+            target/${{ env.TARGET }}/release/bundle/dmg/*.dmg
+            target/${{ env.TARGET }}/release/bundle/macos/Cap-macos-x64-app.zip
+          if-no-files-found: error
+
   build-windows:
     name: Build Windows (x86_64, unsigned)
     if: ${{ inputs.platform == 'windows' || inputs.platform == 'both' }}

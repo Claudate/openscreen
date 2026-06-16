@@ -268,7 +268,7 @@ export function Header() {
 	return (
 		<div
 			data-tauri-drag-region
-			class="flex relative flex-row items-center w-full h-14"
+			class="flex relative flex-row items-center w-full h-14 border-b border-gray-3"
 		>
 			<div
 				data-tauri-drag-region
@@ -467,7 +467,7 @@ export function Header() {
 				</Show>
 				<Button
 					variant="blue"
-					class="flex gap-1.5 justify-center h-[40px] w-full max-w-[100px]"
+					class="flex gap-1.5 justify-center h-[40px] w-full max-w-[100px] active:scale-95 transition-all"
 					onClick={() => {
 						clearTimelineSelection();
 

@@ -934,9 +934,9 @@ export function ExportPage() {
 											<button
 												type="button"
 												class={cx(
-													"flex-1 flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-lg border transition-colors",
+													"flex-1 flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-lg border transition-all active:scale-95",
 													isSelected()
-														? "bg-gray-3 border-gray-5 text-gray-12"
+														? "bg-blue-3 border-blue-7 text-blue-12"
 														: "bg-transparent border-transparent text-gray-11 hover:bg-gray-3 hover:border-gray-4",
 													isDisabled() && "opacity-50 cursor-not-allowed",
 												)}
@@ -959,7 +959,7 @@ export function ExportPage() {
 												<Icon
 													class={cx(
 														"size-5",
-														isSelected() ? "text-gray-12" : "text-gray-10",
+														isSelected() ? "text-blue-11" : "text-gray-10",
 													)}
 												/>
 												<span class="text-xs font-medium">
@@ -1127,9 +1127,9 @@ export function ExportPage() {
 										<button
 											type="button"
 											class={cx(
-												"flex-1 py-2 text-sm font-medium rounded-lg border transition-colors",
+												"flex-1 py-2 text-sm font-medium rounded-lg border transition-all active:scale-95",
 												settings.resolution.value === option.value
-													? "bg-gray-3 border-gray-5 text-gray-12"
+													? "bg-blue-3 border-blue-7 text-blue-12"
 													: "bg-transparent border-transparent text-gray-11 hover:bg-gray-3 hover:border-gray-4",
 											)}
 											onClick={() => updateSettings("resolution", option)}
@@ -1151,9 +1151,9 @@ export function ExportPage() {
 										<button
 											type="button"
 											class={cx(
-												"flex-1 py-2 text-sm font-medium rounded-lg border transition-colors",
+												"flex-1 py-2 text-sm font-medium rounded-lg border transition-all active:scale-95",
 												settings.fps === option.value
-													? "bg-gray-3 border-gray-5 text-gray-12"
+													? "bg-blue-3 border-blue-7 text-blue-12"
 													: "bg-transparent border-transparent text-gray-11 hover:bg-gray-3 hover:border-gray-4",
 											)}
 											onClick={() => {
@@ -1186,9 +1186,9 @@ export function ExportPage() {
 												<button
 													type="button"
 													class={cx(
-														"px-2 py-2 text-xs font-medium rounded-lg border transition-colors",
+														"px-2 py-2 text-xs font-medium rounded-lg border transition-all active:scale-95",
 														isSelected()
-															? "bg-gray-3 border-gray-5 text-gray-12"
+															? "bg-blue-3 border-blue-7 text-blue-12"
 															: "bg-transparent border-transparent text-gray-11 hover:bg-gray-3 hover:border-gray-4",
 													)}
 													onClick={() => {
@@ -1425,7 +1425,7 @@ export function ExportPage() {
 								</SignInButton>
 								<button
 									type="button"
-									class="text-xs font-medium text-gray-12 transition-colors hover:underline underline-offset-2"
+									class="text-xs font-medium text-gray-12 transition-colors hover:text-blue-11 hover:underline underline-offset-2"
 									onClick={handleBack}
 								>
 									{t("editor.export.backToEditor")}
@@ -1464,7 +1464,7 @@ export function ExportPage() {
 								</Button>
 								<button
 									type="button"
-									class="text-xs font-medium text-gray-12 transition-colors hover:underline underline-offset-2"
+									class="text-xs font-medium text-gray-12 transition-colors hover:text-blue-11 hover:underline underline-offset-2"
 									onClick={handleBack}
 								>
 									{t("editor.export.backToEditor")}
@@ -1808,25 +1808,25 @@ function ProgressRing(props: { percent?: number; indeterminate?: boolean }) {
 					cy="32"
 					r="28"
 					stroke="currentColor"
-					stroke-width="4"
-					class="text-gray-4"
+					stroke-width="5"
+					class="text-gray-3"
 				/>
 				<circle
 					cx="32"
 					cy="32"
 					r="28"
 					stroke="currentColor"
-					stroke-width="4"
+					stroke-width="5"
 					stroke-linecap="round"
 					stroke-dasharray={
 						props.indeterminate ? "44 176" : `${pct() * 1.76} 176`
 					}
-					class="transition-all duration-300 text-blue-9"
+					class="transition-all duration-300 ease-out text-blue-9"
 				/>
 			</svg>
 			<Show when={!props.indeterminate}>
 				<div class="flex absolute inset-0 justify-center items-center">
-					<span class="text-base font-semibold tabular-nums text-gray-12">
+					<span class="font-mono text-lg font-semibold tabular-nums text-gray-12">
 						{Math.round(pct())}%
 					</span>
 				</div>
@@ -1881,11 +1881,11 @@ function ActiveExport(props: {
 function CompletedExport(props: { title: string; subtitle: string }) {
 	return (
 		<div class="flex flex-col gap-4 items-center text-center">
-			<div class="flex justify-center items-center rounded-full size-16 bg-blue-3">
+			<div class="flex justify-center items-center rounded-full size-16 bg-blue-3 animate-in zoom-in duration-300">
 				<IconLucideCheck class="size-8 text-blue-9" />
 			</div>
 			<div class="flex flex-col gap-1 items-center">
-				<h2 class="text-lg font-medium text-gray-12">{props.title}</h2>
+				<h2 class="text-lg font-semibold text-gray-12">{props.title}</h2>
 				<p class="text-sm text-gray-11">{props.subtitle}</p>
 			</div>
 		</div>

@@ -64,10 +64,28 @@ jobs:
         shell: bash
         run: ./scripts/build-desktop-binaries.sh ${{ env.TARGET }}
 
+      - name: Verify sidecar binaries (macOS)
+        if: ${{ !contains(env.TARGET, 'windows') }}
+        shell: bash
+        run: |
+          for bin in cap-muxer cap-cli cap-exporter; do
+            f="apps/desktop/src-tauri/binaries/${bin}-${{ env.TARGET }}"
+            if [[ ! -f "$f" ]]; then echo "MISSING: $f" >&2; exit 1; fi
+            echo "OK: $f ($(stat -f%z "$f") bytes)"
+          done
+
+      - name: Verify sidecar binaries (Windows)
+        if: ${{ contains(env.TARGET, 'windows') }}
+        shell: bash
+        run: |
+          for bin in cap-muxer cap-cli cap-exporter; do
+            f="apps/desktop/src-tauri/binaries/${bin}-${{ env.TARGET }}.exe"
+            if [[ ! -f "$f" ]]; then echo "MISSING: $f" >&2; exit 1; fi
+            echo "OK: $f ($(stat -c%s "$f") bytes)"
+          done
+
       - name: Write unsigned bundle config override
         shell: bash
-        # createUpdaterArtifacts 在默认配置中为 true，会强制要求 TAURI_SIGNING_PRIVATE_KEY；
-        # fork 没有该 secret，必须关掉（不影响 .app/.dmg 产物）。
         run: |
           cat > apps/desktop/src-tauri/ci-unsigned.conf.json <<'EOF'
           {
@@ -81,7 +99,6 @@ jobs:
         working-directory: apps/desktop
         run: pnpm build:tauri --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
         env:
-          # https://github.com/tauri-apps/tauri-action/issues/740
           CI: false
           RUST_TARGET_TRIPLE: ${{ env.TARGET }}
 
@@ -146,6 +163,15 @@ jobs:
       - name: Build sidecar binaries
         shell: bash
         run: ./scripts/build-desktop-binaries.sh ${{ env.TARGET }}
+
+      - name: Verify sidecar binaries
+        shell: bash
+        run: |
+          for bin in cap-muxer cap-cli cap-exporter; do
+            f="apps/desktop/src-tauri/binaries/${bin}-${{ env.TARGET }}.exe"
+            if [[ ! -f "$f" ]]; then echo "MISSING: $f" >&2; exit 1; fi
+            echo "OK: $f ($(stat -c%s "$f") bytes)"
+          done
 
       - name: Write unsigned bundle config override
         shell: bash

@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       rust: ${{ steps.filter.outputs.rust }}
+      desktop: ${{ steps.filter.outputs.desktop }}
       tauri-plugins: ${{ steps.filter.outputs.tauri-plugins }}
       branch: ${{ steps.branch.outputs.branch }}
     steps:
@@ -144,6 +145,16 @@ jobs:
         shell: bash
         run: ./scripts/build-desktop-binaries.sh ${{ matrix.settings.target }}
 
+      - name: Verify sidecar binaries
+        shell: bash
+        run: |
+          for bin in cap-muxer cap-cli cap-exporter; do
+            f="apps/desktop/src-tauri/binaries/${bin}-${{ matrix.settings.target }}"
+            [[ "${{ matrix.settings.target }}" == *windows* ]] && f="${f}.exe"
+            if [[ ! -f "$f" ]]; then echo "MISSING: $f" >&2; exit 1; fi
+            echo "OK: $f ($(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null) bytes)"
+          done
+
       - name: Run Clippy
         run: cargo clippy --workspace --all-features --locked -- -D warnings
 
@@ -157,10 +168,10 @@ jobs:
       - name: Setup Biome
         uses: biomejs/setup-biome@v2
         with:
-          version: latest
+          version: 2.2.0
 
       - name: Run Biome
-        run: biome ci . || true
+        run: biome ci .
 
   build-desktop:
     name: Build Desktop
@@ -221,6 +232,16 @@ jobs:
         shell: bash
         run: ./scripts/build-desktop-binaries.sh ${{ matrix.settings.target }}
 
+      - name: Verify sidecar binaries
+        shell: bash
+        run: |
+          for bin in cap-muxer cap-cli cap-exporter; do
+            f="apps/desktop/src-tauri/binaries/${bin}-${{ matrix.settings.target }}"
+            [[ "${{ matrix.settings.target }}" == *windows* ]] && f="${f}.exe"
+            if [[ ! -f "$f" ]]; then echo "MISSING: $f" >&2; exit 1; fi
+            echo "OK: $f ($(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null) bytes)"
+          done
+
       - name: Build app
         working-directory: apps/desktop
         run: pnpm tauri build --debug --target ${{ matrix.settings.target }} --no-bundle
@@ -280,6 +301,10 @@ jobs:
           node-version: 24
 
       - run: node scripts/setup.js
+
+      - name: Build desktop binaries
+        shell: bash
+        run: ./scripts/build-desktop-binaries.sh ${{ matrix.settings.target }}
 
       - name: Build debug
         run: cargo build --all

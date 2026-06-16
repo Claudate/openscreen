@@ -13,6 +13,7 @@ import {
 } from "solid-js";
 import toast from "solid-toast";
 import { SignInButton } from "~/components/SignInButton";
+import { t } from "~/i18n";
 import {
 	createSelectedOrganization,
 	type DesktopOrganization,
@@ -151,11 +152,11 @@ function BrandSettingsDialog(props: {
 
 	const selectLogoFile = (file: File) => {
 		if (!isSupportedLogoContentType(file.type)) {
-			toast.error("Unsupported logo file type");
+			toast.error(t("editor.org.unsupportedLogo"));
 			return;
 		}
 		if (file.size > ORGANIZATION_LOGO_MAX_BYTES) {
-			toast.error("Logo file must be less than 1MB");
+			toast.error(t("editor.org.logoTooLarge"));
 			return;
 		}
 
@@ -197,14 +198,12 @@ function BrandSettingsDialog(props: {
 				},
 			);
 
-			toast.success("Organization branding updated");
+			toast.success(t("editor.org.updated"));
 			props.onSaved(updatedOrganization);
 			props.onOpenChange(false);
 		} catch (error) {
 			toast.error(
-				error instanceof Error
-					? error.message
-					: "Failed to update organization branding",
+				error instanceof Error ? error.message : t("editor.org.updateFailed"),
 			);
 		} finally {
 			setSaving(false);
@@ -214,7 +213,7 @@ function BrandSettingsDialog(props: {
 	return (
 		<Dialog.Root open={props.open} onOpenChange={props.onOpenChange} size="sm">
 			<DialogContent
-				title={props.organization?.name ?? "Organization"}
+				title={props.organization?.name ?? t("editor.org.organization")}
 				class="gap-5 text-gray-12"
 				confirm={
 					<>
@@ -223,13 +222,13 @@ function BrandSettingsDialog(props: {
 							disabled={saving()}
 							onClick={() => props.onOpenChange(false)}
 						>
-							Cancel
+							{t("common.cancel")}
 						</Button>
 						<Dialog.ConfirmButton
 							disabled={saving() || !props.organization}
 							onClick={() => void save()}
 						>
-							{saving() ? "Saving..." : "Save"}
+							{saving() ? t("editor.org.saving") : t("common.save")}
 						</Dialog.ConfirmButton>
 					</>
 				}
@@ -257,12 +256,12 @@ function BrandSettingsDialog(props: {
 							onClick={() => fileInput.click()}
 						>
 							<IconLucideUpload class="size-4" />
-							Upload
+							{t("editor.org.upload")}
 						</Button>
 						<Show when={displayedLogoUrl() || logoFile()}>
 							<Button variant="gray" class="gap-1.5" onClick={removeLogo}>
 								<IconLucideTrash2 class="size-4" />
-								Remove
+								{t("editor.org.remove")}
 							</Button>
 						</Show>
 					</div>
@@ -302,7 +301,7 @@ function BrandSettingsDialog(props: {
 														)
 													}
 												>
-													Set
+													{t("editor.org.set")}
 												</Button>
 											}
 										>
@@ -355,27 +354,27 @@ export function OrganizationDropdown() {
 	const triggerLabel = createMemo(() => {
 		const availability = organizationSelection.availability();
 		if (availability === "available") {
-			return selectedOrganization()?.name ?? "Organization";
+			return selectedOrganization()?.name ?? t("editor.org.organization");
 		}
-		if (availability === "loading") return "Loading...";
-		if (availability === "unavailable") return "Organization";
-		return "Sign in";
+		if (availability === "loading") return t("common.loading");
+		if (availability === "unavailable") return t("editor.org.organization");
+		return t("editor.org.signIn");
 	});
 	const fallbackTitle = createMemo(() => {
 		const availability = organizationSelection.availability();
-		if (availability === "loading") return "Loading organizations";
-		if (availability === "unavailable") return "Unable to load organizations";
-		return "Organization branding requires sign in";
+		if (availability === "loading") return t("editor.org.loadingOrgs");
+		if (availability === "unavailable") return t("editor.org.unableLoad");
+		return t("editor.org.requiresSignIn");
 	});
 	const fallbackDescription = createMemo(() => {
 		const availability = organizationSelection.availability();
 		if (availability === "loading") {
-			return "Fetching organization branding from Cap web.";
+			return t("editor.org.fetching");
 		}
 		if (availability === "unavailable") {
-			return "Organization branding uses live Cap web data. Connect to Cap web to select an organization and use its colours.";
+			return t("editor.org.unavailableDesc");
 		}
-		return "Sign in to select an organization, edit brand colours, and use those colours in Studio.";
+		return t("editor.org.signInDesc");
 	});
 
 	const selectOrganization = (organization: DesktopOrganization) => {
@@ -429,7 +428,7 @@ export function OrganizationDropdown() {
 												}
 											>
 												<SignInButton class="w-full justify-center">
-													Sign In
+													{t("editor.org.signIn")}
 												</SignInButton>
 											</Show>
 											<Show
@@ -444,7 +443,7 @@ export function OrganizationDropdown() {
 													disabled={organizationSelection.refreshing()}
 												>
 													<IconLucideRefreshCw class="size-4" />
-													Retry
+													{t("editor.org.retry")}
 												</Button>
 											</Show>
 										</div>
@@ -459,7 +458,7 @@ export function OrganizationDropdown() {
 										each={organizationSelection.organizations()}
 										fallback={
 											<div class="py-1 text-center text-sm text-gray-11">
-												No organizations
+												{t("editor.org.noOrganizations")}
 											</div>
 										}
 									>
@@ -494,7 +493,7 @@ export function OrganizationDropdown() {
 											}
 										>
 											<IconLucidePalette class="size-4" />
-											Brand settings
+											{t("editor.org.brandSettings")}
 										</DropdownItem>
 									</MenuItemList>
 								</Show>

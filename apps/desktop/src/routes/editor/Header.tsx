@@ -138,14 +138,18 @@ export function Header() {
 				await commands.addExistingRecordingToEditor(sourcePath);
 			toast.success(
 				importedCount === 1
-					? "Recording imported"
-					: `${importedCount} recordings imported`,
+					? t("editor.header.importSuccess")
+					: t("editor.header.importSuccessMultiple", {
+							count: importedCount,
+						}),
 				{ id: toastId },
 			);
 			window.location.reload();
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
-			toast.error(`Failed to import recording: ${message}`, { id: toastId });
+			toast.error(t("editor.header.importFailed", { message }), {
+				id: toastId,
+			});
 		} finally {
 			setImportingRecording(false);
 		}
@@ -154,7 +158,9 @@ export function Header() {
 	const pickMp4Recording = async () => {
 		const path = selectedPath(
 			await open({
-				filters: [{ name: "MP4 Video", extensions: ["mp4"] }],
+				filters: [
+					{ name: t("editor.header.mp4VideoFilter"), extensions: ["mp4"] },
+				],
 				multiple: false,
 			}),
 		);
@@ -174,11 +180,11 @@ export function Header() {
 		const menu = await Menu.new({
 			items: [
 				await MenuItem.new({
-					text: "Existing Cap Recording...",
+					text: t("editor.header.importExistingCapRecording"),
 					action: openExistingRecordingImporter,
 				}),
 				await MenuItem.new({
-					text: "MP4 Video...",
+					text: t("editor.header.importMp4Video"),
 					action: () => void pickMp4Recording(),
 				}),
 			],
@@ -234,9 +240,7 @@ export function Header() {
 				language,
 			);
 			if (result.segments.length < 1) {
-				toast.error(
-					"No captions were generated. The audio might be too quiet or unclear.",
-				);
+				toast.error(t("editor.captionsTab.noCaptionsGenerated"));
 				return;
 			}
 
@@ -411,8 +415,8 @@ export function Header() {
 								<IconCapCaptions class="size-3.5" />
 							</Show>
 							{editorState.captions.isGenerating
-								? "Regenerating..."
-								: "Regenerate captions"}
+								? t("editor.header.regeneratingCaptions")
+								: t("editor.header.regenerateCaptions")}
 						</button>
 						<Show when={!editorState.captions.isGenerating}>
 							<div class="w-px h-4 bg-gray-6" />
@@ -569,7 +573,7 @@ function ImportRecordingDialog(props: {
 					}}
 					disabled={props.isImporting}
 				>
-					Import MP4
+					{t("editor.header.importMp4")}
 				</Button>
 			</Dialog.Footer>
 		</Dialog.Root>
@@ -601,7 +605,7 @@ function ImportRecordingItem(props: {
 				>
 					<img
 						class="size-12 shrink-0 rounded-md object-cover"
-						alt="Recording thumbnail"
+						alt={t("settings.recordings.recordingThumbnail")}
 						src={convertFileSrc(props.recording.thumbnailPath)}
 						onError={() => setImageExists(false)}
 					/>

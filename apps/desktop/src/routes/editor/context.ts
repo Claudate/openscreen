@@ -20,6 +20,7 @@ import {
 	onCleanup,
 } from "solid-js";
 import { createStore, produce, reconcile, unwrap } from "solid-js/store";
+import { t } from "~/i18n";
 import { generalSettingsStore } from "~/store";
 import { defaultKeyboardSettings } from "~/store/keyboard";
 import { createPresets } from "~/utils/createPresets";
@@ -1125,7 +1126,7 @@ export type { EditorPreviewQuality } from "~/utils/tauri";
 
 function transformMeta({ pretty_name, ...rawMeta }: RecordingMeta) {
 	if ("fps" in rawMeta) {
-		throw new Error("Instant mode recordings cannot be edited");
+		throw new Error(t("editor.instantModeNotEditable"));
 	}
 
 	let meta:

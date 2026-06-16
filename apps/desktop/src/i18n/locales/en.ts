@@ -743,6 +743,7 @@ export const dict = {
 		},
 	},
 	editor: {
+		instantModeNotEditable: "Instant mode recordings cannot be edited",
 		loadingScreen: {
 			title: "Loading editor...",
 			slowHint: "Large projects or slower devices may take a while",
@@ -754,6 +755,8 @@ export const dict = {
 			addTrack: "Add track",
 			addTrackMenu: "Add {{label}} track",
 			deleteTrack: "Delete track",
+			deleteTextTrack: "Delete text track",
+			deleteMaskTrack: "Delete mask track",
 			tracks: {
 				clip: "Clip",
 				captions: "Captions",
@@ -890,6 +893,8 @@ export const dict = {
 			needSignInToShare: "You need to sign in to share recordings",
 			planCheckFailed: "Failed to verify your subscription status",
 			upgradeRequired: "This feature requires an upgraded plan",
+			shareUpgradeLongRecording:
+				"Upgrade required to share recordings longer than 5 minutes",
 			cursorOnlyDestinationTooltip:
 				"Cursor-only exports can only be saved to a file or clipboard",
 			transparentDestinationTooltip:
@@ -903,7 +908,13 @@ export const dict = {
 			importRecording: "Import recording",
 			importingRecording: "Importing recording...",
 			importSuccess: "Recording imported successfully",
+			importSuccessMultiple: "{{count}} recordings imported",
 			importFailed: "Failed to import recording: {{message}}",
+			importExistingCapRecording: "Existing Cap Recording...",
+			importMp4Video: "MP4 Video...",
+			importMp4: "Import MP4",
+			mp4VideoFilter: "MP4 Video",
+			regeneratingCaptions: "Regenerating...",
 			importDialogTitle: "Import recording",
 			importDialogDesc:
 				"Select a recording from your library to import into the editor.",
@@ -1191,6 +1202,15 @@ export const dict = {
 			resizeTimeline: "Resize timeline height",
 			resizeTranscript: "Resize transcript panel",
 			copyStats: "Click to copy stats",
+			perfFrame: "Frame:",
+			perfRange: "Range:",
+			perfJitter: "Jitter:",
+			perfDropped: "Dropped: {{dropped}}/{{total}}",
+			perfAvg: "avg",
+			perfPlaying: "Playing: {{value}}",
+			perfPlayingYes: "Yes",
+			perfPlayingNo: "No",
+			perfStatsCopied: "Performance stats copied to clipboard",
 		},
 		captionsTab: {
 			captions: "Captions",
@@ -1334,6 +1354,7 @@ export const dict = {
 			updated: "Organization branding updated",
 			updateFailed: "Failed to update organization branding",
 			brandColours: "Brand colours",
+			saving: "Saving...",
 		},
 		errorScreen: {
 			recoveryTitle: "Recording Needs Recovery",
@@ -1490,6 +1511,7 @@ export const dict = {
 		copyLink: "Copy Shareable Link",
 		createLink: "Create Shareable Link",
 		signInToShare: "You need to sign in to share recordings",
+		mediaPreviewAlt: "Media preview",
 		copyingToClipboardAction: "Copying to Clipboard",
 		chooseExport: "Choose where to export video...",
 		chooseSave: "Choose where to save image...",
@@ -1589,6 +1611,10 @@ export const dict = {
 			loadingPreview: "Loading preview...",
 			savedToast: "Screenshot saved!",
 			copiedToast: "Screenshot copied to clipboard!",
+			defaultName: "Screenshot",
+			exportFailed: "Failed to export",
+			previewUpdating: "Preview is still updating. Try again.",
+			pngImageFilter: "PNG Image",
 		},
 	},
 };

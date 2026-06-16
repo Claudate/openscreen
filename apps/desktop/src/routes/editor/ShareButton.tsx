@@ -48,9 +48,7 @@ function ShareButton() {
 			if (!canShare.allowed) {
 				if (canShare.reason === "upgrade_required") {
 					await commands.showWindow("Upgrade");
-					throw new Error(
-						"Upgrade required to share recordings longer than 5 minutes",
-					);
+					throw new Error(t("editor.export.shareUpgradeLongRecording"));
 				}
 			}
 

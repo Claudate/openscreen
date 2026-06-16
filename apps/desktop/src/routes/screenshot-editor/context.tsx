@@ -11,6 +11,7 @@ import {
 	onCleanup,
 } from "solid-js";
 import { createStore, reconcile, unwrap } from "solid-js/store";
+import { t } from "~/i18n";
 import { createLazySignal, type FrameData } from "~/utils/socket";
 import {
 	type Annotation,
@@ -628,7 +629,9 @@ function createScreenshotEditorContext() {
 			return editorInstance()?.path ?? "";
 		},
 		get prettyName() {
-			return editorInstance()?.prettyName ?? "Screenshot";
+			return (
+				editorInstance()?.prettyName ?? t("screenshotEditor.misc.defaultName")
+			);
 		},
 		project,
 		setProject,

@@ -449,7 +449,9 @@ function Dialogs() {
 														>
 															<img
 																class="w-full h-full pointer-events-none select-none shadow-sm"
-																alt="screenshot"
+																alt={t(
+																	"settings.screenshots.screenshotThumbnail",
+																)}
 																src={convertFileSrc(imagePath())}
 															/>
 														</Cropper>

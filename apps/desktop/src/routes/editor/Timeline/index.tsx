@@ -444,7 +444,10 @@ export function Timeline(props: {
 		const menu = await Menu.new({
 			items: [
 				await MenuItem.new({
-					text: `Delete ${type === "text" ? "text" : "mask"} track`,
+					text:
+						type === "text"
+							? t("editor.timeline.deleteTextTrack")
+							: t("editor.timeline.deleteMaskTrack"),
 					action: () => handleDeleteTrackLane(type, laneIndex),
 				}),
 			],
@@ -704,9 +707,7 @@ export function Timeline(props: {
 			);
 
 			if (result.segments.length < 1) {
-				toast.error(
-					"No captions were generated. The audio might be too quiet or unclear.",
-				);
+				toast.error(t("editor.captionsTab.noCaptionsGenerated"));
 				return;
 			}
 

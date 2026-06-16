@@ -186,7 +186,7 @@ export default function () {
 												>
 													<img
 														class="pointer-events-none w-full h-full object-cover absolute inset-0 -z-10 rounded-[7.4px]"
-														alt="media preview"
+														alt={t("recordingsOverlay.mediaPreviewAlt")}
 														src={`${convertFileSrc(
 															isRecording
 																? `${media.path}/screenshots/display.jpg`
@@ -744,9 +744,7 @@ function createRecordingMutations(
 			if (!canShare.allowed) {
 				if (canShare.reason === "upgrade_required") {
 					await commands.showWindow("Upgrade");
-					throw new Error(
-						"Upgrade required to share recordings longer than 5 minutes",
-					);
+					throw new Error(t("editor.export.shareUpgradeLongRecording"));
 				}
 			}
 

@@ -807,16 +807,26 @@ type InstantResolutionTier = {
 	summary: string;
 };
 
-const INSTANT_RESOLUTION_TIERS: InstantResolutionTier[] = [
-	{ value: 1280, label: "720p", summary: "Smallest size, low bandwidth." },
-	{
-		value: 1920,
-		label: "1080p",
-		summary: "Recommended. Sharp on most networks.",
-	},
-	{ value: 2560, label: "1440p", summary: "More detail for desktop content." },
-	{ value: 3840, label: "4K", summary: "Max clarity. Needs fast upload." },
-];
+function getInstantResolutionTiers(): InstantResolutionTier[] {
+	return [
+		{
+			value: 1280,
+			label: "720p",
+			summary: t("settings.general.capPro.tier720p"),
+		},
+		{
+			value: 1920,
+			label: "1080p",
+			summary: t("settings.general.capPro.tier1080p"),
+		},
+		{
+			value: 2560,
+			label: "1440p",
+			summary: t("settings.general.capPro.tier1440p"),
+		},
+		{ value: 3840, label: "4K", summary: t("settings.general.capPro.tier4k") },
+	];
+}
 
 function SegmentedControl<T extends string | number>(props: {
 	value: T;
@@ -904,8 +914,9 @@ function InstantQualitySetting(props: {
 	);
 	const currentTier = createMemo(
 		() =>
-			INSTANT_RESOLUTION_TIERS.find((t) => t.value === effectiveValue()) ??
-			INSTANT_RESOLUTION_TIERS[0],
+			getInstantResolutionTiers().find(
+				(tier) => tier.value === effectiveValue(),
+			) ?? getInstantResolutionTiers()[0],
 	);
 	const handleResolutionClick = async (value: number) => {
 		if (props.hasCapPro || value === FREE_INSTANT_MODE_MAX_RESOLUTION) {
@@ -945,7 +956,7 @@ function InstantQualitySetting(props: {
 		>
 			<div class="flex flex-col items-end gap-1.5">
 				<div class="inline-flex p-0.5 rounded-lg border border-gray-3 bg-gray-3">
-					<For each={INSTANT_RESOLUTION_TIERS}>
+					<For each={getInstantResolutionTiers()}>
 						{(tier) => {
 							const isSelected = () => effectiveValue() === tier.value;
 							return (

@@ -346,6 +346,10 @@ export const dict: typeof en = {
 				instantModeQualityFreeDesc:
 					"即时录制锁定为 720p。Screen Pro 可解锁更高分辨率。",
 				upgradeToast: "升级到 Screen Pro 可录制高于 720p 的即时模式视频。",
+				tier720p: "最小体积，低带宽。",
+				tier1080p: "推荐。大多数网络清晰流畅。",
+				tier1440p: "更多细节，适合桌面内容。",
+				tier4k: "最高清晰度。需要高速上传。",
 			},
 			quality: {
 				title: "画质",
@@ -897,6 +901,9 @@ export const dict: typeof en = {
 			qualityFull: "完整",
 			qualityHalf: "二分之一",
 			qualityQuarter: "四分之一",
+			zoomHintWindows: "按住 Ctrl 滚动滚轮，或按 Ctrl +/- 缩放",
+			zoomHintMac: "双指捏合，或按 Cmd +/- 缩放",
+			performanceMode: "性能模式",
 		},
 		transcript: {
 			title: "转录",

@@ -75,8 +75,8 @@ export function PlayerContent() {
 
 	const zoomHint = () =>
 		ostype() === "windows"
-			? "Hold Ctrl and scroll, or press Ctrl +/- to zoom"
-			: "Pinch, or press Cmd +/- to zoom";
+			? t("editor.player.zoomHintWindows")
+			: t("editor.player.zoomHintMac");
 
 	// Load captions on mount
 	onMount(async () => {
@@ -373,7 +373,8 @@ export function PlayerContent() {
 								value: EditorPreviewQuality;
 							}> class="flex-1 text-left truncate">
 								{(state) =>
-									state.selectedOption()?.label ?? "Select preview quality"
+									state.selectedOption()?.label ??
+									t("editor.player.previewQuality")
 								}
 							</KSelect.Value>
 							<KSelect.Icon>
@@ -419,7 +420,7 @@ export function PlayerContent() {
 					>
 						<IconCapPrev class="text-gray-12 size-3" />
 					</button>
-					<Tooltip kbd={["Space"]} content="Play/Pause video">
+					<Tooltip kbd={["Space"]} content={t("editor.player.playPause")}>
 						<button
 							type="button"
 							onClick={handlePlayPauseClick}
@@ -547,7 +548,9 @@ function PreviewCanvas() {
 			items: [
 				{
 					id: "performance-mode",
-					text: performanceMode() ? "✓ Performance Mode" : "Performance Mode",
+					text: performanceMode()
+						? `✓ ${t("editor.player.performanceMode")}`
+						: t("editor.player.performanceMode"),
 					action: () => setPerformanceMode(!performanceMode()),
 				},
 			],

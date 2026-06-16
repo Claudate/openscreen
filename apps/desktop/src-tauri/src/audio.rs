@@ -133,6 +133,7 @@ pub struct SilenceSpan {
 }
 
 impl SilenceSpan {
+    #[cfg(test)]
     pub fn duration(&self) -> f64 {
         (self.end - self.start).max(0.0)
     }
@@ -237,8 +238,7 @@ pub fn max_dbfs_per_bucket(a: &[f32], b: &[f32]) -> Vec<f32> {
     out
 }
 
-/// 把「删除静音」转成「保留区间」(keep ranges)，给时间轴 split/delete 链路或导出用。
-/// 输入静音段（须已按 start 升序、不重叠），总时长 total_seconds；输出补集（要保留的片段）。
+#[cfg(test)]
 pub fn silence_to_keep_ranges(silences: &[SilenceSpan], total_seconds: f64) -> Vec<SilenceSpan> {
     let mut keeps: Vec<SilenceSpan> = Vec::new();
     let mut cursor = 0.0_f64;

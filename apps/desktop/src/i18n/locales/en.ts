@@ -363,6 +363,10 @@ export const dict = {
 					"Instant recordings are locked to 720p. Screen Pro unlocks higher resolutions.",
 				upgradeToast:
 					"Upgrade to Screen Pro to record Instant Mode videos above 720p.",
+				tier720p: "Smallest size, low bandwidth.",
+				tier1080p: "Recommended. Sharp on most networks.",
+				tier1440p: "More detail for desktop content.",
+				tier4k: "Max clarity. Needs fast upload.",
 			},
 			quality: {
 				title: "Quality",
@@ -949,6 +953,9 @@ export const dict = {
 			qualityFull: "Full",
 			qualityHalf: "Half",
 			qualityQuarter: "Quarter",
+			zoomHintWindows: "Hold Ctrl and scroll, or press Ctrl +/- to zoom",
+			zoomHintMac: "Pinch, or press Cmd +/- to zoom",
+			performanceMode: "Performance Mode",
 		},
 		transcript: {
 			title: "Transcript",

@@ -39,6 +39,7 @@ type BaseProps<T> = {
 	skeletonCount?: number;
 	class?: string;
 	highlightQuery?: string;
+	onRetry?: () => void;
 };
 
 type DisplayGridProps = BaseProps<CaptureDisplayWithThumbnail> & {
@@ -73,7 +74,7 @@ function EmptyState(props: {
 	icon: JSX.Element;
 	title: string;
 	description: string;
-	action?: { label: string; onClick: () => void };
+	action?: { label: string; onClick: () => void; icon?: JSX.Element };
 }) {
 	return (
 		<div class="col-span-2 flex flex-col items-center justify-center py-8 px-4 text-center">
@@ -89,7 +90,7 @@ function EmptyState(props: {
 						onClick={action().onClick}
 						class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-12 bg-gray-3 rounded-lg hover:bg-gray-4 transition-colors"
 					>
-						<IconLucideExternalLink class="size-3" />
+						{action().icon}
 						{action().label}
 					</button>
 				)}
@@ -204,7 +205,11 @@ export default function TargetMenuGrid(props: TargetMenuGridProps) {
 					description={t("main.noRecordingsYetDesc")}
 					action={
 						onViewAll
-							? { label: t("main.viewAllRecordings"), onClick: onViewAll }
+							? {
+									label: t("main.viewAllRecordings"),
+									onClick: onViewAll,
+									icon: <IconLucideExternalLink class="size-3" />,
+								}
 							: undefined
 					}
 				/>
@@ -219,7 +224,11 @@ export default function TargetMenuGrid(props: TargetMenuGridProps) {
 					description={t("main.noScreenshotsYetDesc")}
 					action={
 						onViewAll
-							? { label: t("main.viewAllScreenshots"), onClick: onViewAll }
+							? {
+									label: t("main.viewAllScreenshots"),
+									onClick: onViewAll,
+									icon: <IconLucideExternalLink class="size-3" />,
+								}
 							: undefined
 					}
 				/>
@@ -294,6 +303,11 @@ export default function TargetMenuGrid(props: TargetMenuGridProps) {
 						}
 						title={props.errorMessage ?? ""}
 						description=""
+						action={
+							props.onRetry
+								? { label: t("common.retry"), onClick: props.onRetry }
+								: undefined
+						}
 					/>
 				</Match>
 				<Match when={props.isLoading}>

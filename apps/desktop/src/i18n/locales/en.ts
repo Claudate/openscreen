@@ -23,6 +23,7 @@ export const dict = {
 		cancel: "Cancel",
 		aspectRatio: "Aspect Ratio",
 		fill: "Fill",
+		retry: "Retry",
 	},
 	main: {
 		deviceSettings: "Device settings",
@@ -60,6 +61,7 @@ export const dict = {
 		cancelSignIn: "Cancel Sign In",
 		stopRecording: "Stop Recording",
 		startRecording: "Start Recording",
+		recordingInProgress: "Recording",
 		failedToLoadRecordings: "Failed to load recordings",
 		failedToLoadScreenshots: "Failed to load screenshots",
 		unableToLoadDisplays:

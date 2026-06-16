@@ -25,6 +25,7 @@ export const dict: typeof en = {
 		cancel: "取消",
 		aspectRatio: "宽高比",
 		fill: "填满",
+		retry: "重试",
 	},
 	main: {
 		deviceSettings: "设备设置",
@@ -62,6 +63,7 @@ export const dict: typeof en = {
 		cancelSignIn: "取消登录",
 		stopRecording: "停止录制",
 		startRecording: "开始录制",
+		recordingInProgress: "录制中",
 		failedToLoadRecordings: "加载录制失败",
 		failedToLoadScreenshots: "加载截图失败",
 		unableToLoadDisplays: "无法加载显示器，请尝试使用「显示器」按钮。",

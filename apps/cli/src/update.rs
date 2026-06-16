@@ -1,4 +1,6 @@
-use std::process::{Command, Output};
+use std::process::Command;
+#[cfg(not(windows))]
+use std::process::Output;
 
 use serde::Serialize;
 
@@ -117,6 +119,8 @@ const fn installer_url() -> &'static str {
     ""
 }
 
+#[cfg(not(windows))]
+#[cfg(not(windows))]
 fn update_error(output: &Output) -> String {
     let stderr = text(&output.stderr);
     if !stderr.trim().is_empty() {
@@ -131,6 +135,8 @@ fn update_error(output: &Output) -> String {
     format!("Cap update installer exited with {}", output.status)
 }
 
+#[cfg(not(windows))]
+#[cfg(not(windows))]
 fn print_output(output: &Output) {
     let stdout = text(&output.stdout);
     if !stdout.is_empty() {
@@ -143,6 +149,7 @@ fn print_output(output: &Output) {
     }
 }
 
+#[cfg(not(windows))]
 fn text(bytes: &[u8]) -> String {
     String::from_utf8_lossy(bytes).into_owned()
 }

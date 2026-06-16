@@ -83,9 +83,12 @@ jobs:
             echo "OK: $f ($(stat -c%s "$f") bytes)"
           done
 
-      - name: Build frontend (isolated from RUST_TARGET_TRIPLE)
+      - name: Build frontend (isolated from Rust env vars)
         working-directory: apps/desktop
-        run: pnpm turbo build --filter @cap/desktop
+        shell: bash
+        run: |
+          unset TARGET RUST_TARGET_TRIPLE
+          pnpm turbo build --filter @cap/desktop
         env:
           CI: false
 
@@ -166,9 +169,12 @@ jobs:
             echo "OK: $f ($(stat -f%z "$f") bytes)"
           done
 
-      - name: Build frontend
+      - name: Build frontend (isolated from Rust env vars)
         working-directory: apps/desktop
-        run: pnpm turbo build --filter @cap/desktop
+        shell: bash
+        run: |
+          unset TARGET RUST_TARGET_TRIPLE
+          pnpm turbo build --filter @cap/desktop
         env:
           CI: false
 
@@ -249,9 +255,12 @@ jobs:
             echo "OK: $f ($(stat -c%s "$f") bytes)"
           done
 
-      - name: Build frontend
+      - name: Build frontend (isolated from Rust env vars)
         working-directory: apps/desktop
-        run: pnpm turbo build --filter @cap/desktop
+        shell: bash
+        run: |
+          unset TARGET RUST_TARGET_TRIPLE
+          pnpm turbo build --filter @cap/desktop
         env:
           CI: false
 

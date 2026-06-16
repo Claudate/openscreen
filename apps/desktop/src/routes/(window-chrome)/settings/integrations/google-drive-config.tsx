@@ -1,6 +1,7 @@
 import { Button } from "@cap/ui-solid";
 import { useMutation } from "@tanstack/solid-query";
 import { createResource, createSignal, Show, Suspense } from "solid-js";
+import { t } from "~/i18n";
 import { createSelectedOrganization } from "~/utils/organization-branding";
 import { commands } from "~/utils/tauri";
 import { apiClient, protectedHeaders } from "~/utils/web-api";
@@ -136,7 +137,12 @@ export default function GoogleDriveConfigPage() {
 		if (!quota || !usage) return null;
 
 		const limit = formatBytes(quota.limit);
-		return limit ? `${usage} of ${limit} used` : `${usage} used`;
+		return limit
+			? t("settings.integrations.googleDrive.quotaUsedOfLimit", {
+					usage,
+					limit,
+				})
+			: t("settings.integrations.googleDrive.quotaUsed", { usage });
 	};
 
 	const quotaUsagePercent = () => {
@@ -158,7 +164,9 @@ export default function GoogleDriveConfigPage() {
 		const timestamp = formatTimestamp(quota.fetchedAt);
 		if (!timestamp) return null;
 
-		return `${quota.stale ? "Cached" : "Updated"} ${timestamp}`;
+		return quota.stale
+			? t("settings.integrations.googleDrive.quotaCached", { timestamp })
+			: t("settings.integrations.googleDrive.quotaUpdated", { timestamp });
 	};
 
 	const waitForGoogleDriveConnection = async () => {
@@ -174,7 +182,7 @@ export default function GoogleDriveConfigPage() {
 				}
 			}
 			await commands.globalMessageDialog(
-				"Finish connecting Google Drive in your browser, then return here and refresh.",
+				t("settings.integrations.googleDrive.finishConnectingHint"),
 			);
 		} finally {
 			setIsWaitingForConnection(false);
@@ -222,8 +230,10 @@ export default function GoogleDriveConfigPage() {
 		onSuccess: async (body) => {
 			await commands.globalMessageDialog(
 				body.email
-					? `Google Drive connection is working for ${body.email}`
-					: "Google Drive connection is working",
+					? t("settings.integrations.googleDrive.testSuccessWithEmail", {
+							email: body.email,
+						})
+					: t("settings.integrations.googleDrive.testSuccess"),
 			);
 		},
 	}));
@@ -258,7 +268,9 @@ export default function GoogleDriveConfigPage() {
 		},
 		onSuccess: async () => {
 			await refetch();
-			await commands.globalMessageDialog("Google Drive disconnected");
+			await commands.globalMessageDialog(
+				t("settings.integrations.googleDrive.disconnected"),
+			);
 		},
 	}));
 
@@ -276,10 +288,14 @@ export default function GoogleDriveConfigPage() {
 	return (
 		<div class="cap-settings-page flex flex-col h-full custom-scroll">
 			<SettingsPageContent>
-				<IntegrationConfigHeader title="Google Drive" />
+				<IntegrationConfigHeader
+					title={t("settings.integrations.googleDrive.name")}
+				/>
 				<Section
-					title="Connection"
-					description="Google Drive stores new uploads in a private Cap folder in your Drive. Existing Cap-hosted and S3 videos keep using their current storage."
+					title={t("settings.integrations.googleDrive.connection")}
+					description={t(
+						"settings.integrations.googleDrive.connectionDescription",
+					)}
 				>
 					<SectionCard padded class="custom-scroll">
 						<Suspense
@@ -293,7 +309,9 @@ export default function GoogleDriveConfigPage() {
 								<Show when={managedByOrganization()}>
 									{(organization) => (
 										<p class="text-xs leading-relaxed text-gray-10">
-											Managed by your organization: {organization().name}
+											{t("settings.integrations.managedByOrganizationNamed", {
+												name: organization().name,
+											})}
 										</p>
 									)}
 								</Show>
@@ -304,14 +322,18 @@ export default function GoogleDriveConfigPage() {
 											<p class="text-[13px] text-gray-12">
 												{isConnected()
 													? googleDrive()?.displayName
-													: "Google Drive"}
+													: t("settings.integrations.googleDrive.name")}
 											</p>
 											<p class="text-xs leading-snug text-gray-10">
 												{isConnected()
 													? isActive()
-														? "Active for new uploads"
-														: "Connected but not active"
-													: "Not connected"}
+														? t(
+																"settings.integrations.googleDrive.activeForUploads",
+															)
+														: t(
+																"settings.integrations.googleDrive.connectedNotActive",
+															)
+													: t("settings.integrations.googleDrive.notConnected")}
 											</p>
 										</div>
 										<Button
@@ -319,7 +341,9 @@ export default function GoogleDriveConfigPage() {
 											disabled={busy()}
 											onClick={() => refetch()}
 										>
-											{isRefreshing() ? "Refreshing..." : "Refresh"}
+											{isRefreshing()
+												? t("settings.integrations.googleDrive.refreshing")
+												: t("settings.integrations.googleDrive.refresh")}
 										</Button>
 									</div>
 
@@ -332,10 +356,10 @@ export default function GoogleDriveConfigPage() {
 												onClick={() => connect.mutate()}
 											>
 												{isWaitingForConnection()
-													? "Waiting..."
+													? t("settings.integrations.googleDrive.waiting")
 													: connect.isPending
-														? "Opening..."
-														: "Connect Google Drive"}
+														? t("settings.integrations.googleDrive.opening")
+														: t("settings.integrations.googleDrive.connect")}
 											</Button>
 										}
 									>
@@ -343,7 +367,9 @@ export default function GoogleDriveConfigPage() {
 											<div class="pt-3 space-y-2 border-t border-gray-3">
 												<div class="flex justify-between items-start gap-4">
 													<div class="flex flex-col gap-0.5 min-w-0">
-														<p class="text-[13px] text-gray-12">Storage</p>
+														<p class="text-[13px] text-gray-12">
+															{t("settings.integrations.googleDrive.storage")}
+														</p>
 														<Show when={quotaUsageLabel()}>
 															{(label) => (
 																<p class="text-xs leading-snug text-gray-10">
@@ -374,7 +400,11 @@ export default function GoogleDriveConfigPage() {
 													<Show when={formatBytes(storageQuota()?.remaining)}>
 														{(remaining) => (
 															<>
-																<p class="text-gray-10">Remaining</p>
+																<p class="text-gray-10">
+																	{t(
+																		"settings.integrations.googleDrive.remaining",
+																	)}
+																</p>
 																<p class="text-right text-gray-11">
 																	{remaining()}
 																</p>
@@ -386,7 +416,11 @@ export default function GoogleDriveConfigPage() {
 													>
 														{(usageInDrive) => (
 															<>
-																<p class="text-gray-10">Drive files</p>
+																<p class="text-gray-10">
+																	{t(
+																		"settings.integrations.googleDrive.driveFiles",
+																	)}
+																</p>
 																<p class="text-right text-gray-11">
 																	{usageInDrive()}
 																</p>
@@ -400,7 +434,9 @@ export default function GoogleDriveConfigPage() {
 													>
 														{(usageInDriveTrash) => (
 															<>
-																<p class="text-gray-10">Trash</p>
+																<p class="text-gray-10">
+																	{t("settings.integrations.googleDrive.trash")}
+																</p>
 																<p class="text-right text-gray-11">
 																	{usageInDriveTrash()}
 																</p>
@@ -416,7 +452,11 @@ export default function GoogleDriveConfigPage() {
 												disabled={busy() || isActive()}
 												onClick={() => setActive.mutate("googleDrive")}
 											>
-												{isActive() ? "Active" : "Use Google Drive"}
+												{isActive()
+													? t("settings.integrations.googleDrive.active")
+													: t(
+															"settings.integrations.googleDrive.useGoogleDrive",
+														)}
 											</Button>
 											<Show when={hasS3Config()}>
 												<Button
@@ -424,7 +464,7 @@ export default function GoogleDriveConfigPage() {
 													disabled={busy() || !isActive()}
 													onClick={() => setActive.mutate("s3")}
 												>
-													Use S3
+													{t("settings.integrations.googleDrive.useS3")}
 												</Button>
 											</Show>
 											<Button
@@ -432,14 +472,16 @@ export default function GoogleDriveConfigPage() {
 												disabled={busy()}
 												onClick={() => testConnection.mutate()}
 											>
-												{testConnection.isPending ? "Testing..." : "Test"}
+												{testConnection.isPending
+													? t("settings.integrations.googleDrive.testing")
+													: t("settings.integrations.googleDrive.test")}
 											</Button>
 											<Button
 												variant="destructive"
 												disabled={busy()}
 												onClick={() => disconnect.mutate()}
 											>
-												Disconnect
+												{t("settings.integrations.googleDrive.disconnect")}
 											</Button>
 										</div>
 									</Show>

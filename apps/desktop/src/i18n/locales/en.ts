@@ -634,6 +634,8 @@ export const dict = {
 				testSuccess: "S3 configuration test successful! Connection is working.",
 				testTimeout:
 					"Connection test timed out after 5 seconds. Please check your endpoint URL and network connection.",
+				testFailed:
+					"S3 connection test failed. Check your config and network connection.",
 			},
 		},
 		cli: {
@@ -1573,6 +1575,15 @@ export const dict = {
 			blur: "Blur",
 			pixelate: "Pixelate",
 			done: "Done",
+			strokeColor: "Stroke Color",
+			fillColor: "Fill Color",
+			strokeWidth: "Stroke Width",
+			fontSize: "Font Size",
+			deleteAnnotation: "Delete Annotation",
+			selectToEdit: "Select an annotation to edit.",
+		},
+		dialog: {
+			cancel: "Cancel",
 		},
 		misc: {
 			loadingPreview: "Loading preview...",

@@ -603,6 +603,7 @@ export const dict: typeof en = {
 				deletedSuccess: "S3 配置已删除",
 				testSuccess: "S3 配置测试成功！连接正常。",
 				testTimeout: "连接测试在 5 秒后超时。请检查端点 URL 和网络连接。",
+				testFailed: "S3 连接测试失败。请检查配置和网络连接。",
 			},
 		},
 		cli: {
@@ -1509,6 +1510,15 @@ export const dict: typeof en = {
 			blur: "模糊",
 			pixelate: "像素化",
 			done: "完成",
+			strokeColor: "描边颜色",
+			fillColor: "填充颜色",
+			strokeWidth: "描边宽度",
+			fontSize: "字号",
+			deleteAnnotation: "删除标注",
+			selectToEdit: "选择一个标注以编辑。",
+		},
+		dialog: {
+			cancel: "取消",
 		},
 		misc: {
 			loadingPreview: "正在加载预览...",

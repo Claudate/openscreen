@@ -191,7 +191,7 @@ export const Dialog = {
 	CloseButton() {
 		return (
 			<KDialog.CloseButton as={Button} variant="gray">
-				Cancel
+				{t("screenshotEditor.dialog.cancel")}
 			</KDialog.CloseButton>
 		);
 	},

@@ -164,16 +164,17 @@ export default function TargetCard(props: TargetCardProps) {
 		return target ? formatRefreshRate(target.refresh_rate) : undefined;
 	});
 
+	const [cacheEpoch] = createSignal(Math.floor(Date.now() / 30_000));
 	const thumbnailSrc = createMemo(() => {
 		const recording = recordingTarget();
 		if (recording) {
 			return `${convertFileSrc(
 				`${recording.path}/screenshots/display.jpg`,
-			)}?t=${Date.now()}`;
+			)}?v=${cacheEpoch()}`;
 		}
 		const screenshot = screenshotTarget();
 		if (screenshot) {
-			return `${convertFileSrc(screenshot.path)}?t=${Date.now()}`;
+			return `${convertFileSrc(screenshot.path)}?v=${cacheEpoch()}`;
 		}
 		const target = displayTarget() ?? windowTarget();
 		if (!target?.thumbnail) return undefined;
@@ -321,12 +322,12 @@ export default function TargetCard(props: TargetCardProps) {
 			disabled={local.disabled}
 			data-variant={local.variant}
 			class={cx(
-				"group flex flex-col overflow-hidden rounded-lg border border-transparent bg-gray-3 text-left outline-hidden transition-colors duration-100 hover:bg-gray-4 focus-visible:ring-2 focus-visible:ring-blue-9 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-1",
+				"group flex flex-col overflow-hidden rounded-lg border border-gray-5 bg-gray-3 text-left outline-hidden transition-all duration-150 hover:bg-gray-4 hover:border-gray-6 hover:shadow-sm hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-blue-9 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-1 active:translate-y-0 active:shadow-none",
 				local.disabled && "pointer-events-none opacity-60",
 				local.class,
 			)}
 		>
-			<div class="relative h-19 w-full overflow-hidden bg-gray-4/40">
+			<div class="relative h-19 w-full overflow-hidden bg-gray-4/40 transition-opacity duration-150 group-hover:opacity-95">
 				<Show
 					when={imageExists() ? thumbnailSrc() : undefined}
 					fallback={

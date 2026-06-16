@@ -15,9 +15,12 @@ import type {
 	CaptureDisplayWithThumbnail,
 	CaptureWindowWithThumbnail,
 } from "~/utils/tauri";
+import IconLucideAppWindowMac from "~icons/lucide/app-window-mac";
 import IconLucideExternalLink from "~icons/lucide/external-link";
 import IconLucideImage from "~icons/lucide/image";
+import IconLucideSearch from "~icons/lucide/search";
 import IconLucideSquarePlay from "~icons/lucide/square-play";
+import IconMdiMonitor from "~icons/mdi/monitor";
 import TargetCard, {
 	type RecordingWithPath,
 	type ScreenshotWithPath,
@@ -223,13 +226,40 @@ export default function TargetMenuGrid(props: TargetMenuGridProps) {
 			);
 		}
 
+		if (props.emptyMessage) {
+			return (
+				<EmptyState
+					icon={<IconLucideSearch class="size-5 text-gray-10" />}
+					title={props.emptyMessage}
+					description={
+						props.variant === "display"
+							? t("main.noDisplaysFound")
+							: t("main.noWindowsFound")
+					}
+				/>
+			);
+		}
+
 		return (
-			<div class="col-span-2 py-6 text-sm text-center text-gray-11">
-				{props.emptyMessage ??
-					(props.variant === "display"
+			<EmptyState
+				icon={
+					props.variant === "display" ? (
+						<IconMdiMonitor class="size-5 text-gray-10" />
+					) : (
+						<IconLucideAppWindowMac class="size-5 text-gray-10" />
+					)
+				}
+				title={
+					props.variant === "display"
 						? t("main.noDisplaysFound")
-						: t("main.noWindowsFound"))}
-			</div>
+						: t("main.noWindowsFound")
+				}
+				description={
+					props.variant === "display"
+						? t("main.noDisplaysFoundDesc")
+						: t("main.noWindowsFoundDesc")
+				}
+			/>
 		);
 	};
 
@@ -246,9 +276,25 @@ export default function TargetMenuGrid(props: TargetMenuGridProps) {
 		>
 			<Switch>
 				<Match when={props.errorMessage}>
-					<div class="flex flex-col col-span-2 gap-2 justify-center items-center py-6 text-sm text-center text-gray-11">
-						<p>{props.errorMessage}</p>
-					</div>
+					<EmptyState
+						icon={
+							<svg
+								class="size-5 text-gray-10"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
+								<circle cx="12" cy="12" r="10" />
+								<line x1="12" y1="8" x2="12" y2="12" />
+								<line x1="12" y1="16" x2="12.01" y2="16" />
+							</svg>
+						}
+						title={props.errorMessage ?? ""}
+						description=""
+					/>
 				</Match>
 				<Match when={props.isLoading}>
 					<For each={skeletonItems()}>

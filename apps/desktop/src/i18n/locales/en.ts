@@ -81,7 +81,10 @@ export const dict = {
 			"Your screenshots will appear here. Take a screenshot to get started!",
 		viewAllScreenshots: "View All Screenshots",
 		noDisplaysFound: "No displays found",
+		noDisplaysFoundDesc:
+			"Connect an external display or check your display settings.",
 		noWindowsFound: "No windows found",
+		noWindowsFoundDesc: "Open an application window to capture it.",
 		noMatchingDevices: "No matching devices",
 		noDevicesFound: "No devices found",
 		recordSystemAudio: "Record System Audio",

@@ -1019,7 +1019,15 @@ function DeviceListPanel(props: DeviceListPanelProps) {
 
 function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 	const [search, setSearch] = createSignal("");
-	const trimmedSearch = createMemo(() => search().trim());
+	const [debouncedSearch, setDebouncedSearch] = createSignal("");
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+	const updateSearch = (value: string) => {
+		setSearch(value);
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => setDebouncedSearch(value), 150);
+	};
+	onCleanup(() => clearTimeout(debounceTimer));
+	const trimmedSearch = createMemo(() => debouncedSearch().trim());
 	const normalizedQuery = createMemo(() => trimmedSearch().toLowerCase());
 	const [settingsTarget, setSettingsTarget] = createSignal<
 		CameraWithDetails | MicrophoneWithDetails | null
@@ -1245,7 +1253,7 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 	let restoringScroll = false;
 
 	createEffect(() => {
-		search();
+		debouncedSearch();
 		savedScrollTop = 0;
 	});
 
@@ -1431,11 +1439,11 @@ function TargetMenuPanel(props: TargetMenuPanelProps & SharedTargetMenuProps) {
 									type="search"
 									class="py-2 pl-6 h-full w-full"
 									value={search()}
-									onInput={(event) => setSearch(event.currentTarget.value)}
+									onInput={(event) => updateSearch(event.currentTarget.value)}
 									onKeyDown={(event) => {
 										if (event.key === "Escape" && search()) {
 											event.preventDefault();
-											setSearch("");
+											updateSearch("");
 										}
 									}}
 									placeholder={placeholder()}

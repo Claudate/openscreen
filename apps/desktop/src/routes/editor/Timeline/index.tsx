@@ -866,8 +866,8 @@ export function Timeline(props: {
 					{(time) => (
 						<div
 							class={cx(
-								"flex absolute bottom-0 z-20 justify-center items-center w-px pointer-events-none bg-linear-to-b to-120%",
-								split() ? "from-red-300" : "from-gray-400",
+								"flex absolute bottom-0 z-20 justify-center items-center pointer-events-none border-l border-dashed",
+								split() ? "border-red-300" : "border-gray-7",
 							)}
 							style={{
 								left: `${TIMELINE_PADDING + TRACK_GUTTER}px`,
@@ -879,7 +879,7 @@ export function Timeline(props: {
 						>
 							<div
 								class={cx(
-									"absolute left-1/2 top-0 size-3 -translate-x-1/2 -translate-y-2 rounded-full",
+									"absolute left-1/2 top-0 size-2 -translate-x-1/2 -translate-y-1.5 rounded-full",
 									split() ? "bg-red-300" : "bg-gray-10",
 								)}
 							/>
@@ -888,7 +888,7 @@ export function Timeline(props: {
 				</Show>
 				<div
 					class={cx(
-						"absolute bottom-0 rounded-full z-20 w-px pointer-events-none bg-linear-to-b to-120% from-[rgb(226,64,64)]",
+						"absolute bottom-0 z-20 w-0.5 pointer-events-none bg-linear-to-b to-120% from-[rgb(226,64,64)] drop-shadow-sm",
 						split() && "opacity-50",
 					)}
 					style={{
@@ -901,7 +901,10 @@ export function Timeline(props: {
 						)}px)`,
 					}}
 				>
-					<div class="size-3 bg-[rgb(226,64,64)] rounded-full -mt-2 -ml-[calc(0.37rem-0.5px)]" />
+					<div
+						class="w-3 h-2.5 bg-[rgb(226,64,64)] -mt-2.5 -ml-[5px] drop-shadow-sm"
+						style={{ "clip-path": "polygon(0 0, 100% 0, 50% 100%)" }}
+					/>
 				</div>
 				<div
 					class="relative flex-1 min-h-0"
@@ -1026,10 +1029,10 @@ function TrackRow(props: {
 }) {
 	return (
 		<div
-			class="group/track flex items-stretch gap-2"
+			class="group/track flex items-stretch gap-1 rounded-lg hover:bg-gray-3/50 dark:hover:bg-gray-4/30 transition-colors [&:nth-child(odd)]:bg-gray-2/50 dark:[&:nth-child(odd)]:bg-gray-3/30"
 			onContextMenu={props.onContextMenu}
 		>
-			<div class="relative">
+			<div class="relative rounded-lg transition-colors">
 				<TrackIcon
 					icon={props.icon()}
 					class={
@@ -1074,7 +1077,7 @@ function TimelineMarkings() {
 
 	return (
 		<div
-			class="relative flex-1 h-4 text-xs text-gray-9"
+			class="relative flex-1 h-4 text-xs text-gray-9 font-mono tabular-nums"
 			style={{ "margin-left": `${TRACK_GUTTER}px` }}
 		>
 			<Index each={Array.from({ length: markingCount() })}>
@@ -1087,7 +1090,10 @@ function TimelineMarkings() {
 
 					return (
 						<div
-							class="absolute left-0 bottom-1 w-1 h-1 text-center bg-current rounded-full"
+							class={cx(
+								"absolute left-0 bottom-1 w-1 text-center bg-current rounded-full",
+								showLabel() ? "h-1.5 text-gray-11" : "h-1",
+							)}
 							style={{
 								transform: `translateX(${translateX()}px)`,
 								visibility: isVisible() ? "visible" : "hidden",

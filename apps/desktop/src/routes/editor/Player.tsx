@@ -327,7 +327,7 @@ export function PlayerContent() {
 
 	return (
 		<div class="flex flex-col flex-1 min-h-0">
-			<div class="flex items-center justify-between gap-3 p-3">
+			<div class="flex items-center justify-between gap-3 px-4 py-2 border-b border-gray-3">
 				<div class="flex items-center gap-3">
 					<AspectRatioSelect />
 					<EditorButton
@@ -396,7 +396,7 @@ export function PlayerContent() {
 				</div>
 			</div>
 			<PreviewCanvas />
-			<div class="relative flex overflow-hidden z-10 flex-row gap-3 justify-between items-center p-5">
+			<div class="relative flex overflow-hidden z-10 flex-row gap-3 justify-between items-center px-4 py-3 border-t border-gray-3">
 				<div class="flex-1">
 					<Time
 						class="text-gray-12"
@@ -405,44 +405,47 @@ export function PlayerContent() {
 							0,
 						)}
 					/>
-					<span class="text-gray-11 text-[0.875rem] tabular-nums"> / </span>
-					<Time seconds={totalDuration()} />
+					<span class="text-gray-8 text-[0.875rem] font-mono tabular-nums">
+						{" "}
+						/{" "}
+					</span>
+					<Time seconds={totalDuration()} class="text-xs" />
 				</div>
-				<div class="flex flex-row items-center justify-center text-gray-11 gap-8 text-[0.875rem]">
+				<div class="flex flex-row items-center justify-center text-gray-11 gap-4 text-[0.875rem]">
 					<button
 						type="button"
-						class="transition-opacity hover:opacity-70 will-change-[opacity]"
+						class="hover:text-gray-12 hover:bg-gray-3 rounded-lg p-1.5 transition-colors"
 						onClick={async () => {
 							await commands.stopPlayback();
 							setEditorState("playing", false);
 							setEditorState("playbackTime", 0);
 						}}
 					>
-						<IconCapPrev class="text-gray-12 size-3" />
+						<IconCapPrev class="text-gray-12 size-4" />
 					</button>
 					<Tooltip kbd={["Space"]} content={t("editor.player.playPause")}>
 						<button
 							type="button"
 							onClick={handlePlayPauseClick}
-							class="flex justify-center items-center rounded-full border border-gray-300 transition-colors bg-gray-3 hover:bg-gray-4 hover:text-black size-9"
+							class="flex justify-center items-center rounded-full transition-all duration-150 bg-blue-9 hover:bg-blue-10 text-white size-11"
 						>
 							{!editorState.playing || isAtEnd() ? (
-								<IconCapPlay class="text-gray-12 size-3" />
+								<IconCapPlay class="text-white size-4" />
 							) : (
-								<IconCapPause class="text-gray-12 size-3" />
+								<IconCapPause class="text-white size-4" />
 							)}
 						</button>
 					</Tooltip>
 					<button
 						type="button"
-						class="transition-opacity hover:opacity-70 will-change-[opacity]"
+						class="hover:text-gray-12 hover:bg-gray-3 rounded-lg p-1.5 transition-colors"
 						onClick={async () => {
 							await commands.stopPlayback();
 							setEditorState("playing", false);
 							setEditorState("playbackTime", totalDuration());
 						}}
 					>
-						<IconCapNext class="text-gray-12 size-3" />
+						<IconCapNext class="text-gray-12 size-4" />
 					</button>
 				</div>
 				<div class="flex flex-row flex-1 gap-4 justify-end items-center">
@@ -689,7 +692,9 @@ function PreviewCanvas() {
 
 function Time(props: { seconds: number; fps?: number; class?: string }) {
 	return (
-		<span class={cx("text-gray-11 text-sm tabular-nums", props.class)}>
+		<span
+			class={cx("text-gray-11 text-sm font-mono tabular-nums", props.class)}
+		>
 			{formatTime(props.seconds, props.fps ?? FPS)}
 		</span>
 	);

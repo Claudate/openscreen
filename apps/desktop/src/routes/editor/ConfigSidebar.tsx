@@ -506,7 +506,7 @@ export function ConfigSidebar() {
 			value={editorState.timeline.selection ? undefined : state.selectedTab}
 			class="flex flex-col min-h-0 shrink-0 flex-1 max-w-104 overflow-hidden rounded-xl z-10 bg-gray-1 dark:bg-gray-2 border border-gray-3"
 		>
-			<KTabs.List class="flex overflow-hidden sticky top-0 z-60 flex-row items-center h-16 text-lg border-b border-gray-3 shrink-0 bg-gray-1 dark:bg-gray-2">
+			<KTabs.List class="flex overflow-hidden sticky top-0 z-60 flex-row items-center h-12 text-lg border-b border-gray-3 shrink-0 bg-gray-1 dark:bg-gray-2">
 				<For
 					each={[
 						{ id: TAB_IDS.background, icon: IconCapImage },
@@ -538,10 +538,10 @@ export function ConfigSidebar() {
 						<KTabs.Trigger
 							value={item.id}
 							class={cx(
-								"flex relative z-10 flex-1 justify-center items-center px-4 py-2 transition-colors group disabled:opacity-50 focus:outline-hidden",
+								"flex relative z-10 flex-1 justify-center items-center px-4 py-2 transition-colors group disabled:opacity-50 focus:outline-hidden hover:text-gray-12 hover:bg-gray-3/50",
 								editorState.timeline.selection
 									? "text-gray-11"
-									: "text-gray-11 data-selected:text-gray-12",
+									: "text-gray-11 data-selected:text-blue-9",
 							)}
 							onClick={() => {
 								// Clear any active selection first
@@ -571,7 +571,7 @@ export function ConfigSidebar() {
 				{/** Center the indicator with the icon */}
 				<Show when={!editorState.timeline.selection}>
 					<KTabs.Indicator class="absolute top-0 left-0 w-full h-full transition-transform duration-200 ease-in-out pointer-events-none will-change-transform">
-						<div class="absolute top-1/2 left-1/2 rounded-lg transform -translate-x-1/2 -translate-y-1/2 bg-gray-3 will-change-transform size-9" />
+						<div class="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-full bg-blue-9" />
 					</KTabs.Indicator>
 				</Show>
 			</KTabs.List>

@@ -16,7 +16,6 @@ import {
 	createResource,
 	createSignal,
 	ErrorBoundary,
-	For,
 	Match,
 	on,
 	onCleanup,
@@ -63,7 +62,6 @@ const MIN_PLAYER_CONTENT_HEIGHT = 320;
 const MIN_TIMELINE_HEIGHT = 240;
 const RESIZE_HANDLE_HEIGHT = 16;
 const MIN_PLAYER_HEIGHT = MIN_PLAYER_CONTENT_HEIGHT + RESIZE_HANDLE_HEIGHT;
-const TIMELINE_RESIZE_GRIP_MARKS = [0, 1, 2] as const;
 
 function logCropProfile(
 	stage: string,
@@ -587,7 +585,7 @@ function Inner() {
 			<div class="flex flex-col flex-1 min-h-0 animate-in fade-in duration-300">
 				<Header />
 				<div
-					class="flex overflow-y-hidden flex-col flex-1 gap-2 pb-4 w-full min-h-0 leading-5"
+					class="flex overflow-y-hidden flex-col flex-1 gap-0 pb-2 w-full min-h-0 leading-5"
 					data-tauri-drag-region
 				>
 					<div
@@ -602,7 +600,7 @@ function Inner() {
 							}}
 						>
 							<div
-								class="flex flex-col rounded-xl border bg-gray-1 dark:bg-gray-2 border-gray-3 overflow-hidden"
+								class="flex flex-col rounded-xl border bg-gray-1 dark:bg-gray-2 border-gray-4 overflow-hidden"
 								style={{
 									flex: isTranscriptMode()
 										? `0 0 ${splitRatio() * 100}%`
@@ -618,28 +616,32 @@ function Inner() {
 									style={{ height: `${RESIZE_HANDLE_HEIGHT}px` }}
 								>
 									<div
-										class="flex flex-col gap-0.5 justify-center items-center h-full w-full cursor-row-resize select-none group"
+										class="flex flex-row gap-1.5 justify-center items-center h-full w-full cursor-row-resize select-none group transition-colors hover:bg-blue-3/30 dark:hover:bg-blue-4/20"
 										classList={{
-											"bg-gray-3/55 dark:bg-gray-4/50": isResizingTimeline(),
+											"bg-blue-3/40 dark:bg-blue-4/30": isResizingTimeline(),
 										}}
 										onMouseDown={handleTimelineResizeStart}
 										aria-label={t("editor.misc.resizeTimeline")}
 									>
-										<For each={TIMELINE_RESIZE_GRIP_MARKS}>
-											{() => (
-												<div
-													class="h-0.5 w-20 max-w-[85%] rounded-full bg-gray-6 dark:bg-gray-7 shadow-[0_1px_0_rgb(0_0_0_/0.06)] transition-colors group-hover:bg-gray-9 dark:group-hover:bg-gray-11"
-													classList={{
-														"bg-gray-9 dark:bg-gray-11": isResizingTimeline(),
-													}}
-												/>
-											)}
-										</For>
+										<div
+											class="size-1 rounded-full bg-gray-7 dark:bg-gray-8 transition-colors group-hover:bg-blue-9"
+											classList={{ "bg-blue-9": isResizingTimeline() }}
+										/>
+										<div
+											class="h-0.5 w-12 rounded-full bg-gray-6 dark:bg-gray-7 transition-colors group-hover:bg-blue-9 dark:group-hover:bg-blue-10"
+											classList={{
+												"bg-blue-9 dark:bg-blue-10": isResizingTimeline(),
+											}}
+										/>
+										<div
+											class="size-1 rounded-full bg-gray-7 dark:bg-gray-8 transition-colors group-hover:bg-blue-9"
+											classList={{ "bg-blue-9": isResizingTimeline() }}
+										/>
 									</div>
 								</div>
 							</div>
 							<Show when={!isTranscriptMode()}>
-								<div class="ml-2 flex min-h-0 w-104 min-w-104 flex-none overflow-hidden">
+								<div class="ml-1 flex min-h-0 w-104 min-w-104 flex-none overflow-hidden">
 									<ConfigSidebar />
 								</div>
 							</Show>

@@ -333,17 +333,18 @@ pub async fn close_target_select_overlays(
 ) -> Result<(), String> {
     state.invalidate();
 
-    let mut closed_display_ids = Vec::new();
+    let mut closed_windows = Vec::new();
 
     for (id, window) in app.webview_windows() {
         if let Ok(CapWindowId::TargetSelectOverlay { display_id }) = CapWindowId::from_str(&id) {
             hide_overlay(&window);
-            closed_display_ids.push(display_id);
+            closed_windows.push((display_id, window));
         }
     }
 
-    for display_id in closed_display_ids {
+    for (display_id, window) in closed_windows {
         state.destroy(&display_id, app.global_shortcut());
+        let _ = window.close();
     }
 
     Ok(())
@@ -479,52 +480,59 @@ impl WindowFocusManager {
 
     pub fn spawn(&self, id: &DisplayId, window: WebviewWindow) {
         let display_id = id.clone();
+        let spawn_gen = self.current_generation();
         let mut tasks = self.tasks.lock().unwrap_or_else(PoisonError::into_inner);
-        tasks.insert(
-            id.to_string(),
-            tokio::spawn(async move {
-                let app = window.app_handle();
-                let mut main_window_was_seen = false;
+        let new_handle = tokio::spawn(async move {
+            let app = window.app_handle();
+            let mut main_window_was_seen = false;
 
-                loop {
-                    if crate::app_is_exiting(app) {
-                        break;
-                    }
-
-                    let cap_main = CapWindowId::Main.get(app);
-                    let cap_settings = CapWindowId::Settings.get(app);
-
-                    let main_window_available = cap_main.is_some();
-                    let settings_window_available = cap_settings.is_some();
-
-                    if main_window_available || settings_window_available {
-                        main_window_was_seen = true;
-                    }
-
-                    if main_window_was_seen && !main_window_available && !settings_window_available
-                    {
-                        hide_overlay(&window);
-                        app.state::<WindowFocusManager>()
-                            .finish(&display_id, app.global_shortcut());
-                        break;
-                    }
-
-                    #[cfg(windows)]
-                    if window.is_visible().unwrap_or(false)
-                        && let Some(cap_main) = cap_main
-                    {
-                        let should_refocus = cap_main.is_focused().ok().unwrap_or_default()
-                            || window.is_focused().unwrap_or_default();
-
-                        if !should_refocus {
-                            window.set_focus().ok();
-                        }
-                    }
-
-                    tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+            loop {
+                if crate::app_is_exiting(app) {
+                    break;
                 }
-            }),
-        );
+
+                let focus_manager = app.state::<WindowFocusManager>();
+                if focus_manager.current_generation() != spawn_gen {
+                    hide_overlay(&window);
+                    let _ = window.close();
+                    break;
+                }
+
+                let cap_main = CapWindowId::Main.get(app);
+                let cap_settings = CapWindowId::Settings.get(app);
+
+                let main_window_available = cap_main.is_some();
+                let settings_window_available = cap_settings.is_some();
+
+                if main_window_available || settings_window_available {
+                    main_window_was_seen = true;
+                }
+
+                if main_window_was_seen && !main_window_available && !settings_window_available {
+                    hide_overlay(&window);
+                    app.state::<WindowFocusManager>()
+                        .finish(&display_id, app.global_shortcut());
+                    break;
+                }
+
+                #[cfg(windows)]
+                if window.is_visible().unwrap_or(false)
+                    && let Some(cap_main) = cap_main
+                {
+                    let should_refocus = cap_main.is_focused().ok().unwrap_or_default()
+                        || window.is_focused().unwrap_or_default();
+
+                    if !should_refocus {
+                        window.set_focus().ok();
+                    }
+                }
+
+                tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+            }
+        });
+        if let Some(old_handle) = tasks.insert(id.to_string(), new_handle) {
+            old_handle.abort();
+        }
     }
 
     fn finish<R: tauri::Runtime>(&self, id: &DisplayId, global_shortcut: &GlobalShortcut<R>) {

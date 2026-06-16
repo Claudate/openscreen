@@ -37,7 +37,6 @@ use crate::{
     recording::{RecordingEvent, RecordingInputKind},
     recording_settings::RecordingTargetMode,
     screenshot_editor::PendingScreenshotEditorInstances,
-    target_select_overlay::WindowFocusManager,
     window_exclusion::WindowExclusion,
 };
 use cap_recording::{feeds, sources::screen_capture::ScreenCaptureTarget};
@@ -122,6 +121,7 @@ fn hide_recording_windows(app: &AppHandle) {
         {
             if matches!(id, CapWindowId::TargetSelectOverlay { .. }) {
                 hide_overlay(&window);
+                let _ = window.close();
             } else {
                 let _ = window.hide();
             }
@@ -1592,9 +1592,6 @@ impl ShowCapWindow {
                         ));
                     }
                 }
-
-                app.state::<WindowFocusManager>()
-                    .spawn(display_id, window.clone());
 
                 #[cfg(target_os = "macos")]
                 {

@@ -395,13 +395,13 @@ export default function TargetCard(props: TargetCardProps) {
 					</div>
 				</div>
 				<Show when={local.variant === "screenshot"}>
-					<div class="flex items-center justify-between px-2 pb-1.5 pt-0.5 gap-1">
+					<div class="flex items-center justify-between border-t border-gray-5 px-2 pb-1.5 pt-0.5 gap-1">
 						<Tooltip content={t("main.edit")}>
 							<div
 								role="button"
 								tabIndex={-1}
 								onClick={handleOpenEditor}
-								class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-gray-12 transition-colors"
+								class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-blue-11 active:scale-95 transition-all"
 							>
 								<IconLucideEdit class="size-3.5" />
 							</div>
@@ -411,7 +411,7 @@ export default function TargetCard(props: TargetCardProps) {
 								role="button"
 								tabIndex={-1}
 								onClick={handleCopy}
-								class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-gray-12 transition-colors"
+								class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-blue-11 active:scale-95 transition-all"
 							>
 								<IconLucideCopy class="size-3.5" />
 							</div>
@@ -421,7 +421,7 @@ export default function TargetCard(props: TargetCardProps) {
 								role="button"
 								tabIndex={-1}
 								onClick={handleSave}
-								class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-gray-12 transition-colors"
+								class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-blue-11 active:scale-95 transition-all"
 							>
 								<IconLucideSave class="size-3.5" />
 							</div>
@@ -439,14 +439,14 @@ export default function TargetCard(props: TargetCardProps) {
 						const hasProgress = progress !== undefined || reuploading;
 
 						return (
-							<div class="flex items-center justify-between px-2 pb-1.5 pt-0.5 gap-1">
+							<div class="flex items-center justify-between border-t border-gray-5 px-2 pb-1.5 pt-0.5 gap-1">
 								<Show when={isStudio}>
 									<Tooltip content={t("main.edit")}>
 										<div
 											role="button"
 											tabIndex={-1}
 											onClick={handleOpenRecordingEditor}
-											class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-gray-12 transition-colors"
+											class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-blue-11 active:scale-95 transition-all"
 										>
 											<IconLucideEdit class="size-3.5" />
 										</div>
@@ -467,7 +467,12 @@ export default function TargetCard(props: TargetCardProps) {
 													role="button"
 													tabIndex={-1}
 													onClick={handleReupload}
-													class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-gray-12 transition-colors"
+													class={cx(
+														"flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 active:scale-95 transition-all",
+														uploadFailed || recordingFailed()
+															? "text-red-11 hover:text-red-12"
+															: "text-gray-11 hover:text-blue-11",
+													)}
 												>
 													<IconLucideRotateCcw class="size-3.5" />
 												</div>
@@ -489,7 +494,7 @@ export default function TargetCard(props: TargetCardProps) {
 											role="button"
 											tabIndex={-1}
 											onClick={handleOpenRecordingLink}
-											class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-gray-12 transition-colors"
+											class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-blue-11 active:scale-95 transition-all"
 										>
 											<IconCapLink class="size-3.5" />
 										</div>
@@ -500,7 +505,7 @@ export default function TargetCard(props: TargetCardProps) {
 										role="button"
 										tabIndex={-1}
 										onClick={handleOpenRecordingFolder}
-										class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-gray-12 transition-colors"
+										class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-blue-11 active:scale-95 transition-all"
 									>
 										<IconLucideFolder class="size-3.5" />
 									</div>
@@ -510,7 +515,7 @@ export default function TargetCard(props: TargetCardProps) {
 										role="button"
 										tabIndex={-1}
 										onClick={handleDeleteRecording}
-										class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-gray-12 transition-colors"
+										class="flex-1 flex items-center justify-center p-1 rounded-sm hover:bg-gray-5 text-gray-11 hover:text-blue-11 active:scale-95 transition-all"
 									>
 										<IconCapTrash class="size-3.5" />
 									</div>

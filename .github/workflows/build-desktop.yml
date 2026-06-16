@@ -84,20 +84,15 @@ jobs:
             echo "OK: $f ($(stat -c%s "$f") bytes)"
           done
 
-      - name: Write unsigned bundle config override
-        shell: bash
-        run: |
-          cat > apps/desktop/src-tauri/ci-unsigned.conf.json <<'EOF'
-          {
-            "bundle": {
-              "createUpdaterArtifacts": false
-            }
-          }
-          EOF
-
-      - name: Build app (unsigned bundle)
+      - name: Build frontend
         working-directory: apps/desktop
-        run: pnpm build:tauri --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
+        run: pnpm turbo build --filter @cap/desktop
+        env:
+          CI: false
+
+      - name: Build app (unsigned bundle, skip frontend)
+        working-directory: apps/desktop
+        run: pnpm tauri build --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
         env:
           CI: false
           RUST_TARGET_TRIPLE: ${{ env.TARGET }}
@@ -173,20 +168,15 @@ jobs:
             echo "OK: $f ($(stat -f%z "$f") bytes)"
           done
 
-      - name: Write unsigned bundle config override
-        shell: bash
-        run: |
-          cat > apps/desktop/src-tauri/ci-unsigned.conf.json <<'EOF'
-          {
-            "bundle": {
-              "createUpdaterArtifacts": false
-            }
-          }
-          EOF
-
-      - name: Build app (unsigned bundle)
+      - name: Build frontend
         working-directory: apps/desktop
-        run: pnpm build:tauri --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
+        run: pnpm turbo build --filter @cap/desktop
+        env:
+          CI: false
+
+      - name: Build app (unsigned bundle, skip frontend)
+        working-directory: apps/desktop
+        run: pnpm tauri build --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
         env:
           CI: false
           RUST_TARGET_TRIPLE: ${{ env.TARGET }}
@@ -262,20 +252,15 @@ jobs:
             echo "OK: $f ($(stat -c%s "$f") bytes)"
           done
 
-      - name: Write unsigned bundle config override
-        shell: bash
-        run: |
-          cat > apps/desktop/src-tauri/ci-unsigned.conf.json <<'EOF'
-          {
-            "bundle": {
-              "createUpdaterArtifacts": false
-            }
-          }
-          EOF
-
-      - name: Build app (unsigned bundle)
+      - name: Build frontend
         working-directory: apps/desktop
-        run: pnpm build:tauri --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
+        run: pnpm turbo build --filter @cap/desktop
+        env:
+          CI: false
+
+      - name: Build app (unsigned bundle, skip frontend)
+        working-directory: apps/desktop
+        run: pnpm tauri build --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
         env:
           CI: false
           RUST_TARGET_TRIPLE: ${{ env.TARGET }}

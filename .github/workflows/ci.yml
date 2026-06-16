@@ -335,6 +335,10 @@ jobs:
       - name: Build release
         run: cargo check --all --release --target ${{ matrix.settings.target }}
 
+      - name: Install clippy
+        if: ${{ matrix.settings.target == 'aarch64-apple-darwin' || matrix.settings.target == 'x86_64-pc-windows-msvc' }}
+        run: rustup component add clippy
+
       - name: Run Clippy
         if: ${{ matrix.settings.target == 'aarch64-apple-darwin' || matrix.settings.target == 'x86_64-pc-windows-msvc' }}
         run: cargo clippy --workspace --all-features --locked --target ${{ matrix.settings.target }} -- -D warnings

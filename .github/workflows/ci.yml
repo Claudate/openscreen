@@ -300,18 +300,39 @@ jobs:
         with:
           node-version: 24
 
-      - run: node scripts/setup.js
+      - name: Create .env file in root
+        shell: bash
+        run: |
+          echo "VITE_ENVIRONMENT=production" >> .env
+          echo "CAP_DESKTOP_SENTRY_URL=https://6a3b6a09e6ae976c2ad6fff710e88748@o4506859771527168.ingest.us.sentry.io/4508330917101568" >> .env
+          cat .env >> $GITHUB_ENV
+
+      - name: Run setup
+        shell: bash
+        run: node scripts/setup.js
+        env:
+          RUST_TARGET_TRIPLE: ${{ matrix.settings.target }}
 
       - name: Build desktop binaries
         shell: bash
         run: ./scripts/build-desktop-binaries.sh ${{ matrix.settings.target }}
 
+      - name: Verify sidecar binaries
+        shell: bash
+        run: |
+          for bin in cap-muxer cap-cli cap-exporter; do
+            f="apps/desktop/src-tauri/binaries/${bin}-${{ matrix.settings.target }}"
+            [[ "${{ matrix.settings.target }}" == *windows* ]] && f="${f}.exe"
+            if [[ ! -f "$f" ]]; then echo "MISSING: $f" >&2; exit 1; fi
+            echo "OK: $f ($(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null) bytes)"
+          done
+
       - name: Build debug
-        run: cargo build --all
+        run: cargo build --all --target ${{ matrix.settings.target }}
 
       - name: Build release
-        run: cargo check --all --release
+        run: cargo check --all --release --target ${{ matrix.settings.target }}
 
       - name: Run Clippy
         if: ${{ matrix.settings.target == 'aarch64-apple-darwin' || matrix.settings.target == 'x86_64-pc-windows-msvc' }}
-        run: cargo clippy --workspace --all-features --locked -- -D warnings
+        run: cargo clippy --workspace --all-features --locked --target ${{ matrix.settings.target }} -- -D warnings

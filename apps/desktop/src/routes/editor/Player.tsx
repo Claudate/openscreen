@@ -513,9 +513,9 @@ export function PlayerContent() {
 							);
 						}}
 						formatTooltip={() =>
-							`${editorState.timeline.transform.zoom.toFixed(
-								0,
-							)} seconds visible`
+							t("editor.player.zoomSecondsVisible", {
+								seconds: editorState.timeline.transform.zoom.toFixed(0),
+							})
 						}
 					/>
 				</div>

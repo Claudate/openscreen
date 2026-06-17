@@ -205,7 +205,9 @@ function AppearanceSection(props: {
 								<button
 									type="button"
 									aria-checked={isSelected()}
-									aria-label={`Select theme: ${theme.name}`}
+									aria-label={t("settings.general.appearance.selectThemeAria", {
+										name: theme.name,
+									})}
 									onClick={() => props.onThemeChange(theme.id)}
 									class="flex flex-col gap-2 items-center group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-9 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-1 rounded-xl"
 								>
@@ -223,7 +225,10 @@ function AppearanceSection(props: {
 													class="object-cover w-full h-full animate-in fade-in duration-200"
 													draggable={false}
 													src={preview}
-													alt={`Preview of ${theme.name} theme`}
+													alt={t(
+														"settings.general.appearance.themePreviewAlt",
+														{ name: theme.name },
+													)}
 												/>
 											)}
 										</Show>

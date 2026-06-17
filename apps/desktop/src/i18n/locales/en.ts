@@ -344,6 +344,8 @@ export const dict = {
 				system: "System",
 				light: "Light",
 				dark: "Dark",
+				selectThemeAria: "Select theme: {{name}}",
+				themePreviewAlt: "Preview of {{name}} theme",
 			},
 			app: {
 				title: "App",
@@ -961,6 +963,7 @@ export const dict = {
 			zoomHintWindows: "Hold Ctrl and scroll, or press Ctrl +/- to zoom",
 			zoomHintMac: "Pinch, or press Cmd +/- to zoom",
 			performanceMode: "Performance Mode",
+			zoomSecondsVisible: "{{seconds}} seconds visible",
 		},
 		transcript: {
 			title: "Transcript",

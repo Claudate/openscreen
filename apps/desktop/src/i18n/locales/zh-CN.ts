@@ -330,6 +330,8 @@ export const dict: typeof en = {
 				system: "跟随系统",
 				light: "浅色",
 				dark: "深色",
+				selectThemeAria: "选择主题: {{name}}",
+				themePreviewAlt: "{{name}}主题预览",
 			},
 			app: {
 				title: "应用",
@@ -908,6 +910,7 @@ export const dict: typeof en = {
 			zoomHintWindows: "按住 Ctrl 滚动滚轮，或按 Ctrl +/- 缩放",
 			zoomHintMac: "双指捏合，或按 Cmd +/- 缩放",
 			performanceMode: "性能模式",
+			zoomSecondsVisible: "{{seconds}} 秒可见",
 		},
 		transcript: {
 			title: "转录",

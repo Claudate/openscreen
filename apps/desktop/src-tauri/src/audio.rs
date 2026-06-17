@@ -126,13 +126,6 @@ pub struct SilenceSpan {
     pub end: f64,
 }
 
-impl SilenceSpan {
-    #[cfg(test)]
-    pub fn duration(&self) -> f64 {
-        (self.end - self.start).max(0.0)
-    }
-}
-
 /// 静音检测可调参数（前端调参面板可直连）。
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

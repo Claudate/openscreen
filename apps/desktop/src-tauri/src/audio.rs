@@ -2,15 +2,9 @@ use cap_audio::AudioData;
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, Mutex, Weak};
 
-/// 波形 sidecar 缓存：键 = `AudioData` 实例指针（`Arc` 存活期内即身份），
-/// 值携带 `Weak` 自动失效——编辑器实例销毁 → `Arc` 释放 → `Weak::upgrade` 失败
-/// → 条目在下次插入时被清理，无需手动失效钩子。
-///
-/// 为什么放这里而不是 `SegmentMedia`：`AudioData` 挂在上游 crate（cap-editor）
-/// 的 `SegmentMedia` 上，加缓存字段会改上游结构（fork 同步风险）；sidecar 缓存
-/// 零上游改动。内存量级：波形 1 点/100ms，1 小时录制 ≈ 144KB/轨，可忽略。
-static WAVEFORM_CACHE: LazyLock<Mutex<HashMap<usize, (Weak<AudioData>, Arc<Vec<f32>>)>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+type WaveformCache = Mutex<HashMap<usize, (Weak<AudioData>, Arc<Vec<f32>>)>>;
+
+static WAVEFORM_CACHE: LazyLock<WaveformCache> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// 取（或计算并缓存）一条音轨的波形。
 ///

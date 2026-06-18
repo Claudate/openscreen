@@ -1,7 +1,12 @@
 <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect x="0.5" y="0.5" width="79" height="79" rx="15.5" fill="white"/>
-<rect x="0.5" y="0.5" width="79" height="79" rx="15.5" stroke="#E7EAF0"/>
-<path d="M40 72C57.6731 72 72 57.6731 72 40C72 22.3269 57.6731 8 40 8C22.3269 8 8 22.3269 8 40C8 57.6731 22.3269 72 40 72Z" fill="#4785FF"/>
-<path d="M40.0001 66C54.3595 66 66 54.3595 66 40.0001C66 25.6405 54.3595 14 40.0001 14C25.6405 14 14 25.6408 14 40.0001C14 54.3595 25.6408 66 40.0001 66Z" fill="#ADC9FF"/>
-<path d="M39.9999 60C51.0455 60 60 51.0455 60 39.9998C60 28.9542 51.0455 20 39.9999 20C28.9542 20 20 28.9542 20 39.9998C20 51.0455 28.9542 60 39.9999 60Z" fill="white"/>
+<defs>
+<linearGradient id="reko-bg" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#0C4A6E"/>
+<stop offset="100%" stop-color="#4C1D95"/>
+</linearGradient>
+</defs>
+<rect width="80" height="80" rx="18" fill="url(#reko-bg)"/>
+<path d="M28 60V20H40C44.4183 20 48 23.5817 48 28V28C48 32.4183 44.4183 36 40 36H28" stroke="white" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M38 36L52 60" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+<circle cx="54" cy="22" r="5.5" fill="#F43F5E"/>
 </svg>

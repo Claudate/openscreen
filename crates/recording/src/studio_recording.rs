@@ -1680,7 +1680,7 @@ fn persist_final_recording_meta(recording_dir: &Path, studio_meta: &StudioRecord
     use chrono::Local;
 
     let pretty_name = Local::now()
-        .format("Screen %Y-%m-%d at %H.%M.%S")
+        .format("Reko %Y-%m-%d at %H.%M.%S")
         .to_string();
     let recording_meta = RecordingMeta {
         platform: Some(Platform::default()),
@@ -1704,7 +1704,7 @@ fn write_in_progress_meta(recording_dir: &Path) -> anyhow::Result<()> {
     use chrono::Local;
 
     let pretty_name = Local::now()
-        .format("Screen %Y-%m-%d at %H.%M.%S")
+        .format("Reko %Y-%m-%d at %H.%M.%S")
         .to_string();
 
     let meta = RecordingMeta {

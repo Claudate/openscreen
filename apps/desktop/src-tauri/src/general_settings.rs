@@ -95,15 +95,15 @@ impl MainWindowRecordingStartBehaviour {
 // matches by exact title, so a rename there silently disables self-window
 // filtering during recording (the app's own windows leak into the capture).
 const DEFAULT_EXCLUDED_WINDOW_TITLES: &[&str] = &[
-    "Screen",
-    "Screen Settings",
-    "Screen Recording Controls",
-    "Screen Camera",
-    "Screen Target Select",
-    "Screen Window Capture Occluder",
-    "Screen Capture Area",
-    "Screen Mode Selection",
-    "Screen Recordings Overlay",
+    "Reko",
+    "Reko Settings",
+    "Reko Recording Controls",
+    "Reko Camera",
+    "Reko Target Select",
+    "Reko Window Capture Occluder",
+    "Reko Capture Area",
+    "Reko Mode Selection",
+    "Reko Recordings Overlay",
 ];
 
 pub fn default_excluded_windows() -> Vec<WindowExclusion> {
@@ -257,7 +257,7 @@ fn default_crash_recovery_recording() -> bool {
 
 fn default_transcription_hints() -> Vec<String> {
     vec![
-        "Screen".to_string(),
+        "Reko".to_string(),
         "TypeScript".to_string(),
         "My Brand Name".to_string(),
         "mywebsite.com".to_string(),

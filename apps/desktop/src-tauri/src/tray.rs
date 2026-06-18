@@ -419,14 +419,14 @@ fn build_tray_menu(app: &AppHandle, cache: &PreviousItemsCache) -> tauri::Result
                 &MenuItem::with_id(
                     app,
                     "version",
-                    format!("Screen v{}", env!("CARGO_PKG_VERSION")),
+                    format!("Reko v{}", env!("CARGO_PKG_VERSION")),
                     false,
                     None::<&str>,
                 )?,
                 &MenuItem::with_id(
                     app,
                     TrayItem::Quit,
-                    tr("Quit Screen", "退出 Screen"),
+                    tr("Quit Reko", "退出 Reko"),
                     true,
                     None::<&str>,
                 )?,
@@ -548,14 +548,14 @@ fn build_tray_menu(app: &AppHandle, cache: &PreviousItemsCache) -> tauri::Result
     menu.append(&MenuItem::with_id(
         app,
         "version",
-        format!("Screen v{}", env!("CARGO_PKG_VERSION")),
+        format!("Reko v{}", env!("CARGO_PKG_VERSION")),
         false,
         None::<&str>,
     )?)?;
     menu.append(&MenuItem::with_id(
         app,
         TrayItem::Quit,
-        tr("Quit Screen", "退出 Screen"),
+        tr("Quit Reko", "退出 Reko"),
         true,
         None::<&str>,
     )?)?;

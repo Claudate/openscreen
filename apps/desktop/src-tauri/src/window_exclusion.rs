@@ -213,8 +213,8 @@ mod tests {
 
     #[test]
     fn matches_by_window_title() {
-        let exclusion = title_exclusion("Screen Camera");
-        assert!(exclusion.matches(None, None, Some("Screen Camera")));
+        let exclusion = title_exclusion("Reko Camera");
+        assert!(exclusion.matches(None, None, Some("Reko Camera")));
         assert!(!exclusion.matches(None, None, Some("Other Window")));
         assert!(!exclusion.matches(None, None, None));
     }
@@ -229,8 +229,8 @@ mod tests {
 
     #[test]
     fn matches_by_owner_name() {
-        let exclusion = owner_exclusion("Screen");
-        assert!(exclusion.matches(None, Some("Screen"), None));
+        let exclusion = owner_exclusion("Reko");
+        assert!(exclusion.matches(None, Some("Reko"), None));
         assert!(!exclusion.matches(None, Some("Other"), None));
         assert!(!exclusion.matches(None, None, None));
     }
@@ -239,13 +239,13 @@ mod tests {
     fn matches_owner_and_title_requires_both() {
         let exclusion = WindowExclusion {
             bundle_identifier: None,
-            owner_name: Some("Screen".to_string()),
-            window_title: Some("Screen Camera".to_string()),
+            owner_name: Some("Reko".to_string()),
+            window_title: Some("Reko Camera".to_string()),
         };
-        assert!(exclusion.matches(None, Some("Screen"), Some("Screen Camera")));
-        assert!(!exclusion.matches(None, Some("Screen"), Some("Wrong Title")));
-        assert!(!exclusion.matches(None, Some("Wrong Owner"), Some("Screen Camera")));
-        assert!(!exclusion.matches(None, None, Some("Screen Camera")));
+        assert!(exclusion.matches(None, Some("Reko"), Some("Reko Camera")));
+        assert!(!exclusion.matches(None, Some("Reko"), Some("Wrong Title")));
+        assert!(!exclusion.matches(None, Some("Wrong Owner"), Some("Reko Camera")));
+        assert!(!exclusion.matches(None, None, Some("Reko Camera")));
     }
 
     #[test]
@@ -264,7 +264,7 @@ mod tests {
         let exclusion = WindowExclusion {
             bundle_identifier: Some("com.cap.desktop".to_string()),
             owner_name: None,
-            window_title: Some("Screen Camera".to_string()),
+            window_title: Some("Reko Camera".to_string()),
         };
         assert!(exclusion.matches(Some("com.cap.desktop"), None, None));
         assert!(exclusion.matches(Some("com.cap.desktop"), None, Some("Wrong")));
@@ -273,62 +273,62 @@ mod tests {
     #[test]
     fn instant_mode_removes_camera_exclusion() {
         let exclusions = vec![
-            title_exclusion("Screen"),
-            title_exclusion("Screen Camera"),
-            title_exclusion("Screen Settings"),
-            title_exclusion("Screen Recording Controls"),
+            title_exclusion("Reko"),
+            title_exclusion("Reko Camera"),
+            title_exclusion("Reko Settings"),
+            title_exclusion("Reko Recording Controls"),
         ];
 
-        let filtered = filter_for_instant_mode(exclusions, "Screen Camera");
+        let filtered = filter_for_instant_mode(exclusions, "Reko Camera");
 
         assert_eq!(filtered.len(), 3);
         assert!(
             filtered
                 .iter()
-                .all(|e| e.window_title.as_deref() != Some("Screen Camera"))
+                .all(|e| e.window_title.as_deref() != Some("Reko Camera"))
         );
         assert!(
             filtered
                 .iter()
-                .any(|e| e.window_title.as_deref() == Some("Screen"))
+                .any(|e| e.window_title.as_deref() == Some("Reko"))
         );
         assert!(
             filtered
                 .iter()
-                .any(|e| e.window_title.as_deref() == Some("Screen Settings"))
+                .any(|e| e.window_title.as_deref() == Some("Reko Settings"))
         );
         assert!(
             filtered
                 .iter()
-                .any(|e| e.window_title.as_deref() == Some("Screen Recording Controls"))
+                .any(|e| e.window_title.as_deref() == Some("Reko Recording Controls"))
         );
     }
 
     #[test]
     fn instant_mode_noop_when_camera_absent() {
         let exclusions = vec![
-            title_exclusion("Screen"),
-            title_exclusion("Screen Settings"),
+            title_exclusion("Reko"),
+            title_exclusion("Reko Settings"),
         ];
 
-        let filtered = filter_for_instant_mode(exclusions, "Screen Camera");
+        let filtered = filter_for_instant_mode(exclusions, "Reko Camera");
         assert_eq!(filtered.len(), 2);
     }
 
     #[test]
     fn instant_mode_handles_empty_list() {
-        let filtered = filter_for_instant_mode(vec![], "Screen Camera");
+        let filtered = filter_for_instant_mode(vec![], "Reko Camera");
         assert!(filtered.is_empty());
     }
 
     #[test]
     fn matches_webview_title_using_exclusion_rules() {
-        let exclusions = vec![title_exclusion("Screen Camera")];
+        let exclusions = vec![title_exclusion("Reko Camera")];
 
-        assert!(matches_window_title(&exclusions, "Screen Camera"));
+        assert!(matches_window_title(&exclusions, "Reko Camera"));
         assert!(!matches_window_title(
             &exclusions,
-            "Screen Recording Controls"
+            "Reko Recording Controls"
         ));
     }
 

@@ -122,7 +122,7 @@ fn report_unexpected_termination(prev: &SessionRecord) {
         prev_started_at = %prev.started_at,
         prev_os = %prev.os,
         prev_liquid_glass = %prev.liquid_glass,
-        "Previous Cap session terminated without a clean shutdown"
+        "Previous Reko session terminated without a clean shutdown"
     );
 
     sentry::with_scope(
@@ -137,7 +137,7 @@ fn report_unexpected_termination(prev: &SessionRecord) {
         },
         || {
             sentry::capture_message(
-                "Cap session terminated unexpectedly (no clean shutdown)",
+                "Reko session terminated unexpectedly (no clean shutdown)",
                 sentry::Level::Error,
             );
         },

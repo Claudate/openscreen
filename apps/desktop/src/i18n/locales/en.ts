@@ -115,7 +115,7 @@ export const dict = {
 			"No rendering required — uploads on the fly so you can share the link the moment you stop.",
 		studioMode: "Studio mode",
 		studioModeDesc:
-			"Records at the highest quality for local rendering later. Opens the Screen editor when you're done.",
+			"Records at the highest quality for local rendering later. Opens the Reko editor when you're done.",
 		screenshotMode: "Screenshot mode",
 		screenshotModeDesc: "Capture and annotate stills.",
 		recordingModeInfo: "Recording mode info",
@@ -129,11 +129,11 @@ export const dict = {
 			"Unable to check for updates. Please download the latest version manually from cap.so/download. Your data will not be lost.\n\nIf this issue persists, please contact support.",
 		checkFailedTitle: "Update Error",
 		available:
-			"Version {{version}} of Screen is available, would you like to install it?",
-		availableTitle: "Update Screen",
+			"Version {{version}} of Reko is available, would you like to install it?",
+		availableTitle: "Update Reko",
 		update: "Update",
 		ignore: "Ignore",
-		noUpdateAvailable: "You're already using the latest version of Screen.",
+		noUpdateAvailable: "You're already using the latest version of Reko.",
 		noUpdateTitle: "No Update Available",
 		checkForUpdates: "Check for updates",
 		viewPreviousVersions: "View previous versions",
@@ -144,7 +144,7 @@ export const dict = {
 		goBack: "Go Back",
 		noUpdate: "No update available",
 		installFailed: "Failed to download or install the update.",
-		installed: "Update has been installed. Restart Screen to finish updating.",
+		installed: "Update has been installed. Restart Reko to finish updating.",
 		restartNow: "Restart Now",
 		installing: "Installing Update",
 	},
@@ -153,7 +153,7 @@ export const dict = {
 		thankYou: "You can now close this window - thank you for upgrading!",
 		closeWindow: "Close window",
 		commercialLicense: "Commercial License",
-		licenseDetails: "Your license details for Screen commercial use",
+		licenseDetails: "Your license details for Reko commercial use",
 		licenseKey: "License Key",
 		expires: "Expires",
 		deactivating: "Deactivating...",
@@ -165,7 +165,7 @@ export const dict = {
 		switchToLifetime: "Switch to lifetime",
 		switchToYearly: "Switch to yearly",
 		switchToMonthly: "Switch to monthly",
-		commercialFeature1: "Commercial Use of Screen Recorder + Editor",
+		commercialFeature1: "Commercial Use of Reko Recorder + Editor",
 		commercialFeature2: "Community Support",
 		commercialFeature3: "Local-only features",
 		commercialFeature4: "Perpetual license option",
@@ -176,7 +176,7 @@ export const dict = {
 		perUserBilledMonthly: "per user, billed monthly",
 		proPriceMonthly: "$12 per user, billed monthly",
 		proPriceAnnually: "$8.16 per user, billed annually",
-		upgradeToPro: "Upgrade to Screen Pro",
+		upgradeToPro: "Upgrade to Reko Pro",
 		proFeature1: "Commercial License Included",
 		proFeature2: "Unlimited cloud storage & Shareable links",
 		proFeature3: "Connect custom S3 storage bucket",
@@ -192,12 +192,12 @@ export const dict = {
 		noValidLicense: "No instance ID or valid commercial license found",
 	},
 	onboardingPage: {
-		welcomeTitle: "Welcome to Screen",
+		welcomeTitle: "Welcome to Reko",
 		welcomeSubtitle: "Beautiful screen recordings, owned by you.",
 		getStarted: "Get Started",
 		clickOrPress: "Click here, or press",
-		continueToApp: "Continue to Screen",
-		startUsing: "Start Using Screen",
+		continueToApp: "Continue to Reko",
+		startUsing: "Start Using Reko",
 		continueButton: "Continue",
 		modes: {
 			instantTitle: "Instant Mode",
@@ -227,13 +227,13 @@ export const dict = {
 		},
 		overviewTitle: "One app, every workflow",
 		overviewDesc:
-			"Whether you need speed, studio quality, or a quick screenshot — Screen has a mode for it.",
+			"Whether you need speed, studio quality, or a quick screenshot — Reko has a mode for it.",
 		toggleTitle: "Switch modes anytime",
 		toggleDesc:
-			"Toggle between modes with a single click from the main Screen window.",
-		customizeTitle: "Make Screen yours",
+			"Toggle between modes with a single click from the main Reko window.",
+		customizeTitle: "Make Reko yours",
 		customizeDesc:
-			"Customize everything from keyboard shortcuts to storage. Screen adapts to your workflow.",
+			"Customize everything from keyboard shortcuts to storage. Reko adapts to your workflow.",
 		changeAnytime: "Change any of these at any time in Settings",
 		settingsAreas: {
 			shortcutsTitle: "Keyboard Shortcuts",
@@ -249,29 +249,29 @@ export const dict = {
 		},
 		faqTitle: "Frequently Asked Questions",
 		faqSubtitle: "Everything you need to know to get started.",
-		faqQuestion1: "Is Screen free to use?",
+		faqQuestion1: "Is Reko free to use?",
 		faqAnswer1Prefix:
-			"Screen is free for personal use. For teams and commercial use, check out our",
+			"Reko is free for personal use. For teams and commercial use, check out our",
 		pricingPlans: "pricing plans",
 		faqQuestion2: "What's the difference between Instant and Studio?",
 		faqAnswer2:
 			"Instant mode uploads as you record — stop recording and you'll have a shareable link immediately. Studio mode records locally in full quality, letting you edit with backgrounds, effects, and more before sharing.",
 		faqQuestion3: "Where are my recordings stored?",
 		faqAnswer3:
-			"All recordings are stored locally on your computer. In Instant mode, they're also uploaded to Screen's cloud for easy sharing. You can manage storage in Settings.",
+			"All recordings are stored locally on your computer. In Instant mode, they're also uploaded to Reko's cloud for easy sharing. You can manage storage in Settings.",
 		faqQuestion4: "Can I change my shortcuts later?",
 		faqAnswer4:
 			"Head to Settings → Shortcuts at any time to customize all your keyboard shortcuts.",
 		faqQuestion5: "How does sharing work?",
 		faqAnswer5:
-			"In Instant mode, you get a shareable link automatically when you stop recording. In Studio mode, export your edited video and share via Screen's cloud or save locally.",
+			"In Instant mode, you get a shareable link automatically when you stop recording. In Studio mode, export your edited video and share via Reko's cloud or save locally.",
 		viewPricing: "View pricing plans",
 		permScreenRecordingName: "Screen Recording",
 		permScreenRecordingDesc:
-			"Click Grant to allow when macOS asks, or pick Screen in System Settings if needed. Restart the app after allowing screen recording.",
+			"Click Grant to allow when macOS asks, or pick Reko in System Settings if needed. Restart the app after allowing screen recording.",
 		permAccessibilityName: "Accessibility",
 		permAccessibilityDesc:
-			"During recording, Screen collects mouse activity locally to generate automatic zoom in segments.",
+			"During recording, Reko collects mouse activity locally to generate automatic zoom in segments.",
 		permMicrophoneName: "Microphone",
 		permMicrophoneDesc:
 			"This permission is required to record audio in your recordings.",
@@ -280,16 +280,16 @@ export const dict = {
 			"This permission is required to record your camera in your recordings.",
 		permissionsTitle: "Permissions Required",
 		permissionsDesc:
-			"Screen needs a few permissions to record your screen and capture audio.",
+			"Reko needs a few permissions to record your screen and capture audio.",
 		optional: "Optional",
 		granted: "Granted",
 		openSettings: "Open Settings",
 		grant: "Grant",
 		restartTitle: "Restart Required",
 		restartAccessibility:
-			"After enabling Accessibility for Screen in System Settings, macOS may keep showing it as denied until you restart the app.",
+			"After enabling Accessibility for Reko in System Settings, macOS may keep showing it as denied until you restart the app.",
 		restartOther:
-			"After adding Screen in System Settings, you'll need to restart the app for the permission to take effect.",
+			"After adding Reko in System Settings, you'll need to restart the app for the permission to take effect.",
 		restartOk: "Restart, I've granted permission",
 		restartCancel: "No, I still need to add it",
 		stepRecord: "Record",
@@ -304,7 +304,7 @@ export const dict = {
 		skipOnboarding: "Skip onboarding",
 		navHint: "Press Enter ↵ or use ← → arrow keys",
 		startRecording: "Start Recording",
-		editorLabel: "Screen Editor",
+		editorLabel: "Reko Editor",
 		styleLabel: "Style",
 		backgroundLabel: "Background",
 		spaceKey: "Space",
@@ -340,7 +340,7 @@ export const dict = {
 		general: {
 			appearance: {
 				title: "Appearance",
-				description: "Match Screen to your system theme or pick a fixed look.",
+				description: "Match Reko to your system theme or pick a fixed look.",
 				system: "System",
 				light: "Light",
 				dark: "Dark",
@@ -349,17 +349,17 @@ export const dict = {
 			},
 			app: {
 				title: "App",
-				description: "Choose how Screen shows up on your system.",
+				description: "Choose how Reko shows up on your system.",
 				alwaysShowDockIcon: "Always show dock icon",
 				alwaysShowDockIconDesc:
-					"Keep Screen in the dock even when no windows are open.",
+					"Keep Reko in the dock even when no windows are open.",
 				systemNotifications: "System notifications",
 				systemNotificationsDesc:
-					"Show notifications for clipboard copies, saved files, and more. You may need to allow Screen in your system's notification settings.",
+					"Show notifications for clipboard copies, saved files, and more. You may need to allow Reko in your system's notification settings.",
 			},
 			capPro: {
-				title: "Screen Pro",
-				description: "Settings available with a Screen Pro license.",
+				title: "Reko Pro",
+				description: "Settings available with a Reko Pro license.",
 				autoOpenShareableLinks: "Auto-open shareable links",
 				autoOpenShareableLinksDesc:
 					"Open the share link in your browser as soon as the upload finishes.",
@@ -367,9 +367,9 @@ export const dict = {
 				instantModeQualityProDesc:
 					"Choose the maximum upload resolution for Instant recordings.",
 				instantModeQualityFreeDesc:
-					"Instant recordings are locked to 720p. Screen Pro unlocks higher resolutions.",
+					"Instant recordings are locked to 720p. Reko Pro unlocks higher resolutions.",
 				upgradeToast:
-					"Upgrade to Screen Pro to record Instant Mode videos above 720p.",
+					"Upgrade to Reko Pro to record Instant Mode videos above 720p.",
 				tier720p: "Smallest size, low bandwidth.",
 				tier1080p: "Recommended. Sharp on most networks.",
 				tier1440p: "More detail for desktop content.",
@@ -417,7 +417,7 @@ export const dict = {
 				reopenRecordingWindow: "Reopen recording window",
 				deleteInstantAfterUpload: "Delete Instant recordings after upload",
 				deleteInstantAfterUploadDesc:
-					"Screen removes the local file once it has uploaded successfully.",
+					"Reko removes the local file once it has uploaded successfully.",
 				crashRecovery: "Crash-recoverable recording",
 				crashRecoveryDesc:
 					"Record in fragments that can be recovered after a crash or power loss. Slightly larger files during capture.",
@@ -459,13 +459,13 @@ export const dict = {
 				title: "Privacy",
 				telemetry: "Share anonymous telemetry",
 				telemetryDesc:
-					"Screen uses anonymous telemetry to improve reliability and fix bugs. We never collect recording contents, window titles, file paths, or personal information.",
+					"Reko uses anonymous telemetry to improve reliability and fix bugs. We never collect recording contents, window titles, file paths, or personal information.",
 			},
 			selfHost: {
 				title: "Self-host",
 				description:
-					"Only change this if you are running your own instance of Screen Web.",
-				serverUrl: "Screen Server URL",
+					"Only change this if you are running your own instance of Reko Web.",
+				serverUrl: "Reko Server URL",
 				resetToDefault: "Reset to Default",
 				confirmChange:
 					"Are you sure you want to change the server URL to '{{origin}}'? You will need to sign in again.",
@@ -474,12 +474,12 @@ export const dict = {
 				title: "Excluded windows",
 				description: "Hide windows from recordings.",
 				descriptionWindows:
-					"Hide windows from recordings. On Windows, only Screen-related windows can be excluded.",
+					"Hide windows from recordings. On Windows, only Reko-related windows can be excluded.",
 				reset: "Reset",
 				addWindow: "Add window",
 				removeExcludedWindow: "Remove excluded window",
 				noWindowsAvailable: "No available windows to exclude",
-				recommendedNotExcluded: "Recommended Screen windows are not excluded",
+				recommendedNotExcluded: "Recommended Reko windows are not excluded",
 				recommendedNotExcludedDesc:
 					"Camera, settings, or recording windows can appear as black boxes in screen recordings. Missing: {{labels}}.",
 				restore: "Restore",
@@ -489,7 +489,7 @@ export const dict = {
 		hotkeys: {
 			title: "Shortcuts",
 			description:
-				"Configure system-wide keyboard shortcuts to control Screen.",
+				"Configure system-wide keyboard shortcuts to control Reko.",
 			setHotkeys: "Set hotkeys...",
 			none: "None",
 			actions: {
@@ -572,7 +572,7 @@ export const dict = {
 		integrations: {
 			title: "Integrations",
 			description:
-				"Configure integrations to extend Screen's functionality and connect with third-party services.",
+				"Configure integrations to extend Reko's functionality and connect with third-party services.",
 			back: "Back",
 			configure: "Configure",
 			upgradeToPro: "Upgrade to Pro",
@@ -620,7 +620,7 @@ export const dict = {
 					"Connect your own S3 bucket for complete control over your data storage. All new shareable link uploads will be automatically uploaded to your configured S3 bucket, ensuring you maintain complete ownership and control over your content. Perfect for organizations requiring data sovereignty and custom storage policies.",
 				configuration: "Configuration",
 				configDescriptionPrefix:
-					"It should take under 10 minutes to set up and connect your storage bucket to Cap. View the",
+					"It should take under 10 minutes to set up and connect your storage bucket to Reko. View the",
 				storageConfigGuide: "Storage Config Guide",
 				configDescriptionSuffix: "to get started.",
 				storageProvider: "Storage Provider",
@@ -652,7 +652,7 @@ export const dict = {
 		cli: {
 			title: "Command Line",
 			description:
-				"Install the Screen command for terminals, agents, scripts, and local automation.",
+				"Install the Reko command for terminals, agents, scripts, and local automation.",
 			loadError: "Couldn't load CLI status:",
 			unknownError: "unknown error",
 			retry: "Retry",
@@ -673,27 +673,27 @@ export const dict = {
 			pathAdded:
 				"Added {{command}} to your PATH. Restart your terminal to use it, or run this now:",
 			copy: "Copy",
-			installedToast: "Screen CLI installed",
+			installedToast: "Reko CLI installed",
 			installFailedToast: "Failed to install CLI",
-			removedToast: "Screen CLI removed",
+			removedToast: "Reko CLI removed",
 			removeFailedToast: "Failed to remove CLI",
 			copiedToast: "Copied to clipboard",
 		},
 		feedback: {
 			title: "Feedback",
 			description:
-				"Help us improve Screen by submitting feedback or reporting bugs. We'll get right on it.",
-			placeholder: "Tell us what you think about Screen...",
+				"Help us improve Reko by submitting feedback or reporting bugs. We'll get right on it.",
+			placeholder: "Tell us what you think about Reko...",
 			thankYou: "Thank you for your feedback!",
 			submitting: "Submitting...",
 			submit: "Submit Feedback",
 			communityTitle: "Join the Community",
 			communityDesc:
-				"Have questions, want to share ideas, or just hang out? Join the Screen Discord community.",
+				"Have questions, want to share ideas, or just hang out? Join the Reko Discord community.",
 			joinDiscord: "Join Discord",
 			debugTitle: "Debug Information",
 			debugDesc:
-				"Upload your logs to help us diagnose issues with Screen. No personal information is included.",
+				"Upload your logs to help us diagnose issues with Reko. No personal information is included.",
 			uploading: "Uploading...",
 			uploadLogs: "Upload Logs",
 			logsUploaded: "Logs uploaded successfully",
@@ -708,7 +708,7 @@ export const dict = {
 			availableEncoders: "Available Encoders",
 		},
 		license: {
-			proTitle: "Screen Pro License",
+			proTitle: "Reko Pro License",
 			proDesc:
 				"Your account is upgraded to {{pro}} and already includes a commercial license.",
 			commercialTitle: "Commercial License",
@@ -731,7 +731,7 @@ export const dict = {
 			lifetimePlan: "lifetime",
 			yearlyPlan: "yearly",
 			purchaseLicense: "Purchase License",
-			featureCommercialUse: "Commercial Use of Screen Recorder + Editor",
+			featureCommercialUse: "Commercial Use of Reko Recorder + Editor",
 			featureCommunitySupport: "Community Support",
 			featureLocalOnly: "Local-only features",
 			featurePerpetualLicense: "Perpetual license option",
@@ -1259,7 +1259,7 @@ export const dict = {
 			fontFamily: "Font Family",
 			activeWordHighlight: "Active Word Highlight",
 			activeWordHighlightNote:
-				"This is the first version of captions in Screen. Active word highlighting may be inaccurate in some situations. We're working on a fix for this and it will be released in upcoming versions.",
+				"This is the first version of captions in Reko. Active word highlighting may be inaccurate in some situations. We're working on a fix for this and it will be released in upcoming versions.",
 			textColor: "Text Color",
 			backgroundSettings: "Background Settings",
 			backgroundColor: "Background Color",
@@ -1376,7 +1376,7 @@ export const dict = {
 			unableTitle: "Unable to Open Recording",
 			autoRecovery: "Automatic Recovery",
 			autoRecoveryDesc:
-				"Screen can attempt to recover your recording automatically. This will reconstruct the recording from available segment data.",
+				"Reko can attempt to recover your recording automatically. This will reconstruct the recording from available segment data.",
 			recover: "Recover Recording",
 			recovering: "Recovering...",
 			recoveryFailed: "Recovery failed: {{message}}",

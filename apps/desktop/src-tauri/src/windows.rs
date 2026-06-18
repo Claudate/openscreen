@@ -803,18 +803,18 @@ impl CapWindowId {
 
     pub fn title(&self) -> String {
         match self {
-            Self::Settings => "Screen Settings".to_string(),
-            Self::WindowCaptureOccluder { .. } => "Screen Window Capture Occluder".to_string(),
-            Self::CaptureArea => "Screen Capture Area".to_string(),
-            Self::RecordingControls => "Screen Recording Controls".to_string(),
-            Self::Editor { .. } => "Screen Editor".to_string(),
-            Self::ScreenshotEditor { .. } => "Screen Screenshot Editor".to_string(),
-            Self::ModeSelect => "Screen Mode Selection".to_string(),
-            Self::Onboarding => "Welcome to Screen".to_string(),
-            Self::Camera => "Screen Camera".to_string(),
-            Self::RecordingsOverlay => "Screen Recordings Overlay".to_string(),
-            Self::TargetSelectOverlay { .. } => "Screen Target Select".to_string(),
-            _ => "Screen".to_string(),
+            Self::Settings => "Reko Settings".to_string(),
+            Self::WindowCaptureOccluder { .. } => "Reko Window Capture Occluder".to_string(),
+            Self::CaptureArea => "Reko Capture Area".to_string(),
+            Self::RecordingControls => "Reko Recording Controls".to_string(),
+            Self::Editor { .. } => "Reko Editor".to_string(),
+            Self::ScreenshotEditor { .. } => "Reko Screenshot Editor".to_string(),
+            Self::ModeSelect => "Reko Mode Selection".to_string(),
+            Self::Onboarding => "Welcome to Reko".to_string(),
+            Self::Camera => "Reko Camera".to_string(),
+            Self::RecordingsOverlay => "Reko Recordings Overlay".to_string(),
+            Self::TargetSelectOverlay { .. } => "Reko Target Select".to_string(),
+            _ => "Reko".to_string(),
         }
     }
 

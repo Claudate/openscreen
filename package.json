@@ -66,7 +66,7 @@
 		}
 	},
 	"packageManager": "pnpm@10.5.2",
-	"name": "cap",
+	"name": "reko",
 	"engines": {
 		"node": ">=20"
 	}

@@ -1,8 +1,8 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
-	"productName": "Screen",
+	"productName": "Reko",
 	"identifier": "so.cap.desktop.dev",
-	"mainBinaryName": "Screen",
+	"mainBinaryName": "Reko",
 	"build": {
 		"beforeDevCommand": "pnpm localdev",
 		"devUrl": "http://localhost:3002",
@@ -90,8 +90,8 @@
 		"fileAssociations": [
 			{
 				"ext": ["cap"],
-				"name": "Cap Project",
-				"mimeType": "application/x-cap-project",
+"name": "Reko Project",
+			"mimeType": "application/x-reko-project",
 				"role": "Editor"
 			}
 		]

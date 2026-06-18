@@ -8,7 +8,7 @@ on:
       platform:
         description: "Which platform(s) to build"
         required: false
-        default: "macos"
+        default: "both"
         type: choice
         options:
           - macos
@@ -24,6 +24,7 @@ jobs:
     name: Build macOS (aarch64, unsigned)
     if: ${{ inputs.platform == 'macos' || inputs.platform == 'both' }}
     runs-on: macos-latest
+    timeout-minutes: 120
     env:
       TARGET: aarch64-apple-darwin
     steps:
@@ -123,6 +124,7 @@ jobs:
     name: Build macOS (x86_64, unsigned)
     if: ${{ inputs.platform == 'macos' || inputs.platform == 'both' }}
     runs-on: macos-13
+    timeout-minutes: 120
     env:
       TARGET: x86_64-apple-darwin
     steps:
@@ -211,6 +213,7 @@ jobs:
     name: Build Windows (x86_64, unsigned)
     if: ${{ inputs.platform == 'windows' || inputs.platform == 'both' }}
     runs-on: windows-2022
+    timeout-minutes: 90
     env:
       TARGET: x86_64-pc-windows-msvc
     steps:

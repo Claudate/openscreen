@@ -306,10 +306,7 @@ mod tests {
 
     #[test]
     fn instant_mode_noop_when_camera_absent() {
-        let exclusions = vec![
-            title_exclusion("Reko"),
-            title_exclusion("Reko Settings"),
-        ];
+        let exclusions = vec![title_exclusion("Reko"), title_exclusion("Reko Settings")];
 
         let filtered = filter_for_instant_mode(exclusions, "Reko Camera");
         assert_eq!(filtered.len(), 2);

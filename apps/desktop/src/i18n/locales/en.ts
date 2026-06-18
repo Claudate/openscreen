@@ -488,8 +488,7 @@ export const dict = {
 		},
 		hotkeys: {
 			title: "Shortcuts",
-			description:
-				"Configure system-wide keyboard shortcuts to control Reko.",
+			description: "Configure system-wide keyboard shortcuts to control Reko.",
 			setHotkeys: "Set hotkeys...",
 			none: "None",
 			actions: {

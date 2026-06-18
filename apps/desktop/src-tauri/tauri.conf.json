@@ -90,8 +90,8 @@
 		"fileAssociations": [
 			{
 				"ext": ["cap"],
-"name": "Reko Project",
-			"mimeType": "application/x-reko-project",
+				"name": "Reko Project",
+				"mimeType": "application/x-reko-project",
 				"role": "Editor"
 			}
 		]

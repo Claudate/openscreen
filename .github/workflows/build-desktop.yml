@@ -24,7 +24,7 @@ jobs:
     name: Build macOS (aarch64, unsigned)
     if: ${{ inputs.platform == 'macos' || inputs.platform == 'both' }}
     runs-on: macos-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       TARGET: aarch64-apple-darwin
     steps:
@@ -39,6 +39,7 @@ jobs:
       - uses: ./.github/actions/setup-rust-cache
         with:
           target: ${{ env.TARGET }}
+          save-cache: "true"
 
       - uses: ./.github/actions/setup-js
 
@@ -124,7 +125,7 @@ jobs:
     name: Build macOS (x86_64, unsigned)
     if: ${{ inputs.platform == 'macos' || inputs.platform == 'both' }}
     runs-on: macos-13
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       TARGET: x86_64-apple-darwin
     steps:
@@ -139,6 +140,7 @@ jobs:
       - uses: ./.github/actions/setup-rust-cache
         with:
           target: ${{ env.TARGET }}
+          save-cache: "true"
 
       - uses: ./.github/actions/setup-js
 
@@ -228,6 +230,7 @@ jobs:
       - uses: ./.github/actions/setup-rust-cache
         with:
           target: ${{ env.TARGET }}
+          save-cache: "true"
 
       - uses: ./.github/actions/setup-js
 

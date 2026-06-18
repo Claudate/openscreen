@@ -221,8 +221,7 @@ export const dict: typeof en = {
 			screenshotFeature4: "复制、保存或分享",
 		},
 		overviewTitle: "一个应用，覆盖每种工作流",
-		overviewDesc:
-			"无论你需要速度、专业品质，还是快速截图——Reko 都有对应的模式。",
+		overviewDesc: "无论你需要速度、专业品质，还是快速截图——Reko 都有对应的模式。",
 		toggleTitle: "随时切换模式",
 		toggleDesc: "在 Reko 主窗口中一键切换不同模式。",
 		customizeTitle: "打造专属于你的 Reko",

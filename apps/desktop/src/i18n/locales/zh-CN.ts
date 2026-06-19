@@ -910,6 +910,7 @@ export const dict: typeof en = {
 			zoomHintMac: "双指捏合，或按 Cmd +/- 缩放",
 			performanceMode: "性能模式",
 			zoomSecondsVisible: "{{seconds}} 秒可见",
+			fullscreen: "全屏显示",
 		},
 		transcript: {
 			title: "转录",

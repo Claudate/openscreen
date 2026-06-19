@@ -3,6 +3,7 @@ import { ToggleButton as KToggleButton } from "@kobalte/core/toggle-button";
 import { createElementBounds } from "@solid-primitives/bounds";
 import { debounce } from "@solid-primitives/scheduled";
 import { Menu } from "@tauri-apps/api/menu";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { type as ostype } from "@tauri-apps/plugin-os";
 import { cx } from "cva";
 import { createEffect, createSignal, onMount, Show } from "solid-js";
@@ -518,6 +519,20 @@ export function PlayerContent() {
 							})
 						}
 					/>
+					<div class="w-px h-8 rounded-full bg-gray-4" />
+					<Tooltip content={t("editor.player.fullscreen")}>
+						<button
+							type="button"
+							onClick={async () => {
+								const win = getCurrentWindow();
+								const isFullscreen = await win.isFullscreen();
+								await win.setFullscreen(!isFullscreen);
+							}}
+							class="text-gray-12 size-5 will-change-[opacity] transition-opacity hover:opacity-70"
+						>
+							<IconCapFullscreen class="size-5" />
+						</button>
+					</Tooltip>
 				</div>
 				<div class="absolute right-2 bottom-1 text-[11px] leading-none text-right text-gray-9 pointer-events-none whitespace-nowrap">
 					{zoomHint()}

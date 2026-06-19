@@ -963,6 +963,7 @@ export const dict = {
 			zoomHintMac: "Pinch, or press Cmd +/- to zoom",
 			performanceMode: "Performance Mode",
 			zoomSecondsVisible: "{{seconds}} seconds visible",
+			fullscreen: "Fullscreen",
 		},
 		transcript: {
 			title: "Transcript",

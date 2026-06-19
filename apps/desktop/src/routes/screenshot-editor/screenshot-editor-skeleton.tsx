@@ -75,7 +75,7 @@ function PreviewSkeleton() {
 
 				<div class="flex items-center justify-center">
 					<div class="animate-spin">
-						<IconCapLogo class="size-12 text-gray-400 opacity-50" />
+						<IconCapLogo class="size-12" />
 					</div>
 				</div>
 			</div>

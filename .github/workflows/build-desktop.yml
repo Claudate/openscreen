@@ -316,6 +316,12 @@ jobs:
       - name: Prepare desktop bundle config
         run: pnpm --dir apps/desktop run preparescript
 
+      - name: Stage Windows runtime DLLs (before Tauri build)
+        shell: bash
+        run: node scripts/stage-windows-bundle-runtime.mjs
+        env:
+          RUST_TARGET_TRIPLE: ${{ env.TARGET }}
+
       - name: Build app (unsigned bundle, skip frontend)
         working-directory: apps/desktop
         run: pnpm tauri build --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
@@ -327,7 +333,6 @@ jobs:
       - name: Package Windows portable ZIP
         shell: pwsh
         run: |
-          node scripts/stage-windows-bundle-runtime.mjs
           powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-screen-portable-zh.ps1
 
       - name: Write Windows download guide

@@ -26,20 +26,22 @@ async function fileExists(filePath) {
 		.catch(() => false);
 }
 
-async function resolveReleaseDir() {
+async function resolveDllSourceDir() {
 	const triple =
 		process.env.TAURI_ENV_TARGET_TRIPLE ?? process.env.RUST_TARGET_TRIPLE;
 	const candidates = [
 		triple ? path.join(repoRoot, "target", triple, "release") : null,
 		path.join(repoRoot, "target", "release"),
+		path.join(repoRoot, "target", "ffmpeg", "bin"),
 	].filter(Boolean);
 
 	for (const candidate of candidates) {
-		if (await fileExists(candidate)) return candidate;
+		const probe = path.join(candidate, RUNTIME_DLLS[0]);
+		if (await fileExists(probe)) return candidate;
 	}
 
 	throw new Error(
-		`Windows release dir not found. Checked: ${candidates.join(", ")}. Run cap-setup and tauri build first.`,
+		`FFmpeg DLLs not found. Checked: ${candidates.join(", ")}. Run cap-setup first.`,
 	);
 }
 
@@ -49,7 +51,7 @@ async function main() {
 		return;
 	}
 
-	const releaseDir = await resolveReleaseDir();
+	const sourceDir = await resolveDllSourceDir();
 	const stageDir = path.join(
 		repoRoot,
 		"apps/desktop/src-tauri/windows-runtime",
@@ -57,19 +59,30 @@ async function main() {
 	await fs.mkdir(stageDir, { recursive: true });
 
 	for (const dll of RUNTIME_DLLS) {
-		const source = path.join(releaseDir, dll);
+		const source = path.join(sourceDir, dll);
 		if (!(await fileExists(source))) {
 			throw new Error(`Missing runtime DLL for bundling: ${source}`);
 		}
 		await fs.copyFile(source, path.join(stageDir, dll));
 	}
 
-	for (const dll of RUNTIME_DLLS) {
-		await fs.copyFile(path.join(stageDir, dll), path.join(releaseDir, dll));
+	const triple =
+		process.env.TAURI_ENV_TARGET_TRIPLE ?? process.env.RUST_TARGET_TRIPLE;
+	const releaseDirs = [
+		triple ? path.join(repoRoot, "target", triple, "release") : null,
+		path.join(repoRoot, "target", "release"),
+	].filter(Boolean);
+
+	for (const releaseDir of releaseDirs) {
+		if (await fileExists(releaseDir)) {
+			for (const dll of RUNTIME_DLLS) {
+				await fs.copyFile(path.join(stageDir, dll), path.join(releaseDir, dll));
+			}
+		}
 	}
 
 	console.log(
-		`Staged ${RUNTIME_DLLS.length} runtime DLLs from ${releaseDir} -> ${stageDir}`,
+		`Staged ${RUNTIME_DLLS.length} runtime DLLs from ${sourceDir} -> ${stageDir}`,
 	);
 }
 

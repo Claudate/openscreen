@@ -4,7 +4,9 @@ export function isFromDesktopSemver(
 	request: HonoRequest,
 	semver: readonly [number, number, number],
 ) {
-	const xCapVersion = request.header("X-Cap-Desktop-Version");
+	const xCapVersion =
+		request.header("X-Reko-Desktop-Version") ??
+		request.header("X-Cap-Desktop-Version");
 
 	return xCapVersion ? isAtLeastSemver(xCapVersion, ...semver) : false;
 }
@@ -13,9 +15,12 @@ export const UPLOAD_PROGRESS_VERSION = [0, 3, 68] as const;
 export const GOOGLE_DRIVE_UPLOAD_FEATURE = "googleDriveUpload";
 
 export function hasDesktopFeature(request: HonoRequest, feature: string) {
+	const features =
+		request.header("X-Reko-Desktop-Features") ??
+		request.header("X-Cap-Desktop-Features");
+
 	return (
-		request
-			.header("X-Cap-Desktop-Features")
+		features
 			?.split(",")
 			.map((value) => value.trim())
 			.includes(feature) ?? false

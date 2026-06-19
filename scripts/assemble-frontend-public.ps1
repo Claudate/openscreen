@@ -5,6 +5,10 @@ $pub = Join-Path $desktop ".output\public"
 $clientBuild = Join-Path $desktop ".vinxi\build\client\_build"
 $manifestPath = Join-Path $clientBuild ".vite\manifest.json"
 if (-not (Test-Path $manifestPath)) {
+	$clientBuild = Join-Path $pub "_build"
+	$manifestPath = Join-Path $clientBuild ".vite\manifest.json"
+}
+if (-not (Test-Path $manifestPath)) {
 	throw "Vite manifest missing — run vinxi build first"
 }
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json

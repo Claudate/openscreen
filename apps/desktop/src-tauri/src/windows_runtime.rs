@@ -1,3 +1,7 @@
+#[cfg(windows)]
+use std::path::{Path, PathBuf};
+
+#[cfg(windows)]
 const RUNTIME_DLLS: &[&str] = &[
     "avcodec-61.dll",
     "avdevice-61.dll",
@@ -9,9 +13,6 @@ const RUNTIME_DLLS: &[&str] = &[
     "swscale-8.dll",
     "DirectML.dll",
 ];
-
-#[cfg(windows)]
-use std::path::{Path, PathBuf};
 
 #[cfg(windows)]
 pub fn configure_dll_search_path() {

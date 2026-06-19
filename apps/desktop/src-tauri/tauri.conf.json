@@ -85,7 +85,7 @@
 				"languages": ["SimpChinese", "English"],
 				"installerHooks": "assets/nsis-copy-runtime.nsh",
 				"startMenuFolder": "Reko",
-				"installMode": "currentUser"
+				"installMode": "both"
 			},
 			"wix": {
 				"upgradeCode": "c4e8f2a1-9b3d-4f6e-a8c2-1d5e7f9a0b4c",

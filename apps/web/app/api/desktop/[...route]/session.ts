@@ -195,7 +195,7 @@ app.get(
 		const localhostUrl = port
 			? `http://127.0.0.1:${port}?${params}`
 			: undefined;
-		const deepLinkUrl = `cap-desktop://signin?${params}`;
+		const deepLinkUrl = `reko-desktop://signin?${params}`;
 
 		if (platform === "web" && localhostUrl) {
 			return Response.redirect(localhostUrl);

@@ -8,9 +8,8 @@ use serde::Serialize;
 
 use crate::{OutputFormat, write_json};
 
-// Production bundle identifier; matches tauri.prod.conf.json. Dev builds use `so.cap.desktop.dev`,
-// which the user can reach with an explicit `--dir`.
-const DESKTOP_BUNDLE_IDENTIFIER: &str = "so.cap.desktop";
+// Matches tauri.prod.conf.json / tauri.conf.json dev identifier.
+const DESKTOP_BUNDLE_IDENTIFIER: &str = "so.reko.desktop.dev";
 
 fn default_library_dir() -> Result<PathBuf, String> {
     dirs::data_dir()

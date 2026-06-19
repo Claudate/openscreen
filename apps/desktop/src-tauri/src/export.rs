@@ -41,7 +41,7 @@ fn panic_message(panic: Box<dyn Any + Send>) -> String {
 fn export_panic_error(panic: Box<dyn Any + Send>) -> String {
     let panic_msg = panic_message(panic);
     error!(
-        target: "cap_desktop_export",
+        target: "reko_desktop_export",
         panic = %panic_msg,
         "export command panicked"
     );
@@ -64,7 +64,7 @@ where
     // Windows release builds can stack-overflow in Tauri's IPC command entry before the save
     // dialog or exporter sidecar starts. Keep the export future off that command-entry stack.
     std::thread::Builder::new()
-        .name("cap-export-command".to_string())
+        .name("reko-export-command".to_string())
         .stack_size(EXPORT_COMMAND_THREAD_STACK_SIZE)
         .spawn(move || {
             let result = match tokio::runtime::Builder::new_current_thread()
@@ -121,7 +121,7 @@ async fn run_protected_export(
         Err(panic) => {
             let panic_msg = panic_message(panic);
             error!(
-                target: "cap_desktop_export",
+                target: "reko_desktop_export",
                 panic = %panic_msg,
                 "export task panicked"
             );
@@ -1444,7 +1444,7 @@ pub async fn generate_export_preview(
         Err(panic) => {
             let panic_msg = panic_message(panic);
             error!(
-                target: "cap_desktop_export",
+                target: "reko_desktop_export",
                 panic = %panic_msg,
                 "generate_export_preview panicked"
             );
@@ -1743,7 +1743,7 @@ pub async fn generate_export_preview_fast(
         Err(panic) => {
             let panic_msg = panic_message(panic);
             error!(
-                target: "cap_desktop_export",
+                target: "reko_desktop_export",
                 panic = %panic_msg,
                 "generate_export_preview_fast panicked"
             );

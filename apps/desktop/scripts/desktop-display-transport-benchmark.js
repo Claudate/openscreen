@@ -231,7 +231,7 @@ function spawnRustBenchmark(options) {
 	const args = [
 		"run",
 		"-p",
-		"cap-desktop",
+		"reko-desktop",
 		"--example",
 		"desktop-display-transport-benchmark",
 		"--",

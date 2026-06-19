@@ -86,7 +86,7 @@ export async function createTauriPlatformConfigs(
 					"binaries/cap-cli",
 				],
 				resources: {
-					"../../../target/ffmpeg/bin/*.dll": "./",
+					"windows-runtime/*.dll": "windows-runtime/",
 				},
 				windows: {
 					wix: {

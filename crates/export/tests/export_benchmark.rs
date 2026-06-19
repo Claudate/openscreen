@@ -96,7 +96,12 @@ pub fn get_recordings_dir() -> Option<PathBuf> {
 
     if let Some(base_dirs) = BaseDirs::new() {
         let data_dir = base_dirs.data_dir();
-        for identifier in ["so.cap.desktop.dev", "so.cap.desktop"] {
+        for identifier in [
+            "so.reko.desktop.dev",
+            "so.reko.desktop",
+            "so.cap.desktop.dev",
+            "so.cap.desktop",
+        ] {
             candidates.push(data_dir.join(identifier).join("recordings"));
         }
     }

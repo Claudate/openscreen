@@ -395,10 +395,16 @@ function Inner(props: { initialStore: GeneralSettingsStore | null }) {
 
 	const isManagedWindowsApp = (window: CaptureWindow) => {
 		const bundle = window.bundle_identifier?.toLowerCase() ?? "";
-		if (bundle.includes("so.cap.desktop")) {
+		if (
+			bundle.includes("so.reko.desktop") ||
+			bundle.includes("so.cap.desktop")
+		) {
 			return true;
 		}
-		return window.owner_name.toLowerCase().includes("cap");
+		return (
+			window.owner_name.toLowerCase().includes("reko") ||
+			window.owner_name.toLowerCase().includes("cap")
+		);
 	};
 
 	const isWindowAvailable = (window: CaptureWindow) => {

@@ -1,7 +1,7 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
 	"productName": "Reko",
-	"identifier": "so.cap.desktop.dev",
+	"identifier": "so.reko.desktop.dev",
 	"mainBinaryName": "Reko",
 	"build": {
 		"beforeDevCommand": "pnpm localdev",
@@ -30,7 +30,7 @@
 		"updater": { "active": false, "pubkey": "" },
 		"deep-link": {
 			"desktop": {
-				"schemes": ["cap-desktop"]
+				"schemes": ["reko-desktop"]
 			}
 		}
 	},
@@ -38,6 +38,10 @@
 		"active": true,
 		"createUpdaterArtifacts": true,
 		"targets": "all",
+		"publisher": "Reko",
+		"copyright": "Reko",
+		"shortDescription": "Reko — screen recording and editing",
+		"longDescription": "Reko records your screen, camera, and microphone, then edits and exports in one app.",
 		"externalBin": [
 			"binaries/cap-muxer",
 			"binaries/cap-exporter",
@@ -78,10 +82,13 @@
 				"headerImage": "assets/nsis-header.bmp",
 				"sidebarImage": "assets/nsis-sidebar.bmp",
 				"installerIcon": "icons/icon.ico",
-				"languages": ["SimpChinese", "English"]
+				"languages": ["SimpChinese", "English"],
+				"installerHooks": "assets/nsis-copy-runtime.nsh",
+				"startMenuFolder": "Reko",
+				"installMode": "currentUser"
 			},
 			"wix": {
-				"upgradeCode": "79f4309d-ca23-54df-b6f9-826a1d783676",
+				"upgradeCode": "c4e8f2a1-9b3d-4f6e-a8c2-1d5e7f9a0b4c",
 				"bannerPath": "assets/wix-banner.bmp",
 				"dialogImagePath": "assets/wix-dialog.bmp",
 				"language": ["zh-CN"]

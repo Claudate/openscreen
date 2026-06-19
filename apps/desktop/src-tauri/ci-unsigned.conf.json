@@ -1,6 +1,7 @@
 {
 	"build": {
-		"beforeBuildCommand": ""
+		"beforeBuildCommand": "",
+		"beforeBundleCommand": "node ../../scripts/stage-windows-bundle-runtime.mjs"
 	},
 	"bundle": {
 		"createUpdaterArtifacts": false

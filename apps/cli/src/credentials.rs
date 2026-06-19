@@ -12,7 +12,12 @@ use crate::{OutputFormat, write_json};
 
 const DEFAULT_SERVER: &str = "https://cap.so";
 // Prod first, then the dev bundle, so a released install wins on a machine that has both.
-const DESKTOP_BUNDLE_IDS: [&str; 2] = ["so.cap.desktop", "so.cap.desktop.dev"];
+const DESKTOP_BUNDLE_IDS: [&str; 4] = [
+    "so.reko.desktop",
+    "so.reko.desktop.dev",
+    "so.cap.desktop",
+    "so.cap.desktop.dev",
+];
 
 #[derive(Serialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -109,7 +114,7 @@ pub fn resolve() -> Result<Credentials, String> {
     }
 
     Err(
-        "Not signed in. Sign in to Cap Desktop (the CLI reuses its login), or set CAP_API_KEY to a \
+        "Not signed in. Sign in to Reko Desktop (the CLI reuses its login), or set CAP_API_KEY to a \
          Cap auth key from Settings."
             .to_string(),
     )
@@ -160,7 +165,7 @@ pub fn status(format: OutputFormat) -> Result<(), String> {
             if status.authenticated {
                 let source = match status.source {
                     CredentialSource::Env => "CAP_API_KEY env var",
-                    CredentialSource::Desktop => "Cap Desktop login",
+                    CredentialSource::Desktop => "Reko Desktop login",
                     CredentialSource::None => "none",
                 };
                 println!("authenticated: yes (via {source})");

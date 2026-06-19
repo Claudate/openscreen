@@ -95,6 +95,9 @@ jobs:
           CI: false
           NITRO_PRESET: static
 
+      - name: Prepare desktop bundle config
+        run: pnpm --dir apps/desktop run preparescript
+
       - name: Build app (unsigned bundle, skip frontend)
         working-directory: apps/desktop
         run: pnpm tauri build --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
@@ -102,6 +105,21 @@ jobs:
           CI: false
           RUST_TARGET_TRIPLE: ${{ env.TARGET }}
           NITRO_PRESET: static
+
+      - name: Write macOS Gatekeeper instructions
+        shell: bash
+        run: |
+          cat > "target/${{ env.TARGET }}/release/bundle/macos/GATEKEEPER.txt" <<'EOF'
+          Reko macOS unsigned build — first launch
+          ==========================================
+
+          This build is ad-hoc signed. macOS may show "app is damaged" or block launch.
+
+          Option A (recommended): Right-click Reko.app → Open → Open again.
+          Option B (Terminal): xattr -cr /path/to/Reko.app
+
+          Prefer the .zip from Actions artifacts; extract fully before opening the .app.
+          EOF
 
       - name: Zip .app bundle (preserve symlinks/permissions)
         shell: bash
@@ -119,6 +137,7 @@ jobs:
           path: |
             target/${{ env.TARGET }}/release/bundle/dmg/*.dmg
             target/${{ env.TARGET }}/release/bundle/macos/Reko-macos-aarch64-app.zip
+            target/${{ env.TARGET }}/release/bundle/macos/GATEKEEPER.txt
           if-no-files-found: error
 
   build-macos-x64:
@@ -185,6 +204,9 @@ jobs:
           CI: false
           NITRO_PRESET: static
 
+      - name: Prepare desktop bundle config
+        run: pnpm --dir apps/desktop run preparescript
+
       - name: Build app (unsigned bundle, skip frontend)
         working-directory: apps/desktop
         run: pnpm tauri build --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
@@ -192,6 +214,21 @@ jobs:
           CI: false
           RUST_TARGET_TRIPLE: ${{ env.TARGET }}
           NITRO_PRESET: static
+
+      - name: Write macOS Gatekeeper instructions
+        shell: bash
+        run: |
+          cat > "target/${{ env.TARGET }}/release/bundle/macos/GATEKEEPER.txt" <<'EOF'
+          Reko macOS unsigned build — first launch
+          ==========================================
+
+          This build is ad-hoc signed. macOS may show "app is damaged" or block launch.
+
+          Option A (recommended): Right-click Reko.app → Open → Open again.
+          Option B (Terminal): xattr -cr /path/to/Reko.app
+
+          Prefer the .zip from Actions artifacts; extract fully before opening the .app.
+          EOF
 
       - name: Zip .app bundle (preserve symlinks/permissions)
         shell: bash
@@ -209,6 +246,7 @@ jobs:
           path: |
             target/${{ env.TARGET }}/release/bundle/dmg/*.dmg
             target/${{ env.TARGET }}/release/bundle/macos/Reko-macos-x64-app.zip
+            target/${{ env.TARGET }}/release/bundle/macos/GATEKEEPER.txt
           if-no-files-found: error
 
   build-windows:
@@ -275,6 +313,9 @@ jobs:
           CI: false
           NITRO_PRESET: static
 
+      - name: Prepare desktop bundle config
+        run: pnpm --dir apps/desktop run preparescript
+
       - name: Build app (unsigned bundle, skip frontend)
         working-directory: apps/desktop
         run: pnpm tauri build --target ${{ env.TARGET }} --config src-tauri/ci-unsigned.conf.json
@@ -283,6 +324,30 @@ jobs:
           RUST_TARGET_TRIPLE: ${{ env.TARGET }}
           NITRO_PRESET: static
 
+      - name: Package Windows portable ZIP
+        shell: pwsh
+        run: |
+          node scripts/stage-windows-bundle-runtime.mjs
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-screen-portable-zh.ps1
+
+      - name: Write Windows download guide
+        shell: pwsh
+        run: |
+          @"
+          Reko Windows builds (unsigned)
+          =============================
+
+          Recommended: Reko-Portable-win-x64-zh.zip
+          - Extract the full ZIP, then run Reko.exe inside Reko-Portable/
+          - Do not copy Reko.exe alone; FFmpeg DLLs must stay beside the exe
+
+          Optional installers in this artifact:
+          - NSIS *.exe — per-user setup wizard (Manufacturer: Reko)
+          - MSI *.msi — enterprise-style installer (Manufacturer: Reko)
+
+          Sidecar tools cap-cli.exe / cap-muxer.exe / cap-exporter.exe are internal helpers, not the product name.
+          "@ | Set-Content -Encoding UTF8 dist/WINDOWS-DOWNLOAD.txt
+
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -290,4 +355,7 @@ jobs:
           path: |
             target/${{ env.TARGET }}/release/bundle/nsis/*.exe
             target/${{ env.TARGET }}/release/bundle/msi/*.msi
+            dist/Reko-Portable-win-x64-zh.zip
+            dist/manifest-reko-portable-zh.json
+            dist/WINDOWS-DOWNLOAD.txt
           if-no-files-found: error

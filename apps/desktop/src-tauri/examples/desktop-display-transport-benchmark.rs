@@ -5,7 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use cap_desktop_lib::frame_ws::{WSFrame, WSFrameFormat, create_watch_frame_ws};
+use reko_desktop_lib::frame_ws::{WSFrame, WSFrameFormat, create_watch_frame_ws};
 use cap_editor::{
     EditorFrameOutput, Playback, PlaybackRenderOutputFormat, PlaybackSkipReason, PlaybackTelemetry,
     PlaybackTelemetryEvent, Renderer, finish_renderer_layers_creation,

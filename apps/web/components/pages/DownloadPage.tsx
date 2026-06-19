@@ -104,7 +104,7 @@ export const DownloadPage = () => {
 									Install the Cap CLI
 								</h3>
 								<p className="mt-1 text-xs leading-5 text-gray-10">
-									Already have Cap Desktop? Link the bundled CLI for agents,
+									Already have Reko Desktop? Link the bundled CLI for agents,
 									scripts, and terminals.
 								</p>
 							</div>

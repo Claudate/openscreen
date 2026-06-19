@@ -1,13 +1,13 @@
 $ErrorActionPreference = "Stop"
 $root = "H:\Web\openscreen"
-$exe = Join-Path $root "target\x86_64-pc-windows-msvc\release\Screen.exe"
-if (-not (Test-Path $exe)) { throw "Screen.exe missing" }
+$exe = Join-Path $root "target\x86_64-pc-windows-msvc\release\Reko.exe"
+if (-not (Test-Path $exe)) { throw "Reko.exe missing" }
 $size = (Get-Item $exe).Length
-if ($size -lt 65MB) { throw "Screen.exe too small (frontend likely missing): $size" }
+if ($size -lt 65MB) { throw "Reko.exe too small (frontend likely missing): $size" }
 
-$portable = Join-Path $root "dist\Screen-Portable"
+$portable = Join-Path $root "dist\Reko-Portable"
 New-Item -ItemType Directory -Force -Path $portable | Out-Null
-Copy-Item $exe (Join-Path $portable "Screen.exe") -Force
+Copy-Item $exe (Join-Path $portable "Reko.exe") -Force
 
 $assetsSrc = Join-Path $root "target\x86_64-pc-windows-msvc\release\assets"
 if (Test-Path $assetsSrc) {
@@ -27,22 +27,22 @@ foreach ($sidecar in @("cap-cli.exe", "cap-exporter.exe", "cap-muxer.exe")) {
 	Copy-Item (Join-Path $releaseDir $sidecar) (Join-Path $portable $sidecar) -Force
 }
 
-$zip = Join-Path $root "dist\Screen-Portable-win-x64-zh.zip"
+$zip = Join-Path $root "dist\Reko-Portable-win-x64-zh.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
 Compress-Archive -Path (Join-Path $portable "*") -DestinationPath $zip -Force
 
-$shaExe = (Get-FileHash (Join-Path $portable "Screen.exe") -Algorithm SHA256).Hash
+$shaExe = (Get-FileHash (Join-Path $portable "Reko.exe") -Algorithm SHA256).Hash
 $shaZip = (Get-FileHash $zip -Algorithm SHA256).Hash
 
 @{
 	builtAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ss")
-	product = "Screen"
+	product = "Reko"
 	locale = "zh-CN"
-	portableDir = "dist/Screen-Portable"
-	zip = "dist/Screen-Portable-win-x64-zh.zip"
+	portableDir = "dist/Reko-Portable"
+	zip = "dist/Reko-Portable-win-x64-zh.zip"
 	exeBytes = $size
-	sha256 = @{ ScreenExe = $shaExe; zip = $shaZip }
-} | ConvertTo-Json | Set-Content (Join-Path $root "dist\manifest-screen-portable-zh.json") -Encoding UTF8
+	sha256 = @{ RekoExe = $shaExe; zip = $shaZip }
+} | ConvertTo-Json | Set-Content (Join-Path $root "dist\manifest-reko-portable-zh.json") -Encoding UTF8
 
 Write-Output "PACKAGED exe=$size sha=$shaExe"
 Write-Output "ZIP sha=$shaZip"

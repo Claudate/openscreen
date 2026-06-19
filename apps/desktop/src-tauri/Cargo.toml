@@ -1,7 +1,7 @@
 [package]
-name = "cap-desktop"
+name = "reko-desktop"
 version = "1.0.0"
-description = "Beautiful screen recordings, owned by you."
+description = "Reko — screen recording and editing."
 authors = ["you"]
 edition = "2024"
 
@@ -9,7 +9,7 @@ edition = "2024"
 workspace = true
 
 [lib]
-name = "cap_desktop_lib"
+name = "reko_desktop_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]

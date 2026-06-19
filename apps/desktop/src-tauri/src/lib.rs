@@ -42,6 +42,7 @@ pub mod web_api;
 mod window_exclusion;
 mod window_position_persistence;
 mod windows;
+mod windows_runtime;
 
 use audio::AppSounds;
 use auth::{AuthStore, Plan};
@@ -333,7 +334,7 @@ fn build_macos_app_menu(app_handle: &AppHandle) -> tauri::Result<Menu<tauri::Wry
         .product_name
         .as_ref()
         .map(|name| format!("Quit {name}"))
-        .unwrap_or_else(|| "Quit Cap".to_string());
+        .unwrap_or_else(|| "Quit Reko".to_string());
 
     let window_menu = Submenu::with_id_and_items(
         app_handle,
@@ -4246,6 +4247,8 @@ pub async fn run(recording_logging_handle: LoggingHandle, logs_dir: PathBuf) {
     // Arm the unexpected-termination sentinel before anything else can crash, and
     // report any previous session that died without a clean shutdown.
     crash_sentinel::init(&logs_dir, env!("CARGO_PKG_VERSION"));
+
+    windows_runtime::configure_dll_search_path();
 
     ffmpeg::init()
         .map_err(|e| {

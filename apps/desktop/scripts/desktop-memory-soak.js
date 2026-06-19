@@ -35,7 +35,7 @@ const APPLE_KEY_CODES = {
 	KeyT: 17,
 };
 
-const INSTALLED_APP_COMMAND_PREFIX = "/Applications/Cap.app/Contents/MacOS/Cap";
+const INSTALLED_APP_COMMAND_PREFIX = "/Applications/Reko.app/Contents/MacOS/Reko";
 
 function parseArgs(argv) {
 	const options = {
@@ -343,7 +343,7 @@ function listOtherCapProcesses(options) {
 				processInfo.command.startsWith(
 					`${INSTALLED_APP_COMMAND_PREFIX} --crash-reporter-server=`,
 				) ||
-				processInfo.command.endsWith("/target/debug/cap-desktop")),
+				processInfo.command.endsWith("/target/debug/reko-desktop")),
 	);
 }
 

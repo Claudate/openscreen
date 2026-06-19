@@ -101,7 +101,7 @@ fn start_windows_update() -> Result<(), String> {
 
 #[cfg(not(any(target_os = "macos", windows)))]
 fn update_command() -> Result<Command, String> {
-    Err("Cap Desktop updates are only supported on macOS and Windows".to_string())
+    Err("Reko Desktop updates are only supported on macOS and Windows".to_string())
 }
 
 #[cfg(target_os = "macos")]

@@ -83,15 +83,17 @@ try {
 	}
 
 	$assets = @()
-	$winDir = Join-Path $outDir "cap-windows-x64-unsigned"
+	$winDir = Join-Path $outDir "reko-windows-x64-unsigned"
 	if (Test-Path $winDir) {
+		$portable = Get-ChildItem $winDir -Filter "Reko-Portable-win-x64-zh.zip" -Recurse | Select-Object -First 1
 		$nsis = Get-ChildItem $winDir -Filter "*.exe" -Recurse | Select-Object -First 1
 		$msi = Get-ChildItem $winDir -Filter "*.msi" -Recurse | Select-Object -First 1
+		if ($portable) { $assets += $portable.FullName }
 		if ($nsis) { $assets += $nsis.FullName }
 		if ($msi) { $assets += $msi.FullName }
 	}
 
-	$macArmDir = Join-Path $outDir "cap-macos-aarch64-unsigned"
+	$macArmDir = Join-Path $outDir "reko-macos-aarch64-unsigned"
 	if (Test-Path $macArmDir) {
 		$dmg = Get-ChildItem $macArmDir -Filter "*.dmg" -Recurse | Select-Object -First 1
 		$appZip = Get-ChildItem $macArmDir -Filter "*.zip" -Recurse | Select-Object -First 1
@@ -99,7 +101,7 @@ try {
 		if ($appZip) { $assets += $appZip.FullName }
 	}
 
-	$macX64Dir = Join-Path $outDir "cap-macos-x64-unsigned"
+	$macX64Dir = Join-Path $outDir "reko-macos-x64-unsigned"
 	if (Test-Path $macX64Dir) {
 		$dmgX64 = Get-ChildItem $macX64Dir -Filter "*.dmg" -Recurse | Select-Object -First 1
 		if ($dmgX64) { $assets += $dmgX64.FullName }
@@ -109,7 +111,7 @@ try {
 	foreach ($a in $assets) { Write-Host "  - $(Split-Path -Leaf $a)" }
 
 	$releaseNotes = @"
-## Screen $tag
+## Reko $tag
 
 ### Downloads
 - **Windows**: NSIS installer (.exe) — Chinese installation UI
@@ -140,7 +142,7 @@ $(git log --oneline "$tag^..HEAD" 2>$null || git log --oneline -10)
 		Write-Host "[release] Creating new release $tag..." -ForegroundColor Cyan
 		if (-not $DryRun) {
 			$assetArgs = $assets -join " "
-			gh release create $tag $assets --title "Screen $tag" --notes $releaseNotes
+			gh release create $tag $assets --title "Reko $tag" --notes $releaseNotes
 		}
 	}
 

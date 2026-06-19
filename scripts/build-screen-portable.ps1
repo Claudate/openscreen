@@ -14,20 +14,20 @@ if (-not (Test-Path $indexHtml)) {
 
 cmd /c "call `"$vcvars`" >nul 2>&1 && set PATH=$nodeDir;E:\NodeJs\node_global;C:\Users\Administrator\.cargo\bin;%PATH% && set CMAKE_GENERATOR=Visual Studio 17 2022 && cd /d $root && pnpm exec dotenv -e .env -- pnpm --dir apps/desktop run preparescript && pnpm exec dotenv -e .env -- pnpm --dir apps/desktop tauri build --target x86_64-pc-windows-msvc --config src-tauri/ci-nofe.conf.json --no-bundle && echo === BUILD OK ===" 2>&1 | Tee-Object -FilePath $log -Append
 
-$exe = Join-Path $root "target\x86_64-pc-windows-msvc\release\Screen.exe"
+$exe = Join-Path $root "target\x86_64-pc-windows-msvc\release\Reko.exe"
 if (-not (Test-Path $exe)) {
-	throw "Screen.exe not found after build"
+	throw "Reko.exe not found after build"
 }
 
 $size = (Get-Item $exe).Length
 if ($size -lt 65MB) {
-	throw "Screen.exe too small ($size bytes) — frontend likely not embedded"
+	throw "Reko.exe too small ($size bytes) — frontend likely not embedded"
 }
 
-$portable = Join-Path $root "dist\Screen-Portable"
+$portable = Join-Path $root "dist\Reko-Portable"
 New-Item -ItemType Directory -Force -Path $portable | Out-Null
 
-Copy-Item $exe (Join-Path $portable "Screen.exe") -Force
+Copy-Item $exe (Join-Path $portable "Reko.exe") -Force
 $assetsSrc = Join-Path $root "target\x86_64-pc-windows-msvc\release\assets"
 if (Test-Path $assetsSrc) {
 	$assetsDst = Join-Path $portable "assets"
@@ -47,22 +47,22 @@ foreach ($sidecar in @("cap-cli.exe", "cap-exporter.exe", "cap-muxer.exe")) {
 	Copy-Item (Join-Path $releaseDir $sidecar) (Join-Path $portable $sidecar) -Force
 }
 
-$zip = Join-Path $root "dist\Screen-Portable-win-x64-zh.zip"
+$zip = Join-Path $root "dist\Reko-Portable-win-x64-zh.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
 Compress-Archive -Path (Join-Path $portable "*") -DestinationPath $zip -Force
 
-$shaExe = (Get-FileHash (Join-Path $portable "Screen.exe") -Algorithm SHA256).Hash
+$shaExe = (Get-FileHash (Join-Path $portable "Reko.exe") -Algorithm SHA256).Hash
 $shaZip = (Get-FileHash $zip -Algorithm SHA256).Hash
 
 @{
 	builtAt = (Get-Date -Format "yyyy-MM-ddTHH:mm:ss")
-	product = "Screen"
+	product = "Reko"
 	locale = "zh-CN"
-	portableDir = "dist/Screen-Portable"
-	zip = "dist/Screen-Portable-win-x64-zh.zip"
+	portableDir = "dist/Reko-Portable"
+	zip = "dist/Reko-Portable-win-x64-zh.zip"
 	exeBytes = $size
-	sha256 = @{ ScreenExe = $shaExe; zip = $shaZip }
-} | ConvertTo-Json | Set-Content (Join-Path $root "dist\manifest-screen-portable-zh.json") -Encoding UTF8
+	sha256 = @{ RekoExe = $shaExe; zip = $shaZip }
+} | ConvertTo-Json | Set-Content (Join-Path $root "dist\manifest-reko-portable-zh.json") -Encoding UTF8
 
-Write-Output "DONE Screen.exe $size bytes SHA256=$shaExe"
+Write-Output "DONE Reko.exe $size bytes SHA256=$shaExe"
 Write-Output "ZIP $zip SHA256=$shaZip"

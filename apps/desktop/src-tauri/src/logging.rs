@@ -20,7 +20,7 @@ async fn get_latest_log_file(app: &AppHandle) -> Option<PathBuf> {
         .filter_map(|entry| {
             let entry = entry.ok()?;
             let path = entry.path();
-            if path.is_file() && path.file_name()?.to_str()?.contains("cap-desktop.log") {
+            if path.is_file() && path.file_name()?.to_str()?.contains("reko-desktop.log") {
                 let metadata = fs::metadata(&path).ok()?;
                 let modified = metadata.modified().ok()?;
                 Some((path, modified))

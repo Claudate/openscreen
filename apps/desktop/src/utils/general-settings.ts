@@ -8,7 +8,7 @@ export type GeneralSettingsStore = TauriGeneralSettingsStore & {
 };
 
 export const DEFAULT_TRANSCRIPTION_HINTS = [
-	"Screen",
+	"Reko",
 	"TypeScript",
 	"My Brand Name",
 	"mywebsite.com",

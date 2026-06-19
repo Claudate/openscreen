@@ -35,7 +35,7 @@ export default function Page() {
 								</h3>
 							</div>
 							<p class="text-center text-gray-11">
-								{t("settings.license.proDesc", { pro: "Screen Pro" })}
+								{t("settings.license.proDesc", { pro: "Reko Pro" })}
 							</p>
 						</div>
 					</div>

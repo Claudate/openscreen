@@ -1,7 +1,7 @@
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 
-use cap_desktop_lib::{App, web_api::ManagerExt};
+use reko_desktop_lib::{App, web_api::ManagerExt};
 use tauri::{Manager, test::mock_app};
 use tokio::sync::RwLock;
 

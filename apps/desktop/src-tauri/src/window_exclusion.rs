@@ -221,8 +221,8 @@ mod tests {
 
     #[test]
     fn matches_by_bundle_identifier() {
-        let exclusion = bundle_exclusion("com.cap.desktop");
-        assert!(exclusion.matches(Some("com.cap.desktop"), None, None));
+        let exclusion = bundle_exclusion("com.reko.desktop");
+        assert!(exclusion.matches(Some("com.reko.desktop"), None, None));
         assert!(!exclusion.matches(Some("com.other.app"), None, None));
         assert!(!exclusion.matches(None, None, None));
     }
@@ -262,12 +262,12 @@ mod tests {
     #[test]
     fn bundle_identifier_takes_priority() {
         let exclusion = WindowExclusion {
-            bundle_identifier: Some("com.cap.desktop".to_string()),
+            bundle_identifier: Some("com.reko.desktop".to_string()),
             owner_name: None,
             window_title: Some("Reko Camera".to_string()),
         };
-        assert!(exclusion.matches(Some("com.cap.desktop"), None, None));
-        assert!(exclusion.matches(Some("com.cap.desktop"), None, Some("Wrong")));
+        assert!(exclusion.matches(Some("com.reko.desktop"), None, None));
+        assert!(exclusion.matches(Some("com.reko.desktop"), None, Some("Wrong")));
     }
 
     #[test]

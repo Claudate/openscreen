@@ -13,7 +13,7 @@ env:
   CN_APPLICATION: cap/cap
   APP_CARGO_TOML: apps/desktop/src-tauri/Cargo.toml
   SENTRY_ORG: cap-s2
-  SENTRY_PROJECT: cap-desktop
+  SENTRY_PROJECT: reko-desktop
 
 jobs:
   draft:
@@ -360,7 +360,7 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
-          sentry-cli debug-files upload -o ${{ env.SENTRY_ORG }} -p ${{ env.SENTRY_PROJECT }} target/${{ matrix.settings.target }}/release/cap_desktop.pdb
+          sentry-cli debug-files upload -o ${{ env.SENTRY_ORG }} -p ${{ env.SENTRY_PROJECT }} target/${{ matrix.settings.target }}/release/reko_desktop_lib.pdb
 
   done:
     needs: [draft, build]

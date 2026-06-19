@@ -6,7 +6,7 @@ pub mod plugin {
     };
 
     pub fn init<R: Runtime>() -> TauriPlugin<R> {
-        Builder::new("cap-flags")
+        Builder::new("reko-flags")
             .js_init_script(format!(
                 "window.FLAGS = {}",
                 serde_json::to_string_pretty(&FLAGS).unwrap()

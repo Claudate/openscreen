@@ -347,7 +347,7 @@ app.post(
 
 			const formData = new FormData();
 			const logBlob = new Blob([log], { type: "text/plain" });
-			const fileName = `cap-desktop-${os || "unknown"}-${version || "unknown"}-${Date.now()}.log`;
+			const fileName = `reko-desktop-${os || "unknown"}-${version || "unknown"}-${Date.now()}.log`;
 			formData.append("file", logBlob, fileName);
 
 			let diagnosticsContent = "";

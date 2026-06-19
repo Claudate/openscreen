@@ -442,7 +442,7 @@ async function ensureMsvcVersion() {
 				`(e.g. __std_find_last_of_trivial_pos_*, __std_remove_8) that only exist in vcruntime140_1.lib from MSVC 14.42+.\n` +
 				`\nUpdate via the Visual Studio Installer, or from an elevated PowerShell:\n` +
 				`  winget upgrade --id Microsoft.VisualStudio.2022.BuildTools\n` +
-				`After updating, run: cargo clean -p cap-desktop && pnpm dev:windows\n`,
+				`After updating, run: cargo clean -p reko-desktop && pnpm dev:windows\n`,
 		);
 	}
 

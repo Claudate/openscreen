@@ -97,7 +97,7 @@ export const EXPORT_TO_OPTIONS = [
 		label: "Shareable Link",
 		value: "link",
 		icon: IconCapLink,
-		description: "Share via Cap cloud",
+		description: "Share via Reko cloud",
 	},
 ] as const;
 

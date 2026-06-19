@@ -469,7 +469,7 @@ export default function Page() {
 										<Pro class="w-[250px]" />
 										<div class="space-y-1 text-center">
 											<h3 class="text-2xl font-medium tracking-tight leading-5 text-gray-1">
-												Screen Pro
+												Reko Pro
 											</h3>
 											<p class="text-[0.875rem] text-gray-9">
 												{t("upgradePage.forProfessionalUse")}

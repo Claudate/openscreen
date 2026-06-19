@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$root = "H:\Web\openscreen"
+$root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $vcvars = "H:\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 $nodeDir = "H:\tools\node-v20.20.2-win-x64"
 $log = Join-Path $root "reko-installer-build.log"

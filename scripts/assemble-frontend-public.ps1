@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$root = "H:\Web\openscreen"
+$root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $desktop = Join-Path $root "apps\desktop"
 $pub = Join-Path $desktop ".output\public"
 $clientBuild = Join-Path $desktop ".vinxi\build\client\_build"

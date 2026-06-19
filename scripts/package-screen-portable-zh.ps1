@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$root = "H:\Web\openscreen"
+$root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $exe = Join-Path $root "target\x86_64-pc-windows-msvc\release\Reko.exe"
 if (-not (Test-Path $exe)) { throw "Reko.exe missing" }
 $size = (Get-Item $exe).Length

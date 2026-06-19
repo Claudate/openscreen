@@ -35,7 +35,8 @@ const APPLE_KEY_CODES = {
 	KeyT: 17,
 };
 
-const INSTALLED_APP_COMMAND_PREFIX = "/Applications/Reko.app/Contents/MacOS/Reko";
+const INSTALLED_APP_COMMAND_PREFIX =
+	"/Applications/Reko.app/Contents/MacOS/Reko";
 
 function parseArgs(argv) {
 	const options = {

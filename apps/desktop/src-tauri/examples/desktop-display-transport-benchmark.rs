@@ -5,7 +5,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use reko_desktop_lib::frame_ws::{WSFrame, WSFrameFormat, create_watch_frame_ws};
 use cap_editor::{
     EditorFrameOutput, Playback, PlaybackRenderOutputFormat, PlaybackSkipReason, PlaybackTelemetry,
     PlaybackTelemetryEvent, Renderer, finish_renderer_layers_creation,
@@ -16,6 +15,7 @@ use cap_project::{
     TimelineConfiguration, TimelineSegment, XY,
 };
 use cap_rendering::{GpuOutputFormat, ProjectRecordingsMeta, RenderVideoConstants, Video};
+use reko_desktop_lib::frame_ws::{WSFrame, WSFrameFormat, create_watch_frame_ws};
 use tokio::sync::{mpsc, watch};
 
 #[derive(Default)]

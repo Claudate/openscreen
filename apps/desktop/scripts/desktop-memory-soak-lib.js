@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 const DEV_APP_COMMAND_PREFIX = fileURLToPath(
 	new URL("../../../target/debug/reko-desktop", import.meta.url),
 );
-const INSTALLED_APP_COMMAND_PREFIX = "/Applications/Reko.app/Contents/MacOS/Reko";
+const INSTALLED_APP_COMMAND_PREFIX =
+	"/Applications/Reko.app/Contents/MacOS/Reko";
 
 export const DEFAULTS = {
 	appCommandPrefix:

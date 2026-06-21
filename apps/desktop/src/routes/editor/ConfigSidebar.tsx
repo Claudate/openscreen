@@ -529,9 +529,7 @@ function BgmControl() {
 					<Subfield name={t("editor.bgm.loop")}>
 						<Toggle
 							checked={bgm()?.loopPlayback ?? false}
-							onChange={(v) =>
-								setProject("audio", "bgm", "loopPlayback", v)
-							}
+							onChange={(v) => setProject("audio", "bgm", "loopPlayback", v)}
 						/>
 					</Subfield>
 				</Show>

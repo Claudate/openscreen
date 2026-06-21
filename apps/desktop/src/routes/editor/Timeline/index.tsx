@@ -38,6 +38,7 @@ import type { MaskSegment } from "../masks";
 import type { TextSegment } from "../text";
 import { getTrackRowsWithCount, getUsedTrackCount } from "../timelineTracks";
 import { formatTime } from "../utils";
+import { type BgmSegmentDragState, BgmTrack } from "./BgmTrack";
 import { type CaptionSegmentDragState, CaptionsTrack } from "./CaptionsTrack";
 import { ClipTrack } from "./ClipTrack";
 import { TimelineContextProvider, useTimelineContext } from "./context";
@@ -47,7 +48,6 @@ import { type SceneSegmentDragState, SceneTrack } from "./SceneTrack";
 import { type TextSegmentDragState, TextTrack } from "./TextTrack";
 import { TrackIcon, TrackManager } from "./TrackManager";
 import { type ZoomSegmentDragState, ZoomTrack } from "./ZoomTrack";
-import { type BgmSegmentDragState, BgmTrack } from "./BgmTrack";
 
 const TIMELINE_PADDING = 16;
 const TRACK_GUTTER = 64;
@@ -550,7 +550,7 @@ export function Timeline(props: {
 	let textSegmentDragState = { type: "idle" } as TextSegmentDragState;
 	let captionSegmentDragState = { type: "idle" } as CaptionSegmentDragState;
 	let keyboardSegmentDragState = { type: "idle" } as KeyboardSegmentDragState;
-	let bgmSegmentDragState = { type: "idle" } as BgmSegmentDragState;
+	let _bgmSegmentDragState = { type: "idle" } as BgmSegmentDragState;
 
 	let pendingZoomDelta = 0;
 	let pendingZoomOrigin: number | null = null;
@@ -1035,7 +1035,7 @@ export function Timeline(props: {
 								<TrackRow icon={trackIcons.bgm}>
 									<BgmTrack
 										onDragStateChanged={(v) => {
-											bgmSegmentDragState = v;
+											_bgmSegmentDragState = v;
 										}}
 										handleUpdatePlayhead={handleUpdatePlayhead}
 									/>

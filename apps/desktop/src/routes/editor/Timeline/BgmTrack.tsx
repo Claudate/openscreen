@@ -1,26 +1,12 @@
 import { createEventListenerMap } from "@solid-primitives/event-listener";
-import { cx } from "cva";
-import {
-	batch,
-	createMemo,
-	createRoot,
-	createSignal,
-	Index,
-	Show,
-} from "solid-js";
-import { produce } from "solid-js/store";
 import { open } from "@tauri-apps/plugin-dialog";
+import { cx } from "cva";
+import { batch, createMemo, createRoot, Index, Show } from "solid-js";
+import { produce } from "solid-js/store";
 import toast from "solid-toast";
 import { t } from "~/i18n";
 import { useEditorContext } from "../context";
-import { useTimelineContext, useTrackContext } from "./context";
-import {
-	SegmentContent,
-	SegmentHandle,
-	SegmentRoot,
-	TrackRoot,
-	useSetPreviewTime,
-} from "./Track";
+import { SegmentContent, SegmentHandle, SegmentRoot, TrackRoot } from "./Track";
 
 export type BgmSegmentDragState =
 	| { type: "idle" }
@@ -31,20 +17,9 @@ export function BgmTrack(props: {
 	onDragStateChanged: (v: BgmSegmentDragState) => void;
 	handleUpdatePlayhead: (e: MouseEvent) => void;
 }) {
-	const {
-		project,
-		setProject,
-		setEditorState,
-		editorState,
-		totalDuration,
-	} = useEditorContext();
+	const { project, setProject, totalDuration } = useEditorContext();
 
-	const { secsPerPixel } = useTimelineContext();
-	const setPreviewTime = useSetPreviewTime();
-
-	const bgmSegments = createMemo(
-		() => project.timeline?.bgmSegments ?? [],
-	);
+	const bgmSegments = createMemo(() => project.timeline?.bgmSegments ?? []);
 
 	const handleAddBgm = async () => {
 		try {
@@ -152,9 +127,7 @@ function BgmSegment(props: {
 	index: number;
 	onDragStateChanged: (v: BgmSegmentDragState) => void;
 }) {
-	const { setProject, editorState, setEditorState, project } =
-		useEditorContext();
-	const { secsPerPixel } = useTrackContext();
+	const { setProject, setEditorState, project } = useEditorContext();
 
 	const fileName = createMemo(() => {
 		const bgm = project.audio.bgm;
@@ -163,7 +136,7 @@ function BgmSegment(props: {
 		return parts[parts.length - 1] ?? t("editor.bgm.untitled");
 	});
 
-	const handleDelete = () => {
+	const _handleDelete = () => {
 		batch(() => {
 			setProject(
 				"timeline",

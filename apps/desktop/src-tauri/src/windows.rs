@@ -940,14 +940,14 @@ impl ShowCapWindow {
                     .ids
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
-                if !s.iter().any(|(path, _)| path == project_path) {
+                if let Some(&(_, id)) = s.iter().find(|(path, _)| path == project_path) {
+                    id
+                } else {
                     let id = state
                         .counter
                         .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                     s.push((project_path.clone(), id));
                     id
-                } else {
-                    s.iter().find(|(path, _)| path == project_path).unwrap().1
                 }
             };
 

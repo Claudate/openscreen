@@ -324,10 +324,15 @@ export function MaskTrack(props: {
 						return indices.has(index);
 					});
 
+					const maskTypeLabels: Record<string, string> = {
+						sensitive: t("editor.timeline.mask.sensitive"),
+						highlight: t("editor.timeline.mask.highlight"),
+						silhouette: t("editor.timeline.mask.silhouette"),
+						edgeGlow: t("editor.timeline.mask.edgeGlow"),
+					};
 					const contentLabel = () =>
-						segment.maskType === "sensitive"
-							? t("editor.timeline.mask.sensitive")
-							: t("editor.timeline.mask.highlight");
+						maskTypeLabels[segment.maskType] ??
+						t("editor.timeline.mask.sensitive");
 
 					const segmentWidth = () => segment.end - segment.start;
 

@@ -429,6 +429,117 @@ const TAB_IDS = {
 	captions: "captions",
 } as const;
 
+function BgmControl() {
+	const { project, setProject, setEditorState } = useEditorContext();
+	const bgm = () => project.audio.bgm;
+
+	const handleAddBgm = async () => {
+		const { open } = await import("@tauri-apps/plugin-dialog");
+		const selected = await open({
+			multiple: false,
+			filters: [
+				{
+					name: "Audio",
+					extensions: ["mp3", "wav", "ogg", "flac", "aac", "m4a"],
+				},
+			],
+		});
+		if (!selected) return;
+		const path = typeof selected === "string" ? selected : selected.path;
+		batch(() => {
+			setProject("audio", "bgm", {
+				path,
+				volumeDb: -6.0,
+				startOffset: 0.0,
+				enabled: true,
+				loopPlayback: false,
+			});
+			setEditorState("timeline", "tracks", "bgm", true);
+		});
+	};
+
+	const handleRemoveBgm = () => {
+		batch(() => {
+			setProject("audio", "bgm", undefined);
+			setProject(
+				"timeline",
+				"bgmSegments",
+				produce((segs) => {
+					if (segs) segs.length = 0;
+				}),
+			);
+			setEditorState("timeline", "tracks", "bgm", false);
+		});
+	};
+
+	const fileName = () => {
+		const b = bgm();
+		if (!b) return "";
+		const parts = b.path.replace(/\\/g, "/").split("/");
+		return parts[parts.length - 1] ?? "";
+	};
+
+	return (
+		<Collapsible defaultOpen>
+			<Collapsible.Trigger class="flex items-center gap-2 py-2 text-sm font-medium text-gray-12 cursor-pointer hover:text-gray-11 group w-full">
+				<IconLucideMusic class="size-4" />
+				<span class="flex-1 text-left">{t("editor.bgm.volume")}</span>
+				<IconCapChevronDown class="size-3.5 text-gray-9 transition-transform group-data-closed:-rotate-90" />
+			</Collapsible.Trigger>
+			<Collapsible.Content class="flex flex-col gap-3 pb-3">
+				<Show
+					when={bgm()}
+					fallback={
+						<button
+							type="button"
+							class="flex items-center justify-center gap-1.5 w-full h-9 rounded-lg border border-dashed border-gray-5 hover:border-emerald-7 hover:bg-emerald-3/20 transition-colors text-xs text-gray-9 hover:text-emerald-11"
+							onClick={handleAddBgm}
+						>
+							<IconLucideMusic class="size-3.5" />
+							{t("editor.bgm.addMusic")}
+						</button>
+					}
+				>
+					<div class="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-emerald-3/30 border border-emerald-5">
+						<IconLucideMusic class="size-3.5 text-emerald-11 flex-shrink-0" />
+						<span class="text-xs text-emerald-12 truncate flex-1">
+							{fileName()}
+						</span>
+						<button
+							type="button"
+							class="text-gray-9 hover:text-red-11 transition-colors p-0.5"
+							onClick={handleRemoveBgm}
+						>
+							<IconCapTrash class="size-3.5" />
+						</button>
+					</div>
+					<Slider
+						disabled={project.audio.mute}
+						value={[bgm()?.volumeDb ?? -6]}
+						onChange={(v) => setProject("audio", "bgm", "volumeDb", v[0])}
+						minValue={-30}
+						maxValue={10}
+						step={0.1}
+						formatTooltip={(v) =>
+							v <= -30
+								? t("editor.audio.muted")
+								: `${v > 0 ? "+" : ""}${v.toFixed(1)} dB`
+						}
+					/>
+					<Subfield name={t("editor.bgm.loop")}>
+						<Toggle
+							checked={bgm()?.loopPlayback ?? false}
+							onChange={(v) =>
+								setProject("audio", "bgm", "loopPlayback", v)
+							}
+						/>
+					</Subfield>
+				</Show>
+			</Collapsible.Content>
+		</Collapsible>
+	);
+}
+
 export function ConfigSidebar() {
 	const {
 		project,
@@ -712,6 +823,7 @@ export function ConfigSidebar() {
 							/>
 						</Field>
 					)}
+					<BgmControl />
 				</KTabs.Content>
 				<KTabs.Content
 					value="cursor"
@@ -3598,6 +3710,13 @@ function MaskSegmentConfig(props: {
 								if (segment.maskType === "highlight") {
 									segment.feather = 0;
 									segment.opacity = 1;
+								} else if (segment.maskType === "silhouette") {
+									segment.feather = 0.05;
+									segment.opacity = 0.8;
+									segment.darkness = 0.9;
+								} else if (segment.maskType === "edgeGlow") {
+									segment.feather = 0.15;
+									segment.opacity = 0.7;
 								} else {
 									segment.feather = 0.1;
 									segment.fadeDuration = 0;
@@ -3613,6 +3732,14 @@ function MaskSegmentConfig(props: {
 							{
 								value: "highlight",
 								label: t("editor.segment.maskHighlight"),
+							},
+							{
+								value: "silhouette",
+								label: t("editor.segment.maskSilhouette"),
+							},
+							{
+								value: "edgeGlow",
+								label: t("editor.segment.maskEdgeGlow"),
 							},
 						].map((option) => (
 							<RadioGroup.Item

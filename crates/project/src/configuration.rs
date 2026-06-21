@@ -420,6 +420,30 @@ pub struct AudioConfiguration {
     pub mic_volume_db: f32,
     pub mic_stereo_mode: StereoMode,
     pub system_volume_db: f32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bgm: Option<BgmConfiguration>,
+}
+
+#[derive(Type, Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct BgmConfiguration {
+    pub path: String,
+    pub volume_db: f32,
+    pub start_offset: f64,
+    pub enabled: bool,
+    pub loop_playback: bool,
+}
+
+impl Default for BgmConfiguration {
+    fn default() -> Self {
+        Self {
+            path: String::new(),
+            volume_db: -6.0,
+            start_offset: 0.0,
+            enabled: true,
+            loop_playback: false,
+        }
+    }
 }
 
 impl Default for AudioConfiguration {
@@ -430,6 +454,7 @@ impl Default for AudioConfiguration {
             mic_volume_db: 0.0,
             mic_stereo_mode: StereoMode::default(),
             system_volume_db: 0.0,
+            bgm: None,
         }
     }
 }
@@ -708,6 +733,8 @@ pub enum ZoomMode {
 pub enum MaskKind {
     Sensitive,
     Highlight,
+    Silhouette,
+    EdgeGlow,
 }
 
 #[derive(Type, Serialize, Deserialize, Clone, Debug, Default)]
@@ -907,6 +934,22 @@ pub struct TimelineConfiguration {
     pub caption_segments: Vec<CaptionTrackSegment>,
     #[serde(default)]
     pub keyboard_segments: Vec<crate::KeyboardTrackSegment>,
+    #[serde(default)]
+    pub bgm_segments: Vec<BgmTrackSegment>,
+}
+
+#[derive(Type, Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BgmTrackSegment {
+    pub id: String,
+    pub start: f64,
+    pub end: f64,
+    pub source_start: f64,
+    pub volume_db: f32,
+    #[serde(default)]
+    pub fade_in: f64,
+    #[serde(default)]
+    pub fade_out: f64,
 }
 
 #[derive(Type, Serialize, Deserialize, Clone, Debug)]

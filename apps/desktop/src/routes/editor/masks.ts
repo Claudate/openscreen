@@ -1,6 +1,6 @@
 import type { XY } from "~/utils/tauri";
 
-export type MaskKind = "sensitive" | "highlight";
+export type MaskKind = "sensitive" | "highlight" | "silhouette" | "edgeGlow";
 
 export type MaskScalarKeyframe = {
 	time: number;

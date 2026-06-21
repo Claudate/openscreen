@@ -787,6 +787,7 @@ mod tests {
                 text_segments: Vec::new(),
                 caption_segments: Vec::new(),
                 keyboard_segments: Vec::new(),
+                bgm_segments: Vec::new(),
             }),
             clips: vec![
                 ClipConfiguration {
@@ -884,6 +885,7 @@ mod tests {
                 text_segments: Vec::new(),
                 caption_segments: Vec::new(),
                 keyboard_segments: Vec::new(),
+                bgm_segments: Vec::new(),
             }),
             clips: vec![ClipConfiguration {
                 index: 0,
@@ -972,6 +974,7 @@ mod tests {
                 text_segments: Vec::new(),
                 caption_segments: Vec::new(),
                 keyboard_segments: Vec::new(),
+                bgm_segments: Vec::new(),
             }),
             clips: vec![ClipConfiguration {
                 index: 0,
@@ -1009,6 +1012,7 @@ mod tests {
                 text_segments: Vec::new(),
                 caption_segments: Vec::new(),
                 keyboard_segments: Vec::new(),
+                bgm_segments: Vec::new(),
             }),
             clips: vec![ClipConfiguration {
                 index: 0,

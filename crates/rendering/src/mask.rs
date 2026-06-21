@@ -87,7 +87,9 @@ pub fn interpolate_masks(
 
         let fade_duration = match segment.mask_type {
             MaskKind::Sensitive => 0.0,
-            MaskKind::Highlight => segment.fade_duration.max(0.0),
+            MaskKind::Highlight | MaskKind::Silhouette | MaskKind::EdgeGlow => {
+                segment.fade_duration.max(0.0)
+            }
         };
         if fade_duration > 0.0 {
             let time_since_start = (frame_time - segment.start).max(0.0);
@@ -102,10 +104,9 @@ pub fn interpolate_masks(
         let clamped_size = XY::new(size.x.clamp(0.01, 2.0), size.y.clamp(0.01, 2.0));
 
         let min_axis = clamped_size.x.min(clamped_size.y).abs();
-        let segment_feather = if let MaskKind::Highlight = segment.mask_type {
-            0.0
-        } else {
-            segment.feather
+        let segment_feather = match segment.mask_type {
+            MaskKind::Highlight => 0.0,
+            _ => segment.feather,
         };
         let feather = (min_axis * 0.5 * segment_feather.max(0.0)).max(0.0001) as f32;
 

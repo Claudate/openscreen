@@ -139,7 +139,8 @@ export type TimelineTrackType =
 	| "text"
 	| "zoom"
 	| "scene"
-	| "mask";
+	| "mask"
+	| "bgm";
 
 export const MAX_ZOOM_IN = 3;
 const PROJECT_SAVE_DEBOUNCE_MS = 250;
@@ -157,6 +158,16 @@ export type CornerRoundingType = "rounded" | "squircle";
 
 type WithCornerStyle<T> = T & { roundingType: CornerRoundingType };
 
+type BgmTrackSegment = {
+	id: string;
+	start: number;
+	end: number;
+	sourceStart: number;
+	volumeDb: number;
+	fadeIn: number;
+	fadeOut: number;
+};
+
 type EditorTimelineConfiguration = Omit<
 	TimelineConfiguration,
 	"sceneSegments" | "maskSegments"
@@ -164,6 +175,7 @@ type EditorTimelineConfiguration = Omit<
 	sceneSegments?: SceneSegment[];
 	maskSegments: MaskSegment[];
 	textSegments: TextSegment[];
+	bgmSegments: BgmTrackSegment[];
 };
 
 export type EditorProjectConfiguration = Omit<
@@ -223,6 +235,12 @@ export function normalizeProject(
 						}
 					).textSegments ?? [],
 				),
+				bgmSegments:
+					(
+						config.timeline as TimelineConfiguration & {
+							bgmSegments?: BgmTrackSegment[];
+						}
+					).bgmSegments ?? [],
 			}
 		: undefined;
 
@@ -250,6 +268,7 @@ export function serializeProjectConfiguration(
 				keyboardSegments: project.timeline.keyboardSegments ?? [],
 				maskSegments: project.timeline.maskSegments ?? [],
 				textSegments: project.timeline.textSegments ?? [],
+				bgmSegments: project.timeline.bgmSegments ?? [],
 			}
 		: project.timeline;
 
@@ -337,6 +356,45 @@ export const [EditorContextProvider, useEditorContext] = createContextProvider(
 					);
 					setEditorState("timeline", "selection", null);
 				});
+			},
+			mergeAdjacentClipSegments: (indices: number[]): boolean => {
+				if (!project.timeline) return false;
+				const segments = project.timeline.segments;
+				if (indices.length < 2) return false;
+
+				const sorted = [...indices].sort((a, b) => a - b);
+				for (let i = 1; i < sorted.length; i++) {
+					if (sorted[i] !== sorted[i - 1] + 1) return false;
+				}
+
+				const first = segments[sorted[0]];
+				const last = segments[sorted[sorted.length - 1]];
+				if (!first || !last) return false;
+
+				if (
+					sorted.some(
+						(idx) =>
+							segments[idx].timescale !== first.timescale ||
+							segments[idx].recordingSegment !== first.recordingSegment,
+					)
+				)
+					return false;
+
+				batch(() => {
+					setProject(
+						"timeline",
+						"segments",
+						produce((s) => {
+							if (!s) return;
+							s[sorted[0]].end = last.end;
+							for (let i = sorted.length - 1; i > 0; i--) {
+								s.splice(sorted[i], 1);
+							}
+						}),
+					);
+					setEditorState("timeline", "selection", null);
+				});
+				return true;
 			},
 			splitZoomSegment: (index: number, time: number) => {
 				setProject(
@@ -947,6 +1005,7 @@ export const [EditorContextProvider, useEditorContext] = createContextProvider(
 			},
 			timeline: {
 				interactMode: "seek" as "seek" | "split",
+				snap: true,
 				selection: null as
 					| null
 					| { type: "zoom"; indices: number[] }
@@ -1000,6 +1059,7 @@ export const [EditorContextProvider, useEditorContext] = createContextProvider(
 					scene: true,
 					mask: initialMaskTrackCount,
 					text: initialTextTrackCount,
+					bgm: !!project.audio?.bgm,
 				},
 				hoveredTrack: null as null | TimelineTrackType,
 				hoveredMaskIndex: null as number | null,

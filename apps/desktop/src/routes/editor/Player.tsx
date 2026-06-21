@@ -1,5 +1,4 @@
 import { Select as KSelect } from "@kobalte/core/select";
-import { ToggleButton as KToggleButton } from "@kobalte/core/toggle-button";
 import { createElementBounds } from "@solid-primitives/bounds";
 import { debounce } from "@solid-primitives/scheduled";
 import { Menu } from "@tauri-apps/api/menu";
@@ -57,6 +56,8 @@ export function PlayerContent() {
 		previewResolutionBase,
 		previewQuality,
 		setPreviewQuality,
+		projectActions,
+		projectHistory,
 	} = useEditorContext();
 
 	const previewOptions = [
@@ -398,19 +399,96 @@ export function PlayerContent() {
 			</div>
 			<PreviewCanvas />
 			<div class="relative flex overflow-hidden z-10 flex-row gap-3 justify-between items-center px-4 py-3 border-t border-gray-3">
-				<div class="flex-1">
-					<Time
-						class="text-gray-12"
-						seconds={Math.max(
-							editorState.previewTime ?? editorState.playbackTime,
-							0,
-						)}
-					/>
-					<span class="text-gray-8 text-[0.875rem] font-mono tabular-nums">
-						{" "}
-						/{" "}
-					</span>
-					<Time seconds={totalDuration()} class="text-xs" />
+				<div class="flex flex-row items-center gap-1.5">
+					<Tooltip kbd={["V"]} content={t("editor.player.selectMode")}>
+						<button
+							type="button"
+							class={cx(
+								"rounded-lg p-1.5 transition-colors",
+								editorState.timeline.interactMode === "seek"
+									? "bg-blue-9 text-white"
+									: "text-gray-11 hover:text-gray-12 hover:bg-gray-3",
+							)}
+							onClick={() => setEditorState("timeline", "interactMode", "seek")}
+						>
+							<IconLucideMousePointer2 class="size-4" />
+						</button>
+					</Tooltip>
+					<Tooltip kbd={["S"]} content={t("editor.player.splitMode")}>
+						<button
+							type="button"
+							class={cx(
+								"rounded-lg p-1.5 transition-colors",
+								editorState.timeline.interactMode === "split"
+									? "bg-red-9 text-white"
+									: "text-gray-11 hover:text-gray-12 hover:bg-gray-3",
+							)}
+							onClick={() =>
+								setEditorState(
+									"timeline",
+									"interactMode",
+									editorState.timeline.interactMode === "split"
+										? "seek"
+										: "split",
+								)
+							}
+						>
+							<IconCapScissors class="size-4" />
+						</button>
+					</Tooltip>
+					<div class="w-px h-5 bg-gray-4" />
+					<Tooltip kbd={["N"]} content={t("editor.player.snapToggle")}>
+						<button
+							type="button"
+							class={cx(
+								"rounded-lg p-1.5 transition-colors",
+								editorState.timeline.snap
+									? "text-blue-11 bg-blue-3"
+									: "text-gray-11 hover:text-gray-12 hover:bg-gray-3",
+							)}
+							onClick={() =>
+								setEditorState("timeline", "snap", !editorState.timeline.snap)
+							}
+						>
+							<IconLucideMagnet class="size-4" />
+						</button>
+					</Tooltip>
+					<div class="w-px h-5 bg-gray-4" />
+					<Tooltip kbd={["meta", "Z"]} content={t("editor.header.undo")}>
+						<button
+							type="button"
+							class="rounded-lg p-1.5 transition-colors text-gray-11 hover:text-gray-12 hover:bg-gray-3 disabled:opacity-30 disabled:cursor-not-allowed"
+							disabled={!projectHistory.canUndo()}
+							onClick={() => projectHistory.undo()}
+						>
+							<IconCapUndo class="size-4" />
+						</button>
+					</Tooltip>
+					<Tooltip
+						kbd={["meta", "shift", "Z"]}
+						content={t("editor.header.redo")}
+					>
+						<button
+							type="button"
+							class="rounded-lg p-1.5 transition-colors text-gray-11 hover:text-gray-12 hover:bg-gray-3 disabled:opacity-30 disabled:cursor-not-allowed"
+							disabled={!projectHistory.canRedo()}
+							onClick={() => projectHistory.redo()}
+						>
+							<IconCapRedo class="size-4" />
+						</button>
+					</Tooltip>
+					<div class="w-px h-5 bg-gray-4" />
+					<div class="text-[0.8125rem]">
+						<Time
+							class="text-gray-12"
+							seconds={Math.max(
+								editorState.previewTime ?? editorState.playbackTime,
+								0,
+							)}
+						/>
+						<span class="text-gray-8 font-mono tabular-nums"> / </span>
+						<Time seconds={totalDuration()} class="text-xs" />
+					</div>
 				</div>
 				<div class="flex flex-row items-center justify-center text-gray-11 gap-4 text-[0.875rem]">
 					<button
@@ -451,25 +529,66 @@ export function PlayerContent() {
 				</div>
 				<div class="flex flex-row flex-1 gap-4 justify-end items-center">
 					<div class="flex-1" />
-					<EditorButton<typeof KToggleButton>
-						tooltipText={t("editor.player.toggleSplit")}
-						kbd={["S"]}
-						pressed={editorState.timeline.interactMode === "split"}
-						onChange={(v: boolean) =>
-							setEditorState("timeline", "interactMode", v ? "split" : "seek")
-						}
-						as={KToggleButton}
-						variant="danger"
-						leftIcon={
-							<IconCapScissors
-								class={cx(
-									editorState.timeline.interactMode === "split"
-										? "text-white"
-										: "text-gray-12",
-								)}
-							/>
-						}
-					/>
+					<Tooltip kbd={["C"]} content={t("editor.player.splitAtPlayhead")}>
+						<button
+							type="button"
+							class="hover:text-gray-12 hover:bg-gray-3 rounded-lg p-1.5 transition-colors text-gray-11"
+							onClick={() => {
+								const time =
+									editorState.previewTime ?? editorState.playbackTime;
+								projectActions.splitClipSegment(time);
+							}}
+						>
+							<IconLucideScissors class="size-4" />
+						</button>
+					</Tooltip>
+					<Tooltip
+						kbd={["Backspace"]}
+						content={t("editor.player.deleteSegment")}
+					>
+						<button
+							type="button"
+							class="hover:text-red-11 hover:bg-red-3 rounded-lg p-1.5 transition-colors text-gray-11 disabled:opacity-30 disabled:cursor-not-allowed"
+							disabled={
+								!editorState.timeline.selection ||
+								editorState.timeline.selection.type !== "clip"
+							}
+							onClick={() => {
+								const selection = editorState.timeline.selection;
+								if (selection?.type === "clip") {
+									for (const idx of [...selection.indices].sort(
+										(a, b) => b - a,
+									)) {
+										projectActions.deleteClipSegment(idx);
+									}
+								}
+							}}
+						>
+							<IconCapTrash class="size-4" />
+						</button>
+					</Tooltip>
+					<Tooltip content={t("editor.player.mergeSegments")}>
+						<button
+							type="button"
+							class="hover:text-gray-12 hover:bg-gray-3 rounded-lg p-1.5 transition-colors text-gray-11 disabled:opacity-30 disabled:cursor-not-allowed"
+							disabled={
+								!editorState.timeline.selection ||
+								editorState.timeline.selection.type !== "clip" ||
+								editorState.timeline.selection.indices.length < 2
+							}
+							onClick={() => {
+								const selection = editorState.timeline.selection;
+								if (
+									selection?.type === "clip" &&
+									selection.indices.length >= 2
+								) {
+									projectActions.mergeAdjacentClipSegments(selection.indices);
+								}
+							}}
+						>
+							<IconLucideMerge class="size-4" />
+						</button>
+					</Tooltip>
 					<div class="w-px h-8 rounded-full bg-gray-4" />
 					<Tooltip kbd={["meta", "-"]} content={t("editor.player.zoomOut")}>
 						<IconCapZoomOut

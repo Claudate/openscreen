@@ -206,6 +206,8 @@ pub struct RenderOptions {
 pub enum MaskRenderMode {
     Sensitive,
     Highlight,
+    Silhouette,
+    EdgeGlow,
 }
 
 impl MaskRenderMode {
@@ -213,6 +215,8 @@ impl MaskRenderMode {
         match kind {
             MaskKind::Sensitive => MaskRenderMode::Sensitive,
             MaskKind::Highlight => MaskRenderMode::Highlight,
+            MaskKind::Silhouette => MaskRenderMode::Silhouette,
+            MaskKind::EdgeGlow => MaskRenderMode::EdgeGlow,
         }
     }
 }
@@ -234,6 +238,8 @@ impl PreparedMask {
         match self.mode {
             MaskRenderMode::Sensitive => 0,
             MaskRenderMode::Highlight => 1,
+            MaskRenderMode::Silhouette => 2,
+            MaskRenderMode::EdgeGlow => 3,
         }
     }
 }

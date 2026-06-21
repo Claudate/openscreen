@@ -47,6 +47,7 @@ import { type SceneSegmentDragState, SceneTrack } from "./SceneTrack";
 import { type TextSegmentDragState, TextTrack } from "./TextTrack";
 import { TrackIcon, TrackManager } from "./TrackManager";
 import { type ZoomSegmentDragState, ZoomTrack } from "./ZoomTrack";
+import { type BgmSegmentDragState, BgmTrack } from "./BgmTrack";
 
 const TIMELINE_PADDING = 16;
 const TRACK_GUTTER = 64;
@@ -61,6 +62,7 @@ const trackIcons: Record<TimelineTrackType, () => JSX.Element> = {
 	mask: () => <IconLucideBoxSelect class="size-4" />,
 	zoom: () => <IconLucideSearch class="size-4" />,
 	scene: () => <IconLucideVideo class="size-4" />,
+	bgm: () => <IconLucideMusic class="size-4" />,
 };
 
 type TrackDefinition = {
@@ -72,7 +74,8 @@ type TrackDefinition = {
 		| "text"
 		| "mask"
 		| "zoom"
-		| "scene";
+		| "scene"
+		| "bgm";
 	icon: () => JSX.Element;
 	locked: boolean;
 };
@@ -118,6 +121,12 @@ const trackDefinitions: TrackDefinition[] = [
 		type: "scene",
 		labelKey: "scene",
 		icon: trackIcons.scene,
+		locked: false,
+	},
+	{
+		type: "bgm",
+		labelKey: "bgm",
+		icon: trackIcons.bgm,
 		locked: false,
 	},
 ];
@@ -187,7 +196,9 @@ export function Timeline(props: {
 								? trackState().mask > 0
 								: definition.type === "text"
 									? trackState().text > 0
-									: true,
+									: definition.type === "bgm"
+										? trackState().bgm
+										: true,
 			available: definition.type === "scene" ? sceneAvailable() : true,
 			supportsMultiple:
 				definition.type === "mask" || definition.type === "text",
@@ -310,6 +321,10 @@ export function Timeline(props: {
 			if (!next && editorState.timeline.selection?.type === "mask") {
 				setEditorState("timeline", "selection", null);
 			}
+		}
+
+		if (type === "bgm") {
+			setEditorState("timeline", "tracks", "bgm", next);
 		}
 	}
 
@@ -473,6 +488,7 @@ export function Timeline(props: {
 				textSegments: [],
 				captionSegments: [],
 				keyboardSegments: [],
+				bgmSegments: [],
 			});
 			resume();
 		}
@@ -523,6 +539,7 @@ export function Timeline(props: {
 				project.timeline.maskSegments ??= [];
 				project.timeline.textSegments ??= [];
 				project.timeline.zoomSegments ??= [];
+				project.timeline.bgmSegments ??= [];
 			}),
 		);
 	}
@@ -533,6 +550,7 @@ export function Timeline(props: {
 	let textSegmentDragState = { type: "idle" } as TextSegmentDragState;
 	let captionSegmentDragState = { type: "idle" } as CaptionSegmentDragState;
 	let keyboardSegmentDragState = { type: "idle" } as KeyboardSegmentDragState;
+	let bgmSegmentDragState = { type: "idle" } as BgmSegmentDragState;
 
 	let pendingZoomDelta = 0;
 	let pendingZoomOrigin: number | null = null;
@@ -1008,6 +1026,16 @@ export function Timeline(props: {
 									<SceneTrack
 										onDragStateChanged={(v) => {
 											sceneSegmentDragState = v;
+										}}
+										handleUpdatePlayhead={handleUpdatePlayhead}
+									/>
+								</TrackRow>
+							</Show>
+							<Show when={trackState().bgm}>
+								<TrackRow icon={trackIcons.bgm}>
+									<BgmTrack
+										onDragStateChanged={(v) => {
+											bgmSegmentDragState = v;
 										}}
 										handleUpdatePlayhead={handleUpdatePlayhead}
 									/>

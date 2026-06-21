@@ -1349,6 +1349,7 @@ impl RecoveryManager {
             text_segments: Vec::new(),
             caption_segments: Vec::new(),
             keyboard_segments: Vec::new(),
+            bgm_segments: Vec::new(),
         });
 
         config

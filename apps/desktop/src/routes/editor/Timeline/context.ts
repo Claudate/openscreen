@@ -13,6 +13,8 @@ const TIMELINE_MARKING_RESOLUTIONS = [0.5, 1, 2.5, 5, 10, 30];
 
 const SEGMENT_RENDER_PADDING = 2;
 
+const SNAP_THRESHOLD_PX = 8;
+
 type TimelineContextValue = {
 	duration: Accessor<number>;
 	secsPerPixel: Accessor<number>;
@@ -20,6 +22,7 @@ type TimelineContextValue = {
 	markingResolution: Accessor<number>;
 	visibleTimeRange: Accessor<{ start: number; end: number }>;
 	isSegmentVisible(segmentStart: number, segmentEnd: number): boolean;
+	snapTime(time: number, exclude?: { start?: number; end?: number }): number;
 };
 
 type TrackContextValue = {
@@ -66,6 +69,59 @@ export const [TimelineContextProvider, useTimelineContext] =
 				return segmentEnd >= range.start && segmentStart <= range.end;
 			};
 
+			const { project } = useEditorContext();
+
+			const snapTime = (
+				time: number,
+				exclude?: { start?: number; end?: number },
+			): number => {
+				if (!state.timeline.snap) return time;
+
+				const spp = props.secsPerPixel;
+				const threshold = SNAP_THRESHOLD_PX * spp;
+				const edges: number[] = [0, props.duration];
+
+				const playhead = state.playbackTime;
+				edges.push(playhead);
+				if (state.previewTime != null) edges.push(state.previewTime);
+
+				let clipCursor = 0;
+				for (const seg of project.timeline?.segments ?? []) {
+					edges.push(clipCursor);
+					clipCursor += (seg.end - seg.start) / seg.timescale;
+					edges.push(clipCursor);
+				}
+				for (const seg of project.timeline?.zoomSegments ?? [])
+					edges.push(seg.start, seg.end);
+				for (const seg of project.timeline?.textSegments ?? [])
+					edges.push(seg.start, seg.end);
+				for (const seg of project.timeline?.maskSegments ?? [])
+					edges.push(seg.start, seg.end);
+				for (const seg of project.timeline?.captionSegments ?? [])
+					edges.push(seg.start, seg.end);
+				for (const seg of project.timeline?.keyboardSegments ?? [])
+					edges.push(seg.start, seg.end);
+				for (const seg of project.timeline?.bgmSegments ?? [])
+					edges.push(seg.start, seg.end);
+
+				let best = time;
+				let bestDist = threshold;
+				for (const edge of edges) {
+					if (
+						exclude &&
+						((exclude.start != null && Math.abs(edge - exclude.start) < 1e-6) ||
+							(exclude.end != null && Math.abs(edge - exclude.end) < 1e-6))
+					)
+						continue;
+					const dist = Math.abs(edge - time);
+					if (dist < bestDist) {
+						bestDist = dist;
+						best = edge;
+					}
+				}
+				return best;
+			};
+
 			return {
 				duration: () => props.duration,
 				secsPerPixel: () => props.secsPerPixel,
@@ -73,6 +129,7 @@ export const [TimelineContextProvider, useTimelineContext] =
 				markingResolution,
 				visibleTimeRange,
 				isSegmentVisible,
+				snapTime,
 			};
 		},
 		null as unknown as TimelineContextValue,

@@ -287,6 +287,10 @@ export function PlayerContent() {
 		);
 	}, [
 		{
+			combo: "V",
+			handler: () => setEditorState("timeline", "interactMode", "seek"),
+		},
+		{
 			combo: "S",
 			handler: () =>
 				setEditorState(
@@ -294,6 +298,11 @@ export function PlayerContent() {
 					"interactMode",
 					editorState.timeline.interactMode === "split" ? "seek" : "split",
 				),
+		},
+		{
+			combo: "N",
+			handler: () =>
+				setEditorState("timeline", "snap", !editorState.timeline.snap),
 		},
 		{
 			combo: "Mod+=",
